@@ -1,137 +1,141 @@
-# Implementação RISC-V Multi-Cycle Modular
+# 🗺️ Roadmap: RISC-V SoC (System on a Chip)
 
-Esta seção guia a refatoração da arquitetura Single-Cycle para Multi-Cycle (RV32I), com foco na modularização e isolamento de componentes.
+Este documento rastreia o status de desenvolvimento do SoC RISC-V, desde a refatoração do Core até a implementação na FPGA e desenvolvimento da HAL.
 
-## 1. 🏗️ Preparação e Estrutura
-- [x] **Limpeza Inicial**:
-    - [x] Garantir que a pasta `rtl/core/multi_cycle/` esteja limpa (fazer backup do que já existe se necessário).
-- [x] **Revisão de Dependências Comuns**:
-    - [x] Confirmar que `rtl/core/common/` contém: `alu.vhd`, `reg_file.vhd`, `imm_gen.vhd` (não precisamos reescrever estes).
+---
 
-## 2. 🔌 Modificações no Datapath (`datapath.vhd`)
-*O Datapath Multi-Cycle precisa de registradores "invisíveis" ao programador para guardar dados entre os estados do clock.*
+## 🟡 Fase 0: Core Single-Cycle (Concluído)
+*Arquitetura base onde cada instrução termina em 1 ciclo de clock. Serviu para validação inicial da lógica.*
 
-- [x] **Instanciar Registradores Internos (Barreiras)**:
-    - [x] **IR (Instruction Register)**: Guarda a instrução lida na fase de Fetch. (Enable controlado por `IRWrite`).
-    - [x] **MDR (Memory Data Register)**: Guarda o dado vindo da memória (Load).
-    - [x] **Reg A e Reg B**: Guardam os valores lidos do Banco de Registradores (`rs1` e `rs2`).
-    - [x] **ALUOut**: Guarda o resultado da ALU para ser usado no próximo ciclo (ex: endereço de memória ou WriteBack).
-- [x] **Atualizar Multiplexadores (MUXs)**:
-    - [x] **MUX A (Entrada A da ALU)**: Adicionar opção para selecionar `PC` (para cálculo de branch/jal) ou `Reg A`.
-    - [x] **MUX B (Entrada B da ALU)**: Adicionar opções para `Reg B`, `4` (incremento PC), `Imediato`, ou `Shifts`.
-    - [x] **MUX MemToReg**: Agora deve selecionar entre `ALUOut` (resultados R-Type/I-Type) ou `MDR` (Loads).
-- [x] **Lógica do PC**:
-    - [x] Alterar o PC para ser um registrador com *Enable* (`PCWrite` ou `PCWriteCond` vindo do controle).
+- [x] **Datapath (`datapath.vhd`)**
+  - [x] Execução direta: `PC` -> `IMem` -> `Decoder` -> `RegFile` -> `ALU` -> `DMem` -> `WB`.
+  - [x] Unidade de Branch combinacional (`branch_unit.vhd`).
+- [x] **Controle (`control.vhd`)**
+  - [x] Decodificação combinacional de `Opcode` (7 bits) para sinais `ALUSrc`, `MemtoReg`, `RegWrite`.
+- [x] **Validação**
+  - [x] Testes unitários com instruções R-Type, I-Type, Load/Store e Branch.
 
-## 3. 🧠 Controle Modular (`control_unit/`)
-*Em vez de um arquivo gigante, vamos dividir a FSM em três entidades menores conectadas por um wrapper.*
+---
 
-### 3.1. `main_fsm.vhd` (Máquina de Estados)
-*Responsável apenas pelas transições de estados, sem gerar os sinais finais de controle.*
-- [x] Definir os Estados (Enum):
-    - `S_FETCH`, `S_DECODE`
-    - `S_EXEC_R`, `S_EXEC_I`, `S_JAL`, `S_JALR`, `S_BRANCH`
-    - `S_MEM_ADDR`, `S_MEM_READ`, `S_MEM_WRITE`, `S_WB`
-- [x] Implementar Lógica de Próximo Estado (Process Combinacional):
-    - Ler `Opcode`.
-    - Transitar de `FETCH` -> `DECODE` -> [Execução Específica] -> [Memória/WB] -> `FETCH`.
-- [x] Implementar Lógica Sequencial:
-    - Atualizar `CurrentState` na borda de subida do Clock.
+## 🟢 Fase 1: Refatoração Multi-Cycle (Concluído)
+*Introdução de máquina de estados para suportar clocks mais altos (reduzir caminho crítico), reutilização de recursos e permitir o uso de memórias síncronas (como BRAM)*
 
-### 3.2. `control_decoder.vhd` (Decodificador de Sinais)
-*Recebe o Estado Atual e gera os sinais de controle para o Datapath.*
-- [x] Mapear saídas baseadas no **Estado Atual**:
-    - [x] **Estados de Busca**: Em `S_FETCH`, ligar `IRWrite`, `ALUSrcA=PC`, `ALUSrcB=4`, `PCWrite`.
-    - [x] **Estados de Execução**: Em `S_EXEC_R`, ligar `ALUSrcA=RegA`, `ALUSrcB=RegB`, etc.
-    - [x] **Estados de Memória**: Em `S_MEM_READ`, garantir que `IorD` (Instruction or Data) selecione o endereço da ALUOut.
-    - [x] **Estados de WriteBack**: Controlar `RegWrite` e `MemToReg`.
+- [x] **Infraestrutura do Projeto**
+  - [x] Limpeza e reestruturação de diretórios (`rtl/core`, `rtl/soc`, `rtl/perips`).
+  - [x] Atualização do `makefile` e scripts de simulação.
+  - [x] Separação de arquivos de teste (`sim/core`).
 
-### 3.3. `alu_decoder.vhd` (ALU Control)
-*Pode ser reutilizado ou adaptado do Single-Cycle, mas deve estar separado.*
-- [x] Receber `ALUOp` (gerado pelo `control_decoder`) e campos `Funct3/Funct7`.
-- [x] Gerar `ALUControl` (4 bits) para a ALU.
+- [x] **Datapath Multi-Cycle (RTL)**
+  - [x] **Registradores de Barreira (`datapath.vhd`)**
+      - [x] `IR` (Instruction Register) com sinal `IRWrite`.
+      - [x] `MDR` (Memory Data Register) para capturar dados da memória.
+      - [x] `ALUOut` para armazenar endereços calculados ou resultados parciais.
+      - [x] `Reg A` e `Reg B` para estabilizar entradas da ALU.
+  - [x] **FSM (`main_fsm.vhd`)**
+      - [x] Estados definidos: `S_FETCH` -> `S_DECODE` -> (`S_EXEC_R` | `S_MEM_ADDR` | `S_BRANCH`...) -> `S_WB`.
+      - [x] Controle de PC: `PCWrite` (incondicional) e `PCWriteCond` (Branches).
+  - [x] **Modularização do Controle**
+      - [x] Separação em `main_fsm`, `control_decoder` e `alu_decoder`.
+  - [x] Implementação de PC com *Write Enable*.
 
-### 3.4. `control_top.vhd` (Wrapper)
-- [x] Instanciar e conectar: `main_fsm`, `control_decoder` e `alu_decoder`.
-- [x] Expor apenas as portas necessárias para o Datapath.
+- [x] **Unidade de Controle (FSM)**
+  - [x] Modularização em `main_fsm`, `control_decoder` e `alu_decoder`.
+  - [x] Definição e implementação dos estados (Fetch, Decode, Exec, Mem, WB).
+  - [x] Integração no `control_top.vhd`.
 
-## 4. 🔗 Top Level (`processor_top.vhd`)
-- [x] Conectar o novo `control_top` ao `datapath` modificado.
-- [x] **Gerenciamento de Memória**:
+- [x] **Integração do Processador**
+  - [x] Conexão `datapath` + `control_top` em `processor_top.vhd`.
 
-# ✅ Checklist do SoC RISC-V
+---
 
-Este documento rastreia o progresso da migração de um **Core** isolado para um **SoC (System-on-Chip)** completo, capaz de bootar via UART.
+## 🟡 Fase 2: Infraestrutura do SoC (Concluído)
+*Criação do barramento e sistema de memória para suportar o processador. Integração do Core com o mundo exterior.*
 
-## 1. Reestruturação do Repositório
-- [x] Criar a estrutura de diretórios (`rtl/core`, `rtl/soc`, `rtl/perips`, etc.).
-- [x] Mover arquivos `.vhd` do processador antigo para `rtl/core`.
-- [x] Mover arquivos de teste unitários para `sim/core`.
-- [x] Atualizar o **makefile** para incluir os novos caminhos de fonte.
-- [x] Verificar se `make sim TB=processor_top_tb` ainda funciona após a mudança.
+- [x] **Barramento e Memória**
+  - [x] `bus_interconnect`: Decodificação de endereços (ROM, RAM, Periféricos).
+  - [x] `boot_rom`: Memória de programa (Read-Only) para boot.
+  - [x] `dual_port_ram`: Memória principal (Instrução/Dados).
+  - [x] Linker Script (`link_soc.ld`) apontando para RAM em `0x80000000`.
 
-## 2. Definição do Sistema (Architecture)
+- [x] **Mapa de Memória (`bus_interconnect.vhd`)**
+  - [x] `0x00000000` - `0x00000FFF`: Boot ROM (4KB) [Read-Only].
+  - [x] `0x10000000` - `0x10000FFF`: Periféricos (IO Mapped).
+  - [x] `0x80000000` - `0x80000FFF`: Main RAM (Dual Port).
 
-- [ ] Definir mapa de memória em `sw/common/memory_map.h`.
-    - `0x00000000`: Boot ROM (bootloader)
-    - `0x10000000`: Periféricos (UART, GPIO)
-    - `0x80000000`: Main RAM
-- [x] Atualizar Linker Script (`sw/common/link_soc.ld`) para apontar RAM para `0x80000000`.
+- [x] **Periféricos Básicos**
+  - [x] `uart_controller`: Tx e Rx funcionais.
+  - [x] `gpio_controller`: controle básico dos LEDs e SWs.
 
-## 3. Implementação de Hardware (RTL)
+- [x] **Top Level do Sistema**
+  - [x] `soc_top`: Instanciação de Core, Barramento, Memórias e UART.
 
-### SoC Infrastructure (`rtl/soc/`)
+---
 
-- [x] Implementar `bus_interconnect.vhd`:
-    - Decodificar endereços (`0x0`, `0x1`, `0x8`).
+## 🟢 Fase 3: Deployment FPGA & Toolchain (Concluído)
+*Ferramentas de síntese, implementação e carga de software.*
 
-    | Endereço Inicial | Tamanho | Dispositivo | Descrição |
-    | :-: | :-: | :-: | :-- |
-    | `0x00000000` | 4 KB | Boot ROM | Código de inicialização (Read-Only) | 
-    | `0x10000000` | 4 KB | Periféricos | Registradores de IO (UART, LEDs) | 
-    | `0x80000000` | 4 KB | Main RAM | Memória de Instrução e Dados do Usuário | 
+- [x] **Síntese (`build.tcl`)**
+  - [x] Target: Artix-7 (`xc7a100tcsg324-1`).
+  - [x] Estratégia: `flatten_hierarchy rebuilt` e `retiming` ativado.
+  - [x] Constraints: `pins.xdc` mapeando Clock, Reset, UART e LEDs.
 
-    - Roteamento de sinais `We`, `Addr`, `Data`.
-- [x] Implementar `dual_port_ram.vhd`:
-    - Porta A (Instrução), Porta B (Dados).
-- [x] Implementar `boot_rom.vhd`:
-    - Array constante com o código do **bootloader**.
-    - Capacidade de carregar a memória RAM.
+- [x] **Bootloader (`boot.c`)**
+  - [x] Protocolo: Handshake "Magic Word" (`0xCAFEBABE`) -> Recebe Size -> Grava na RAM.
+  - [x] Jump para User App em `0x80000800`.
 
-### Periféricos (`rtl/perips/`)
+- [x] **Host Tool (`upload.py`)**
+  - [x] Script Python para enviar binários via Serial.
 
-- [ ] Implementar `gpio_controller.vhd` (para LEDs).
-- [x] Implementar `uart_controller.vhd` (Tx e Rx simples).
+---
 
-### Top Level
+## 🟠 Fase 3: Periféricos e IO (Em Progresso)
+*Expansão das capacidades de entrada e saída do sistema.*
 
-- [x] Criar soc_top.vhd:
-    - Instanciar `processor_top` (Core).
-    - Instanciar `bus_interconnect`.
-    - Instanciar Memorias e Periféricos.
-    - Mux no barramento de instrução (BootROM vs RAM).
+- [ ] **Controlador de GPIO V2** (`gpio_controller.vhd`)
+  - [ ] Implementar registradores de direção (DDR) e dados (PORT/PIN).
+  - [ ] Conectar aos LEDs/SWs/BTNs no Top Level.
 
-## 4. Software e Firmware
+- [ ] **Controlador de Interrupções (Opcional/Futuro)**
+  - [ ] Adicionar suporte básico a interrupções externas (UART/GPIO).
+  - [ ] Implementar registrador CSR `mie` e `mip` no Core.
 
-- [x] Escrever `sw/bootloader/bootloader.s`:
-    - Código que roda em 0x0000.
-    - Inicialmente: Apenas pula para `0x8000`.
-    - Futuro: Lê da UART e grava na RAM.
-- [ ] Atualizar `sw/apps/hello.c` e `test_all.s`:
-    - Usar novos endereços de periféricos.
-    - Recompilar para gerar HEX compatível com a Main RAM.
+---
 
-## 5. Simulação do Sistema
+## 🔵 Fase 4: Software & HAL (A Fazer)
+*Camada de abstração de hardware para facilitar o desenvolvimento de aplicações.*
 
-- [x] Criar `sim/soc/soc_tb.vhd`:
-    - Instanciar `soc_top`.
-    - Simular clock e reset.
-    - Simular entrada serial (RX) injetando dados de um arquivo.
-- [ ] Validar execução do "Hello World" imprimindo no console do simulador 
+### 4.1. Definições de Baixo Nível
+- [ ] **Memory Map Header**
+  - [ ] Criar/Atualizar `sw/common/memory_map.h` com endereços base finais.
+  - [ ] Definir offsets de registradores (ex: `UART_TX_REG`, `GPIO_DATA_REG`).
 
-## 6. FPGA (Síntese)
+### 4.2. Hardware Abstraction Layer (HAL)
+- [ ] **HAL UART** (`hal_uart.c/h`)
+  - [ ] `void hal_uart_init(uint32_t baudrate);`
+  - [ ] `void hal_uart_putc(char c);`
+  - [ ] `char hal_uart_getc();`
+  - [ ] `int hal_uart_has_data();`
+- [ ] **HAL GPIO** (`hal_gpio.c/h`)
+  - [ ] `void hal_gpio_pin_mode(int pin, int mode);`
+  - [ ] `void hal_gpio_write(int pin, int value);`
+  - [ ] `int hal_gpio_read(int pin);`
 
-- [ ] Criar arquivo de constraints (`.xdc`) mapeando pinos (Clock, Reset, LEDs, UART TX/RX).
-- [ ] Criar arquivo de automatização para sintetização e upload `build.tcl`.
-- [ ] Adicionar FPGA ao workflow (`makefile`)
-- [ ] Gravar e testar na placa.
+### 4.3. Aplicações e Testes
+- [x] **Bootloader Assembly** (Salto inicial para RAM).
+- [ ] **Portar Aplicações de Teste**
+  - [ ] Adaptar `hello.c` para usar a nova HAL.
+  - [x] Recompilar `fibonacci.c` para a arquitetura de memória do SoC.
+
+---
+
+## 🔴 Fase 5: FPGA e Síntese (A Fazer)
+*Levar o design para o hardware físico.*
+
+- [x] **Constraints**
+  - [x] Criar `.xdc` mapeando pinos da placa (Clock 100MHz, Reset, pinos UART USB, LEDs).
+- [x] **Fluxo de Build**
+  - [x] Criar script Tcl (`build.tcl`) para síntese, implementação e geração de bitstream (Vivado).
+  - [x] Integrar comandos de FPGA no `makefile` (`make fpga`).
+- [x] **Teste em Hardware**
+  - [x] Upload do bitstream.
+  - [x] Upload do software via UART (usando script Python ou Bootloader).
