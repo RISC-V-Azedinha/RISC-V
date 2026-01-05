@@ -373,6 +373,9 @@ clean:
 # Programação da FPGA e Upload
 # ==========================================================================================
 
+# Define a porta COM padrão caso não seja informada via linha de comando
+COM ?= COM6
+
 fpga: boot-fpga
 	@echo ">>> ⚡ Programando FPGA..."
 	@powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "./fpga.ps1"
@@ -383,7 +386,7 @@ upload:
 	
 	@$(MAKE) -s sw-fpga SW=$(SW)
 	
-	@echo ">>> 🚀 Uploading $(SW)..."
-	@powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "python fpga/upload.py -f $(BUILD_FPGA)/$(SW).bin"
+	@echo ">>> 🚀 Uploading $(SW) na porta $(COM)..."
+	@powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "python fpga/upload.py -p $(COM) -f $(BUILD_FPGA)/$(SW).bin"
 
 .PHONY: all cocotb clean view fpga upload
