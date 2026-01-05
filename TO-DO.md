@@ -105,13 +105,12 @@ Este documento rastreia o status de desenvolvimento do SoC RISC-V, desde a refat
 *Camada de abstração de hardware para facilitar o desenvolvimento de aplicações.*
 
 ### 4.1. Definições de Baixo Nível
-- [ ] **Memory Map Header**
-  - [ ] Criar/Atualizar `sw/platform/bsp/memory_map.h` com endereços base finais.
-  - [ ] Definir offsets de registradores (ex: `UART_TX_REG`, `GPIO_DATA_REG`).
+- [x] **Memory Map Header**
+  - [x] Criar/Atualizar `sw/platform/bsp/memory_map.h` com endereços base finais.
+  - [x] Definir offsets de registradores (ex: `UART_TX_REG`, `GPIO_DATA_REG`).
 
 ### 4.2. Hardware Abstraction Layer (HAL)
 - [x] **HAL UART** (`hal_uart.c/h`)
-  - [ ] `void hal_uart_init(uint32_t baudrate);`
   - [x] `void hal_uart_putc(char c);`
   - [x] `char hal_uart_getc();`
   - [x] `int hal_uart_has_data();`
