@@ -384,6 +384,6 @@ upload:
 	@$(MAKE) -s sw-fpga SW=$(SW)
 	
 	@echo ">>> 🚀 Uploading $(SW)..."
-	@powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "python fpga/upload.py $(BUILD_FPGA)/$(SW).bin"
+	@powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "python fpga/upload.py -f $(BUILD_FPGA)/$(SW).bin"
 
 .PHONY: all cocotb clean view fpga upload
