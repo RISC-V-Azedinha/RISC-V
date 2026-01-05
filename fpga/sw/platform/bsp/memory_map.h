@@ -49,6 +49,7 @@
 
 #define VGA_VSYNC_OFFSET        0x1FFFF                                   // Offset do Registrador VSYNC
 #define VGA_VSYNC_ADDR          (VGA_BASE_ADDR + VGA_VSYNC_OFFSET)        // Endereço do Registrador VSYNC
+#define VGA_VSYNC_BIT           (1 << 0)                                  // Bit 0 - Sinal VSYNC
 
 /* ============================================================================================================== */
 /* MACROS DE ACESSO                                                                                               */
