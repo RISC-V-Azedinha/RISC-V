@@ -40,100 +40,57 @@ The repository is organized as follows to separate the hardware design (RTL), si
 ```text
 RISC-V/
 |
-├── rtl/                              # Synthesizable VHDL code (processor RTL)
+├── rtl/                              # Synthesizable VHDL code (Hardware)
 │   ├── core/                         # Core processor components
-│   │   ├── common/                   # ISA-common components (used by all microarchitectures)
-│   │   │   ├── alu.vhd               # Arithmetic Logic Unit
-│   │   │   ├── [...]
-│   │   │   └── store_unit.vhd        # Store operation unit
+│   │   ├── common/                   # ISA-common components (ALU, RegFile, etc.)
 │   │   ├── single_cycle/             # Single-cycle microarchitecture
-│   │   │   ├── [...]
-│   │   │   ├── datapath.vhd          # Datapath
-│   │   │   └── processor_top.vhd     # Top-level processor
 │   │   └── multi_cycle/              # Multi-cycle microarchitecture
 │   │
 │   ├── soc/                          # System-on-Chip integration
-│   │   ├── boot_rom.vhd              # Boot ROM with bootloader
-│   │   ├── bus_interconnect.vhd      # Bus interconnect
-│   │   ├── dual_port_ram.vhd         # Dual-port RAM
-│   │   └── soc_top.vhd               # Top-level SoC
+│   │   ├── boot_rom.vhd              # Boot ROM (holds the bootloader)
+│   │   ├── bus_interconnect.vhd      # Wishbone/Custom Bus Interconnect
+│   │   └── soc_top.vhd               # Top-level SoC entity
 │   │
-│   └── perips/                       # Peripherals
-│       └── uart/                     # UART controller (future)
+│   └── perips/                       # Peripheral Controllers
+│       ├── gpio/                     # General Purpose I/O
+│       ├── uart/                     # UART (Serial Communication)
+│       └── vga/                      # VGA Video Controller
 │
-├── sim/                              # Testbenches (Python + cocotb)
-│   ├── core/                         # Component testbenches
-│   │   ├── common/                   # Tests for common components
-│   │   │   ├── test_alu.py
-│   │   │   ├── test_imm_gen.py
-│   │   │   ├── test_load_unit.py
-│   │   │   ├── [...]
-│   │   │   └── test_store_unit.py
-│   │   ├── single_cycle/             # Tests for single-cycle implementation
-│   │   │   ├── test_control.py
-|   |   |   ├── test_processor.py
-│   │   │   ├── test_datapath.py
-│   │   │   ├── test_decoder.py
-│   │   │   └── wrappers/             # VHDL wrappers for testbenches
-│   │   └── multi_cycle/              # Tests for multi-cycle
+├── sim/                              # Simulation Environment (Cocotb + GHDL)
+│   ├── core/                         # Processor Unit & Integration Tests
+│   ├── soc/                          # SoC & Bus Tests
+│   ├── perips/                       # Peripheral Tests
 │   │
-│   ├── soc/                          # SoC testbenches
-│   │   ├── test_boot_rom.py
-│   │   ├── [...]
-│   │   ├── test_memory_system.py
-│   │   └── wrappers/                 # VHDL wrappers for testbenches
+│   └── sw/                           # SIMULATION SOFTWARE 
+│       ├── apps/                     # Apps compiled for simulation (e.g., test_all.s)
+│       └── platform/                 # Simulation BSP (crt0.s, boot.ld)
+│
+├── fpga/                             # FPGA Implementation (Nexys 4 DDR)
+│   ├── constraints/                  # Physical Constraints (.xdc files)
+│   ├── scripts/                      # Vivado TCL build scripts
+│   ├── upload.py                     # Python script for UART binary upload 
 │   │
-│   ├── perips/                       # Peripheral testbenches
-│   │   ├── test_uart_controller.py
-│   │   ├── test_uart_rx.py
-│   │   └── test_uart_tx.py
-│   │
-│   └── common/                       # Shared test utilities
-│       └── test_utils.py
+│   └── sw/                           # HARDWARE SOFTWARE 
+│       ├── apps/                     # Apps with hardware drivers (Pong, Fractal, etc.)
+│       └── platform/                 # Hardware BSP (start.s, hal_uart.c, hal_vga.c)
 │
-├── pkg/                              # VHDL packages
-│   └── riscv_isa_pkg.vhd             # RISC-V ISA definitions (ISA-agnostic)
+├── pkg/                              # VHDL Packages
+│   └── riscv_isa_pkg.vhd             # Global RISC-V ISA Definitions
 │
-├── sw/                               # Software programs (C and Assembly)
-│   ├── apps/                         # User applications
-│   │   ├── hello.c
-│   │   ├── fibonacci.c
-│   │   ├── console_test.c
-│   │   ├── branch_test.s
-│   │   └── test_all.s
-│   └── platform/
-│       ├── bootloader/
-│       │   └── boot.c
-│       ├── startup/
-│       │   ├── crt0.s                # C Runtime Zero
-│       │   └── start.s               # Boot Start
-│       └── linker/
-│           ├── link.ld               # Processor linker script (ORIGIN=0x00000000)
-│           ├── link_soc.ld           # SoC linker script (ORIGIN=0x80000000)
-│           └── boot.ld               # Bootloader linker script
-│
-├── docs/                             # Documentation (LaTeX ABNT thesis)
-├── fpga/                             # FPGA configuration (future)
-├── build/                            # Auto-generated build output (ignored by Git)
-|   ├── boot/
-│   ├── cocotb/
-│   │   ├── single_cycle/             # Output for single_cycle architecture
-│   │   └── multi_cycle/              # Output for multi_cycle architecture
-│   └── sw/                           # Compiled software
-│
-├── makefile                          # Build automation (compilation, simulation, visualization)
-├── README.md                         # This file
-└── .gitignore                        # Git ignore rules
+├── build/                            # Build Artifacts (Hex, Bin, Waveforms)
+├── makefile                          # Automation (Simulation & Synthesis)
+└── fpga.ps1                          # PowerShell wrapper for FPGA workflow
 ```
 
 ## 🛠️ Prerequisites
 To compile and simulate this project, install the following tools and ensure they are in your PATH:
 
-1. GHDL: Open-source VHDL simulator.
-2. GTKWave: Waveform viewer.
-3. RISC-V GCC Toolchain (riscv32-unknown-elf-gcc): For compiling C/Assembly programs.
-4. COCOTB: Python-based coroutine testbench framework for hardware simulation.
-5. Python 3: Required for running cocotb testbenches.
+1. **GHDL**: Open-source VHDL simulator.
+2. **GTKWave**: Waveform viewer.
+3. **RISC-V GCC Toolchain** (riscv32-unknown-elf-gcc): For compiling C/Assembly programs.
+4. **COCOTB**: Python-based coroutine testbench framework for hardware simulation.
+5. **Python 3**: Required for running cocotb testbenches.
+6. **Vivado**: Used for RTL synthesis, implementation, bitstream generation, and FPGA configuration of the target device.
 
 ## 🚀 How to Compile and Simulate (Using the Makefile)
 
@@ -164,6 +121,11 @@ All commands are executed from the root of the repository. The Makefile automate
    make cocotb TEST=<test> TOP=<top>                            Teste de componente (unit)
    make list-tests [CORE=<core>]                                Listar testes disponíveis
  
+🔌 FPGA & UPLOAD
+ ─────────────────────────────────────────────────────────────────────────────────────────────────────
+   make fpga                                                    Sintetizar e programar a FPGA
+   make upload SW=<prog> [COM=<port>]                           Enviar software via UART
+
  📊 VISUALIZATION & DEBUG
  ─────────────────────────────────────────────────────────────────────────────────────────────────────
    make view TEST=<test>                                        Abrir ondas (VCD) no GTKWave
@@ -273,6 +235,30 @@ make view CORE=single_cycle TEST=test_datapath
 ```
 
 This opens `build/cocotb/<core>/wave-test_<testbench_name>.vcd` in GTKWave for detailed signal inspection.
+
+## 🔌 FPGA Programming & Upload
+
+Synthesize the hardware and upload software to the physical FPGA board (Nexys 4).
+
+### 1. Program FPGA (Bitstream)
+Synthesize the VHDL code using VIVADO TCL script (`build.tcl`):
+```bash
+make fpga
+```
+### 2. Upload Software (UART)
+Upload a program to the processor's memory via serial:
+```bash
+make upload SW=<program_name> [COM=<port>]
+```
+
+Examples:
+```bash
+# Upload fibonacci using default port (COM6)
+make upload SW=fibonacci
+
+# Upload pong specifying COM3
+make upload SW=pong COM=COM3
+```
 
 ## ✅ Verification
 
