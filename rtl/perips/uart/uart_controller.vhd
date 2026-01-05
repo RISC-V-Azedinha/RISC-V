@@ -53,24 +53,75 @@ entity uart_controller is
     );
 end entity;
 
+-------------------------------------------------------------------------------------------------------------------
+-- Arquitetura: Implementação comportamental da interface do Controlador UART
+-------------------------------------------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------------------------------------------
+-- MAPA DE REGISTRADORES (Memory Map)
+-------------------------------------------------------------------------------------------------------------------
+--
+-- 0x00: DATA REGISTER (R/W)
+--
+--       [31:8] Ignorado
+--       [7:0]  Dados (Byte)
+--
+--       -> WRITE (TX): Escreve um byte no buffer de transmissão. 
+--                      A transmissão inicia automaticamente se TX_BUSY = '0'.
+--                      Requisito: Verificar TX_BUSY antes de escrever.
+--
+--       -> READ  (RX): Lê o byte atual na saída da FIFO (Head of Queue).
+--                      IMPORTANTE: A leitura NÃO remove o dado da FIFO (Operação Peek).
+--                      Para avançar para o próximo byte, use o Command Register.
+-- 
+-- 0x04: STATUS & CONTROL REGISTER (R/W)
+--       
+--       -> READ (Status Flags):
+--            Bit 0: TX_BUSY (1 = Transmissor ocupado, 0 = Livre/Pronto)
+--            Bit 1: RX_VALID (1 = FIFO tem dados, 0 = FIFO vazia)
+--            Bit 31-2: Reservado (0)
+--
+--       -> WRITE (Commands):
+--            Bit 0: RX_POP / ACK (Escrever '1' remove o byte lido da FIFO)
+--            Bit 31-1: Ignorado
+--
+-------------------------------------------------------------------------------------------------------------------
+-- FLUXO DE OPERAÇÃO SUGERIDO (DRIVER)
+-------------------------------------------------------------------------------------------------------------------
+--
+-- 1. TRANSMISSÃO (TX):
+--    a. Ler endereço 0x04 e verificar Bit 0 (TX_BUSY).
+--    b. Se '0', escrever char no endereço 0x00. Se '1', aguardar.
+--
+-- 2. RECEPÇÃO (RX):
+--    a. Ler endereço 0x04 e verificar Bit 1 (RX_VALID).
+--    b. Se '1', ler dado do endereço 0x00 (Armazenar em variável).
+--    c. Escrever '1' no endereço 0x04 (Bit 0) para descartar o dado lido e avançar a fila.
+--
+-------------------------------------------------------------------------------------------------------------------
+
 architecture rtl of uart_controller is
+
+    -- Cálculo do período de um bit em ciclos de clock
 
     constant c_bit_period : integer := CLK_FREQ / BAUD_RATE;
     
     -- DEFINIÇÃO DA FIFO (Buffer First-In First-Out)
+
     type t_fifo_mem is array (0 to FIFO_DEPTH-1) of std_logic_vector(7 downto 0);
 
-    signal r_fifo         : t_fifo_mem;
+    signal r_fifo         : t_fifo_mem;                      -- Memória da FIFO
     signal r_head         : integer range 0 to FIFO_DEPTH-1; -- Onde RX escreve
     signal r_tail         : integer range 0 to FIFO_DEPTH-1; -- Onde CPU lê
     signal r_count        : integer range 0 to FIFO_DEPTH;   -- Quantos itens tem
     
-    signal w_fifo_full    : std_logic;
-    signal w_fifo_empty   : std_logic;
+    signal w_fifo_full    : std_logic;                       -- Flag de FIFO cheia
+    signal w_fifo_empty   : std_logic;                       -- Flag de FIFO vazia
     signal w_wr_en        : std_logic;                       -- Enable de escrita na FIFO (pelo RX)
     signal w_rd_en        : std_logic;                       -- Enable de leitura na FIFO (pelo CPU)
 
     -- Sinais TX
+
     type t_tx_state is (TX_IDLE, TX_START, TX_DATA, TX_STOP);
     signal tx_state       : t_tx_state;
     signal tx_timer       : integer range 0 to c_bit_period;
@@ -81,6 +132,7 @@ architecture rtl of uart_controller is
     signal r_tx_data_latch: std_logic_vector(7 downto 0);
 
     -- Sinais RX
+
     type t_rx_state is (RX_IDLE, RX_START, RX_DATA, RX_STOP);
     signal rx_state       : t_rx_state;
     signal rx_timer       : integer range 0 to c_bit_period;
@@ -92,10 +144,12 @@ architecture rtl of uart_controller is
 begin
 
     -- Status da FIFO
+
     w_fifo_full  <= '1' when r_count = FIFO_DEPTH else '0';
     w_fifo_empty <= '1' when r_count = 0 else '0';
 
     -- Sincronizador RX
+
     rx_bit_val <= rx_pin_sync(1);
     process(clk)
     begin
@@ -105,14 +159,18 @@ begin
     end process;
 
     -- Gerenciamento da FIFO
+
     process(clk)
     begin
+
         if rising_edge(clk) then
+
             if rst = '1' then
                 r_head  <= 0;
                 r_tail  <= 0;
                 r_count <= 0;
             else
+
                 -- ESCRITA (RX Hardware inserindo dados)
                 if w_wr_en = '1' and w_fifo_full = '0' then
                     r_fifo(r_head) <= rx_shifter; -- Grava o byte que acabou de chegar
@@ -141,11 +199,14 @@ begin
                 -- Se ambos acontecem ao mesmo tempo, count não muda
             end if;
         end if;
+
     end process;
 
     -- 1. TX STATE MACHINE
+
     process(clk)
     begin
+
         if rising_edge(clk) then
             if rst = '1' then
                 tx_state <= TX_IDLE;
@@ -201,11 +262,14 @@ begin
                 end case;
             end if;
         end if;
+
     end process;
 
     -- 2. RX STATE MACHINE
+
     process(clk)
     begin
+
         if rising_edge(clk) then
             if rst = '1' then
                 rx_state <= RX_IDLE;
@@ -214,7 +278,7 @@ begin
                 rx_shifter <= (others => '0');
                 w_wr_en    <= '0';
             else
-                w_wr_en <= '0'; -- Pulso default
+                w_wr_en <= '0';
 
                 case rx_state is
                     when RX_IDLE =>
@@ -252,11 +316,14 @@ begin
                 end case;
             end if;
         end if;
+
     end process;
 
     -- 3. INTERFACE DE CONTROLE
+
     process(clk)
     begin
+
         if rising_edge(clk) then
             if rst = '1' then
                 tx_start_pulse  <= '0';
@@ -284,11 +351,14 @@ begin
                 end if;
             end if;
         end if;
+
     end process;
 
     -- 4. SAÍDA (ASYNC/COMBINACIONAL)
+
     process(addr_i, r_fifo, r_tail, tx_busy_flag, w_fifo_empty)
     begin
+
         data_o <= (others => '0');
         case to_integer(unsigned(addr_i)) is
             when 0 => 
@@ -296,11 +366,10 @@ begin
                 data_o(7 downto 0) <= r_fifo(r_tail);
             when 4 => 
                 data_o(0) <= tx_busy_flag;
-                -- A flag 'RX_VALID' agora é o inverso de FIFO_EMPTY
-                -- Se não estiver vazia, tem dado válido!
                 data_o(1) <= not w_fifo_empty; 
             when others => null;
         end case;
+
     end process;
 
 end architecture; -- rtl 
