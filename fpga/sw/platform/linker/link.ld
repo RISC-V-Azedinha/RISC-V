@@ -4,7 +4,7 @@ ENTRY(_start)
 MEMORY
 {
   /* Deixa os primeiros 2KB livres para dados do Bootloader */
-  ram (rwx) : ORIGIN = 0x80000800, LENGTH = 14K
+  ram (rwx) : ORIGIN = 0x80000800, LENGTH = 128K
 }
 
 SECTIONS
