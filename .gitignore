@@ -20,3 +20,6 @@ __pycache__/
 *.txt
 *.jou
 *.log
+
+# MNIST image processing
+mnist.npz

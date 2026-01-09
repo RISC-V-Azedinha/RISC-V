@@ -11,9 +11,17 @@ set targetPart "xc7a100tcsg324-1"
 # Arquitetura do Core (multi_cycle)
 set coreArch "multi_cycle"
 
-# Diretorios
-set outputDir ./build/fpga
+# Define diretórios de saída
+set outputDir "./build/fpga"
+set bitDir    "$outputDir/bitstream"
+set rptDir    "$outputDir/reports"
+set dcpDir    "$outputDir/checkpoints"
+
+# Cria a estrutura de pastas
 file mkdir $outputDir
+file mkdir $bitDir
+file mkdir $rptDir
+file mkdir $dcpDir
 
 # ==========================================================================================
 #                             PREPARACAO DO AMBIENTE
@@ -90,9 +98,8 @@ if {[catch {
     exit 1
 }
 
-write_checkpoint -force $outputDir/post_synth.dcp
-report_utilization -file $outputDir/utilization_synth.rpt
-report_timing_summary -file $outputDir/timing_summary.rpt
+write_checkpoint -force $dcpDir/post_synth.dcp
+report_utilization -file $rptDir/utilization_synth.rpt
 
 # ==========================================================================================
 #                             IMPLEMENTACAO
@@ -110,8 +117,10 @@ if {[catch {
     exit 1
 }
 
-write_checkpoint -force $outputDir/post_route.dcp
-report_utilization -file $outputDir/utilization_route.rpt
+write_checkpoint -force $dcpDir/post_route.dcp
+report_utilization -file $rptDir/utilization_route.rpt
+report_timing_summary -file $rptDir/timing_summary.rpt
+report_power -file $rptDir/power.rpt
 
 # ==========================================================================================
 #                             BITSTREAM
@@ -119,7 +128,7 @@ report_utilization -file $outputDir/utilization_route.rpt
 puts "\n--------------------------------------------------------------------------------------------------------------------------------"
 puts ">>> [5/6] Gerando Bitstream...\n"
 
-write_bitstream -force $outputDir/${topEntity}.bit
+write_bitstream -force $bitDir/${topEntity}.bit
 
 puts " "
 puts "================================================================"
@@ -127,30 +136,9 @@ puts "   SUCESSO! Bitstream gerado:"
 puts "   $outputDir/${topEntity}.bit"
 puts "================================================================"
 
-# ==========================================================================================
-#                             PROGRAMACAO
-# ==========================================================================================
-puts "\n--------------------------------------------------------------------------------------------------------------------------------"
-puts ">>> [6/6] Tentando programar a placa...\n"
-
-if {[catch {
-    open_hw_manager
-    connect_hw_server
-    open_hw_target
-    current_hw_device [lindex [get_hw_devices] 0]
-    refresh_hw_device -update_hw_probes false [lindex [get_hw_devices] 0]
-    
-    set_property PROGRAM.FILE "$outputDir/${topEntity}.bit" [lindex [get_hw_devices] 0]
-    program_hw_devices [lindex [get_hw_devices] 0]
-    
-    close_hw_target
-    close_hw_manager
-    puts "   -> Placa programada com sucesso!"
-} err]} {
-    puts "   -> Aviso: Programacao automatica falhou (Placa desconectada?)"
-    puts "      O bitstream esta pronto para uso manual."
+if {[file exists "clockInfo.txt"]} {
+    puts ">>> Movendo clockInfo.txt para $rptDir..."
+    file rename -force "clockInfo.txt" "$rptDir/clockInfo.txt"
 }
-
-puts "\n--------------------------------------------------------------------------------------------------------------------------------"
 
 exit
