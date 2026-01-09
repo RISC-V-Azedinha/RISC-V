@@ -150,7 +150,7 @@ def upload_file(ser, filename):
     file_size = os.path.getsize(filename)
     CHUNK_SIZE = 64 
     
-    Log.info(f"Iniciando upload de '{filename}' ({file_size} bytes)...")
+    Log.info(f"Iniciando upload de '{filename}' ({file_size} bytes)...\n")
     
     with open(filename, "rb") as f:
         payload = f.read()
@@ -188,7 +188,7 @@ def upload_file(ser, filename):
             # Throttle (evita saturar a FPGA e o visual)
             time.sleep(0.002) 
             
-        print("") # Pula para a próxima linha ao terminar
+        print("\n") # Pula para a próxima linha ao terminar
     
     Log.success("Upload concluído. Aguardando verificação...")
     
@@ -262,7 +262,7 @@ def main():
         Log.error(f"Arquivo '{args.file}' não encontrado.")
         sys.exit(1)
 
-    Log.raw(f"\n{Log.CYAN}--- FPGA LOADER  -----------------------------------------------{Log.RESET}\n")
+    Log.raw(f"\n{Log.CYAN}--- FPGA LOADER  ----------------------------------------------------------------{Log.RESET}\n")
     Log.info(f"Porta: {args.port} | Baud: {args.baud} | Arq: {args.file}")
 
     # Contexto do Terminal (crucial para Linux/Mac)
