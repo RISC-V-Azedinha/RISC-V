@@ -1,6 +1,6 @@
 #include <stdint.h>
-#include "hal_vga.h"
-#include "hal_uart.h"
+#include "hal/hal_vga.h"
+#include "hal/hal_uart.h"
 #include "memory_map.h"
 
 // =========================================================

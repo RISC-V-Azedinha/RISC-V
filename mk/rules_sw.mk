@@ -24,7 +24,10 @@ sw-fpga:
 	@mkdir -p $(BUILD_FPGA_BIN)
 	@$(CC) $(BASE_CFLAGS) -I$(FPGA_SW_DIR)/platform/bsp -T $(FPGA_SW_DIR)/platform/linker/link.ld \
 		-o $(BUILD_FPGA_BIN)/$(SW).elf $(FPGA_SW_DIR)/platform/startup/start.s \
-		$(wildcard $(FPGA_SW_DIR)/platform/bsp/*.c) $(SRC)
+		$(wildcard $(FPGA_SW_DIR)/platform/bsp/*.c) \
+		$(wildcard $(FPGA_SW_DIR)/platform/bsp/hal/*.c) \
+		$(wildcard $(FPGA_SW_DIR)/platform/bsp/npu/*.c) \
+		$(SRC)
 	@$(OBJCOPY) -O binary $(BUILD_FPGA_BIN)/$(SW).elf $(BUILD_FPGA_BIN)/$(SW).bin
 	@$(OBJCOPY) -O verilog $(BUILD_FPGA_BIN)/$(SW).elf $(BUILD_FPGA_BIN)/$(SW).hex
 	@echo ">>> ✅ [FPGA] Binário pronto: $(BUILD_FPGA_BIN)/$(SW).bin"

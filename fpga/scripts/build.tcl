@@ -43,20 +43,36 @@ puts "\n------------------------------------------------------------------------
 puts ">>> [2/6] Lendo arquivos fonte do projeto RISC-V...\n"
 
 proc read_dir {dir pattern} {
-    set files [glob -nocomplain -directory $dir $pattern]
-    if {[llength $files] > 0} {
-        read_vhdl $files
+    if {[file exists $dir]} {
+        set files [glob -nocomplain -directory $dir $pattern]
+        if {[llength $files] > 0} {
+            read_vhdl $files
+        }
     }
 }
 
-# 1. Packages
+# Packages do RISC-V
 read_dir "./pkg" "*.vhd"
 read_dir "./rtl/core/$coreArch" "*pkg.vhd"
 
-# 2. Core Common
+# Arquivos da NPU
+set npu_root "./rtl/perips/npu"
+
+# NPU Package 
+read_vhdl "$npu_root/pkg/npu_pkg.vhd"
+
+# NPU Modules (Core, PPU, Common)
+read_dir "$npu_root/rtl/common" "*.vhd"
+read_dir "$npu_root/rtl/core"   "*.vhd"
+read_dir "$npu_root/rtl/ppu"    "*.vhd"
+
+# NPU Top Level
+read_vhdl "$npu_root/rtl/npu_top.vhd"
+
+# Core Common
 read_dir "./rtl/core/common" "*.vhd"
 
-# 3. Core Architecture
+# Core Architecture
 set core_files [glob -nocomplain -directory "./rtl/core/$coreArch" "*.vhd"]
 foreach f $core_files {
     if {[string first "pkg.vhd" $f] == -1} {
@@ -64,17 +80,21 @@ foreach f $core_files {
     }
 }
 
-# 4. Perifericos
+# Outros Periféricos (GPIO, UART, VGA)
 set perip_dirs [glob -nocomplain -type d "./rtl/perips/*"]
 foreach dir $perip_dirs {
-    read_dir $dir "*.vhd"
+    if {[string first "npu" $dir] == -1} {
+        read_dir $dir "*.vhd"
+    }
 }
+
+# Lê arquivos soltos na raiz de perips (se houver)
 read_dir "./rtl/perips" "*.vhd"
 
-# 5. SoC
+# SoC
 read_dir "./rtl/soc" "*.vhd"
 
-# 6. Constraints
+# Constraints
 set xdc_file "./fpga/constraints/pins.xdc" 
 if {[file exists $xdc_file]} {
     puts "    + Lendo Constraints: [file tail $xdc_file]"

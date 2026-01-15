@@ -1,5 +1,5 @@
 #include <stdint.h>       // Tipos padrão
-#include "hal_vga.h"      // Usa as funções vga_plot, init, etc.
+#include "hal/hal_vga.h"  // Usa as funções vga_plot, init, etc.
 #include "memory_map.h"   // Usa MMIO32 e endereços base (para os LEDs)
 
 // ===============================================================================

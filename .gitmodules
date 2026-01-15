@@ -1,0 +1,3 @@
+[submodule "rtl/perips/npu"]
+	path = rtl/perips/npu
+	url = https://github.com/nyfeu/npu.git

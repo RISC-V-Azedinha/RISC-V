@@ -4,58 +4,74 @@
 #include <stdint.h>
 
 /* ============================================================================================================== */
-/* CONFIGURAÇÃO DO BARRAMENTO (BASEADA NO BUS INTERCONNECT)                                                       */
+/* MACROS DE ACESSO (VOLATILE)                                                                                    */
 /* ============================================================================================================== */
 
-/* * Lógica do Bus Interconnect (bus_interconnect.vhd):
- * s_dmem_sel_uart <= '1' when dmem_addr_i(31 downto 28) = x"1"
- * s_dmem_sel_gpio <= '1' when dmem_addr_i(31 downto 28) = x"2"
- * s_dmem_sel_vga  <= '1' when dmem_addr_i(31 downto 28) = x"3"
- */
+#define MMIO32(addr)            (*(volatile uint32_t *)(addr))
+#define MMIO8(addr)             (*(volatile uint8_t  *)(addr))
 
-#define UART_BASE_ADDR      0x10000000   // Base da UART
-#define GPIO_BASE_ADDR      0x20000000   // Base do GPIO
-#define VGA_BASE_ADDR       0x30000000   // Base da VGA
+/* ============================================================================================================== */
+/* MAPA DE ENDEREÇOS BASE                                                                                         */
+/* ============================================================================================================== */
+
+#define UART_BASE_ADDR      0x10000000
+#define GPIO_BASE_ADDR      0x20000000
+#define VGA_BASE_ADDR       0x30000000
+#define NPU_BASE_ADDR       0x90000000
 
 /* ============================================================================================================== */
 /* UART DEFINITIONS                                                                                               */
 /* ============================================================================================================== */
 
-#define UART_REG_DATA_OFFSET    0x00                                      // Offset do Registrador de Dados 
-#define UART_REG_CTRL_OFFSET    0x04                                      // Offset do Registrador de Controle
-#define UART_DATA_REG_ADDR      (UART_BASE_ADDR + UART_REG_DATA_OFFSET)   // Endereço do Registrador de Dados
-#define UART_CTRL_REG_ADDR      (UART_BASE_ADDR + UART_REG_CTRL_OFFSET)   // Endereço do Registrador de Controle
+#define UART_REG_DATA_OFFSET    0x00
+#define UART_REG_CTRL_OFFSET    0x04
+#define UART_DATA_REG_ADDR      (UART_BASE_ADDR + UART_REG_DATA_OFFSET)
+#define UART_CTRL_REG_ADDR      (UART_BASE_ADDR + UART_REG_CTRL_OFFSET)
 
-/* Status Bits (Read) */
-
-#define UART_STATUS_TX_BUSY     (1 << 0)                                  // Bit 0 - Transmissor ocupado 
-#define UART_STATUS_RX_VALID    (1 << 1)                                  // Bit 1 - Dado recebido válido
-
-/* Command Bits (Write) */
-
-#define UART_CMD_RX_POP         (1 << 0)                                  // Bit 0 - Limpa a flag RX_VALID
+#define UART_STATUS_TX_BUSY     (1 << 0)
+#define UART_STATUS_RX_VALID    (1 << 1)
+#define UART_CMD_RX_POP         (1 << 0)
 
 /* ============================================================================================================== */
-/* VGA DEFINITIONS                                                                                                */
+/* VGA DEFINITIONS (Preservado para compatibilidade com hal_vga.c)                                               */
 /* ============================================================================================================== */
-
-/* Memória VRAM começa em 0x30000000 */
-
-#define VGA_WIDTH               320                                       // Largura da tela em pixels
-#define VGA_HEIGHT              240                                       // Altura da tela em pixels
-
-/* Offset do VSYNC (Endereço 0x1FFFF dentro da faixa da VGA) */
-/* Endereço Físico: 0x30000000 + 0x1FFFF = 0x3001FFFF */
-
-#define VGA_VSYNC_OFFSET        0x1FFFF                                   // Offset do Registrador VSYNC
-#define VGA_VSYNC_ADDR          (VGA_BASE_ADDR + VGA_VSYNC_OFFSET)        // Endereço do Registrador VSYNC
-#define VGA_VSYNC_BIT           (1 << 0)                                  // Bit 0 - Sinal VSYNC
+#define VGA_WIDTH               320
+#define VGA_HEIGHT              240
+#define VGA_VSYNC_OFFSET        0x1FFFF
+#define VGA_VSYNC_ADDR          (VGA_BASE_ADDR + VGA_VSYNC_OFFSET)
+#define VGA_VSYNC_BIT           (1 << 0)
 
 /* ============================================================================================================== */
-/* MACROS DE ACESSO                                                                                               */
+/* NEURAL PROCESSING UNIT (NPU) - Atualizado para robustez                                                        */
 /* ============================================================================================================== */
 
-#define MMIO32(addr)            (*(volatile uint32_t *)(addr))            // Acesso a um registrador de 32 bits
-#define MMIO8(addr)             (*(volatile uint8_t  *)(addr))            // Acesso a um registrador de 8 bits
+// Registradores de Controle e Status (CSRs)
+// Uso padronizado de MMIO32 para garantir acesso volatile correto
+
+#define NPU_REG_CTRL        MMIO32(NPU_BASE_ADDR + 0x00)
+#define NPU_REG_QUANT       MMIO32(NPU_BASE_ADDR + 0x04)
+#define NPU_REG_MULT        MMIO32(NPU_BASE_ADDR + 0x08)
+#define NPU_REG_STATUS      MMIO32(NPU_BASE_ADDR + 0x0C)
+
+// FIFOs de Dados
+
+#define NPU_FIFO_WEIGHTS    MMIO32(NPU_BASE_ADDR + 0x10)
+#define NPU_FIFO_ACT        MMIO32(NPU_BASE_ADDR + 0x14)
+#define NPU_FIFO_OUT        MMIO32(NPU_BASE_ADDR + 0x18)
+
+// Configuração de Bias
+
+#define NPU_REG_BIAS_BASE   MMIO32(NPU_BASE_ADDR + 0x20)
+
+// Flags de Controle e Status
+
+#define NPU_CTRL_RELU_EN    (1 << 0)
+#define NPU_CTRL_LOAD_MODE  (1 << 1)
+#define NPU_CTRL_ACC_CLEAR  (1 << 2)
+#define NPU_CTRL_ACC_DUMP   (1 << 3)
+
+#define NPU_STATUS_IN_FULL  (1 << 0)
+#define NPU_STATUS_W_FULL   (1 << 1)
+#define NPU_STATUS_OUT_RDY  (1 << 3)
 
 #endif /* MEMORY_MAP_H */

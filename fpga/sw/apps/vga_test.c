@@ -2,7 +2,7 @@
 // Inclui os headers necessários ----------------------------------------------------
 
 #include <stdint.h>       // Tipos padrão
-#include "hal_vga.h"      // Driver VGA
+#include "hal/hal_vga.h"  // Driver VGA
 #include "memory_map.h"   // Definições de memória (MMIO32, GPIO_BASE_ADDR)
 
 // Geração de Cores Aleatórias ------------------------------------------------------

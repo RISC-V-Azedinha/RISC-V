@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "hal_uart.h"
+#include "hal/hal_uart.h"
 
 // ============================================================================
 // PROGRAMA PRINCIPAL

@@ -74,6 +74,7 @@ entity bus_interconnect is
         uart_sel_o          : out std_logic;
         
         -- Interface: GPIO
+
         gpio_addr_o         : out std_logic_vector(3 downto 0);
         gpio_data_i         : in  std_logic_vector(31 downto 0);
         gpio_data_o         : out std_logic_vector(31 downto 0);
@@ -81,11 +82,20 @@ entity bus_interconnect is
         gpio_sel_o          : out std_logic;
 
         -- Interface: VGA
+
         vga_addr_o          : out std_logic_vector(16 downto 0);
         vga_data_i          : in  std_logic_vector(31 downto 0); -- Leitura 
         vga_data_o          : out std_logic_vector(31 downto 0); -- Escrita (cor)
         vga_we_o            : out std_logic;
-        vga_sel_o           : out std_logic
+        vga_sel_o           : out std_logic;
+
+        -- Interface: NPU (Neural Processing Unit)
+
+        npu_addr_o          : out std_logic_vector(31 downto 0); 
+        npu_data_i          : in  std_logic_vector(31 downto 0); -- Leitura da NPU
+        npu_data_o          : out std_logic_vector(31 downto 0); -- Escrita na NPU
+        npu_we_o            : out std_logic;                     -- Write Enable
+        npu_sel_o           : out std_logic                      -- Chip Select
 
     );
 end entity;
@@ -101,6 +111,7 @@ architecture rtl of bus_interconnect is
     signal s_dmem_sel_ram  : std_logic;
     signal s_dmem_sel_gpio : std_logic;
     signal s_dmem_sel_vga  : std_logic;
+    signal s_dmem_sel_npu  : std_logic;
 
     -- Sinais internos de decodificação para o lado de INSTRUÇÕES (IMem)
     signal s_imem_sel_rom  : std_logic;
@@ -113,7 +124,10 @@ begin
     -- -------------------------------------------------------------------------
     -- ROM:  0x00000000 (0x0...)
     -- UART: 0x10000000 (0x1...)
+    -- GPIO: 0x20000000 (0x2...)
+    -- VGA:  0x30000000 (0x3...)
     -- RAM:  0x80000000 (0x8...)
+    -- NPU:  0x90000000 (0x9...)
 
     -- Lado de Dados
     s_dmem_sel_rom  <= '1' when dmem_addr_i(31 downto 28) = x"0" else '0';
@@ -121,6 +135,7 @@ begin
     s_dmem_sel_gpio <= '1' when dmem_addr_i(31 downto 28) = x"2" else '0';
     s_dmem_sel_vga  <= '1' when dmem_addr_i(31 downto 28) = x"3" else '0';
     s_dmem_sel_ram  <= '1' when dmem_addr_i(31 downto 28) = x"8" else '0';
+    s_dmem_sel_npu  <= '1' when dmem_addr_i(31 downto 28) = x"9" else '0';
 
     -- Lado de Instruções (Baseado no bit 31 para distinguir ROM de RAM)
     s_imem_sel_rom  <= '1' when imem_addr_i(31 downto 28) = x"0" else '0';
@@ -160,6 +175,12 @@ begin
     vga_we_o    <= '1' when (s_dmem_sel_vga = '1' and unsigned(dmem_we_i) > 0) else '0';
     vga_sel_o   <= s_dmem_sel_vga;
 
+    -- NPU 
+    npu_addr_o   <= dmem_addr_i; 
+    npu_data_o   <= dmem_data_i;
+    npu_we_o     <= '1' when (s_dmem_sel_npu = '1' and unsigned(dmem_we_i) > 0) else '0';
+    npu_sel_o    <= s_dmem_sel_npu;
+
     -- -------------------------------------------------------------------------
     -- 3. MULTIPLEXAÇÃO DE RETORNO AO PROCESSADOR (Leitura)
     -- -------------------------------------------------------------------------
@@ -184,6 +205,8 @@ begin
             dmem_data_o <= gpio_data_i;
         elsif s_dmem_sel_vga = '1' then
             dmem_data_o <= vga_data_i;
+        elsif s_dmem_sel_npu = '1' then  
+            dmem_data_o <= npu_data_i;
         else
             dmem_data_o <= (others => '0');
         end if;

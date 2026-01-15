@@ -108,10 +108,18 @@ architecture rtl of soc_top is
     signal s_vga_we     : std_logic;
     signal s_vga_sel    : std_logic;
 
+    -- NPU (Neural Processing Unit)
+    signal s_npu_addr     : std_logic_vector(31 downto 0);
+    signal s_npu_data_rx  : std_logic_vector(31 downto 0); -- NPU -> Bus
+    signal s_npu_data_tx  : std_logic_vector(31 downto 0); -- Bus -> NPU
+    signal s_npu_we       : std_logic;
+    signal s_npu_sel      : std_logic;
+    signal s_npu_rst_n    : std_logic;
+
 begin
 
     -- =========================================================================
-    -- 1. NÚCLEO PROCESSADOR (CPU)
+    -- NÚCLEO PROCESSADOR (CPU)
     -- =========================================================================
 
     U_CORE: entity work.processor_top
@@ -127,7 +135,7 @@ begin
         );
 
     -- =========================================================================
-    -- 2. HUB DE INTERCONEXÃO (BUS INTERCONNECT)
+    -- HUB DE INTERCONEXÃO (BUS INTERCONNECT)
     -- =========================================================================
     
     U_BUS: entity work.bus_interconnect
@@ -175,11 +183,19 @@ begin
             vga_data_i      => s_vga_data_rx, 
             vga_data_o      => s_vga_data_tx, 
             vga_we_o        => s_vga_we,
-            vga_sel_o       => s_vga_sel
+            vga_sel_o       => s_vga_sel,
+
+            -- Interface NPU 
+            npu_addr_o      => s_npu_addr,
+            npu_data_i      => s_npu_data_rx,
+            npu_data_o      => s_npu_data_tx,
+            npu_we_o        => s_npu_we,
+            npu_sel_o       => s_npu_sel
+
         );
 
     -- =========================================================================
-    -- 3. COMPONENTES DO SISTEMA
+    -- COMPONENTES DO SISTEMA
     -- =========================================================================
 
     U_ROM: entity work.boot_rom
@@ -257,6 +273,22 @@ begin
             vga_r_o     => VGA_R_o,
             vga_g_o     => VGA_G_o,
             vga_b_o     => VGA_B_o
+        );
+
+    -- Inverte o Reset 
+    s_npu_rst_n <= not Reset_i;
+
+    U_NPU: entity work.npu_top
+        port map (
+            clk     => CLK_i,
+            rst_n   => s_npu_rst_n,
+            
+            -- Conexão com o Bus Interconnect
+            sel_i   => s_npu_sel,
+            we_i    => s_npu_we,
+            addr_i  => s_npu_addr,
+            data_i  => s_npu_data_tx,
+            data_o  => s_npu_data_rx
         );
 
 end architecture;
