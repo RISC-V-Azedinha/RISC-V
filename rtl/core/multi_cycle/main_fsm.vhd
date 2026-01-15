@@ -41,6 +41,15 @@ entity main_fsm is
             Opcode_i       : in  std_logic_vector(6 downto 0);
 
         ----------------------------------------------------------------------------------------------------------
+        -- Interface de Handshake 
+        ----------------------------------------------------------------------------------------------------------
+
+        -- Para Memória de DADOS (Load/Store)
+
+            dmem_ready_i   : in  std_logic; -- Vem do Barramento 
+            dmem_valid_o   : out std_logic; -- Vai pro Barramento 
+
+        ----------------------------------------------------------------------------------------------------------
         -- Interface de sinais de controle
         ----------------------------------------------------------------------------------------------------------
 
@@ -93,7 +102,9 @@ architecture rtl of main_fsm is
 
     -- Espera no acesso à memória ---------------------------------------------------------------------------------
 
-    signal wait_mem : std_logic := '0';
+    -- Controle de espera para o FETCH (Instruction Memory)
+    -- Como não implementamos handshake na IMem, mantemos a espera fixa de 1 ciclo para ler a ROM/RAM síncrona.
+    signal s_fetch_wait : std_logic := '0';
 
 begin
 
@@ -108,23 +119,21 @@ begin
 
                 -- Reset Assíncrono para o estado Instruction Fetch (IF)
                 current_state <= S_IF;  
-                wait_mem      <= '0';
+                s_fetch_wait  <= '0';
 
             else 
 
-                -- Lógica para transição de estado e controle do flag
-                if (current_state = S_IF or current_state = S_MEM_RD) and wait_mem = '0' then
+                -- Lógica específica para o FETCH (Wait State fixo)
+                if current_state = S_IF and s_fetch_wait = '0' then
 
-                    -- Se é o 1° ciclo de um estado de leitura, fica nele e ativa o flag
-                    wait_mem      <= '1';           -- Avisa que esperou um ciclo
-                    current_state <= current_state; -- Mantém o estado
+                    s_fetch_wait  <= '1'; -- Espera 1 ciclo
+                    current_state <= S_IF; -- Mantém estado
 
                 else
 
-                    -- Se já esperou (wait_mem=1) ou é outro estado, avança e limpa o flag
-                    wait_mem      <= '0';
-                    current_state <= next_state;
-
+                    s_fetch_wait  <= '0'; -- Reseta wait
+                    current_state <= next_state; -- Avança
+                    
                 end if;
 
             end if;    
@@ -134,7 +143,7 @@ begin
 
     -- 2. Lógica de Próximo Estado (Combinacional)
 
-    process(current_state, Opcode_i)
+    process(current_state, Opcode_i, dmem_ready_i)
     begin
         -- Default: manter estado 
         next_state <= current_state;
@@ -173,9 +182,21 @@ begin
             when S_EX_LUI   => next_state <= S_WB_REG;
             when S_EX_AUIPC => next_state <= S_WB_REG;
 
-            -- MEMORY: Acesso a dados
-            when S_MEM_RD   => next_state <= S_WB_REG;
-            when S_MEM_WR   => next_state <= S_IF;
+            -- MEMORY READ (HANDSHAKE)
+            when S_MEM_RD   => 
+                if dmem_ready_i = '1' then
+                    next_state <= S_WB_REG; -- Sucesso, avança
+                else
+                    next_state <= S_MEM_RD; -- STALL: Fica esperando
+                end if;
+
+            -- MEMORY WRITE (HANDSHAKE)
+            when S_MEM_WR   => 
+                if dmem_ready_i = '1' then
+                    next_state <= S_IF;     -- Sucesso, próxima instrução
+                else
+                    next_state <= S_MEM_WR; -- STALL: Fica esperando
+                end if;
 
             -- WRITE BACK: Fim da instrução
             when S_WB_REG   => next_state <= S_IF;
@@ -183,11 +204,12 @@ begin
             when S_WB_JALR  => next_state <= S_IF;
             
             when others => next_state <= S_IF;
+
         end case;
     end process;
 
     -- 3. Lógica de Saída (Combinacional - Moore)
-    process(current_state, Opcode_i, wait_mem)
+    process(current_state, Opcode_i, s_fetch_wait, dmem_ready_i)
     begin
         
         -- Default Outputs (por segurança)
@@ -199,6 +221,7 @@ begin
         RegWrite_o    <= '0';
         ALUrWrite_o   <= '0';
         MDRWrite_o    <= '0';
+        dmem_valid_o  <= '0';
         
         -- Default Muxes (por segurança)
         PCSrc_o       <= "00"; -- PC+4
@@ -211,9 +234,9 @@ begin
             
             -- Estado IF: IRWrite=1, PCWrite=1, OPCWrite=1
             when S_IF =>
-                -- Ciclo 1 (wait_mem='0'): Só apresenta endereço (PC). Não escreve nada.
-                -- Ciclo 2 (wait_mem='1'): Memória pronta. Escreve IR, PC e OldPC.
-                if wait_mem = '1' then
+                -- Ciclo 1 (wait='0'): Só apresenta endereço (PC). Não escreve nada.
+                -- Ciclo 2 (wait='1'): Memória pronta. Escreve IR, PC e OldPC.
+                if s_fetch_wait = '1' then
                     IRWrite_o  <= '1';
                     PCWrite_o  <= '1';
                     OPCWrite_o <= '1';
@@ -275,16 +298,20 @@ begin
                 ALUSrcA_o   <= "01"; -- OldPC
                 ALUSrcB_o   <= '1';  -- Imediato
 
-            -- Estados de MEMÓRIA
+            -- Estados de MEMÓRIA (HANDSHAKE)
             when S_MEM_RD =>
-                -- Só grava no MDR quando o dado estiver pronto (2° ciclo)
-                if wait_mem = '1' then
+                -- Validamos o pedido de leitura
+                dmem_valid_o <= '1';
+                
+                -- Só grava no MDR quando o dado estiver PRONTO (Ready=1)
+                if dmem_ready_i = '1' then
                     MDRWrite_o <= '1';
                 end if;
-                -- Nota: O datapath mantém o endereço (ALUResult) estável durante os dois ciclos
                 
             when S_MEM_WR =>
-                MemWrite_o  <= '1'; -- Escrita não precisa esperar leitura, então ok manter assim
+                -- Validamos o pedido de escrita
+                dmem_valid_o <= '1';
+                MemWrite_o   <= '1'; -- WE Físico
 
             -- Estados de WRITE-BACK
             when S_WB_REG =>

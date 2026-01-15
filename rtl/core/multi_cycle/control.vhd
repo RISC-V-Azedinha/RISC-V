@@ -44,6 +44,15 @@ entity control is
             Reset_i        : in  std_logic;                          -- Sinal de Master-Reset (IF)
 
         ----------------------------------------------------------------------------------------------------------
+        -- Interface de Handshake
+        ----------------------------------------------------------------------------------------------------------
+
+        -- Estes sinais passam direto para a Main FSM
+
+            dmem_ready_i   : in  std_logic;
+            dmem_valid_o   : out std_logic;
+
+        ----------------------------------------------------------------------------------------------------------
         -- Interface com o Datapath
         ----------------------------------------------------------------------------------------------------------
 
@@ -108,6 +117,10 @@ begin
         Clk_i          => Clk_i,
         Reset_i        => Reset_i,
         Opcode_i       => s_opcode,
+
+        -- Conexão do Handshake
+        dmem_ready_i   => dmem_ready_i,
+        dmem_valid_o   => dmem_valid_o,
 
         -- Saídas de Controle de Escrita/Enable
         PCWrite_o      => s_fsm_pc_write,                            -- Escrita Incondicional

@@ -44,6 +44,7 @@ entity uart_controller is
         addr_i      : in  std_logic_vector( 3 downto 0);     -- Apenas o Offset (0x0, 0x4...)
         data_i      : in  std_logic_vector(31 downto 0);     -- Dado vindo da CPU
         data_o      : out std_logic_vector(31 downto 0);     -- Dado indo para CPU
+        ready_o     : out std_logic;
 
         -- Pinos Físicos
 
@@ -142,6 +143,9 @@ architecture rtl of uart_controller is
     signal rx_bit_val     : std_logic;
 
 begin
+
+    -- Handshake: Resposta imediata
+    ready_o <= '1';
 
     -- Status da FIFO
 

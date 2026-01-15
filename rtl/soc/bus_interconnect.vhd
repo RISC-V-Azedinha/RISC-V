@@ -43,6 +43,10 @@ entity bus_interconnect is
         dmem_we_i           : in  std_logic_vector( 3 downto 0); -- Write Enable
         dmem_data_o         : out std_logic_vector(31 downto 0); -- Dados lidos
 
+        -- Handshake da CPU
+        dmem_valid_i        : in  std_logic; 
+        dmem_ready_o        : out std_logic;
+
         -- ========================================================================================
         -- 2. INTERFACES PARA COMPONENTES (MEMÓRIAS E PERIFÉRICOS)
         -- ========================================================================================
@@ -54,6 +58,7 @@ entity bus_interconnect is
         rom_addr_b_o        : out std_logic_vector(31 downto 0);
         rom_data_b_i        : in  std_logic_vector(31 downto 0);
         rom_sel_b_o         : out std_logic; -- Seleção para leitura de dados
+        rom_ready_i         : in  std_logic;
 
         -- Interface: RAM (Dual Port)
 
@@ -64,6 +69,7 @@ entity bus_interconnect is
         ram_data_b_o        : out std_logic_vector(31 downto 0); -- Escrita
         ram_we_b_o          : out std_logic_vector( 3 downto 0);
         ram_sel_b_o         : out std_logic;
+        ram_ready_i         : in  std_logic;
 
         -- Interface: UART
 
@@ -72,6 +78,7 @@ entity bus_interconnect is
         uart_data_o         : out std_logic_vector(31 downto 0);
         uart_we_o           : out std_logic;
         uart_sel_o          : out std_logic;
+        uart_ready_i        : in  std_logic;
         
         -- Interface: GPIO
 
@@ -80,6 +87,7 @@ entity bus_interconnect is
         gpio_data_o         : out std_logic_vector(31 downto 0);
         gpio_we_o           : out std_logic;
         gpio_sel_o          : out std_logic;
+        gpio_ready_i        : in  std_logic;
 
         -- Interface: VGA
 
@@ -88,6 +96,7 @@ entity bus_interconnect is
         vga_data_o          : out std_logic_vector(31 downto 0); -- Escrita (cor)
         vga_we_o            : out std_logic;
         vga_sel_o           : out std_logic;
+        vga_ready_i         : in  std_logic;
 
         -- Interface: NPU (Neural Processing Unit)
 
@@ -95,7 +104,8 @@ entity bus_interconnect is
         npu_data_i          : in  std_logic_vector(31 downto 0); -- Leitura da NPU
         npu_data_o          : out std_logic_vector(31 downto 0); -- Escrita na NPU
         npu_we_o            : out std_logic;                     -- Write Enable
-        npu_sel_o           : out std_logic                      -- Chip Select
+        npu_sel_o           : out std_logic;                     -- Chip Select
+        npu_ready_i         : in  std_logic
 
     );
 end entity;
@@ -105,6 +115,7 @@ end entity;
 -------------------------------------------------------------------------------------------------------------------
 
 architecture rtl of bus_interconnect is
+
     -- Sinais internos de decodificação para o lado de DADOS (DMem)
     signal s_dmem_sel_rom  : std_logic;
     signal s_dmem_sel_uart : std_logic;
@@ -148,14 +159,14 @@ begin
     -- ROM
     rom_addr_a_o <= imem_addr_i;
     rom_addr_b_o <= dmem_addr_i;
-    rom_sel_b_o  <= s_dmem_sel_rom;
+    rom_sel_b_o  <= s_dmem_sel_rom and dmem_valid_i;
 
     -- RAM
     ram_addr_a_o <= imem_addr_i;
     ram_addr_b_o <= dmem_addr_i;
     ram_data_b_o <= dmem_data_i;
-    ram_we_b_o   <= dmem_we_i when s_dmem_sel_ram = '1' else (others => '0');
-    ram_sel_b_o  <= s_dmem_sel_ram;
+    ram_we_b_o   <= dmem_we_i when (s_dmem_sel_ram = '1' and dmem_valid_i = '1') else (others => '0');
+    ram_sel_b_o  <= s_dmem_sel_ram and dmem_valid_i;
 
     -- UART
     uart_addr_o  <= dmem_addr_i(3 downto 0);
@@ -192,8 +203,9 @@ begin
                    (others => '0'); -- Retorna 0 para endereços inválidos (como 0x5...)
 
     -- Mux de Dados (DMem)
-    process (s_dmem_sel_rom, s_dmem_sel_uart, s_dmem_sel_ram, 
-            rom_data_b_i, uart_data_i, ram_data_b_i)
+    process (s_dmem_sel_rom, s_dmem_sel_uart, s_dmem_sel_ram, s_dmem_sel_gpio, 
+             s_dmem_sel_vga, s_dmem_sel_npu, rom_data_b_i, uart_data_i, 
+             ram_data_b_i, gpio_data_i, vga_data_i, npu_data_i)
     begin
         if s_dmem_sel_rom = '1' then
             dmem_data_o <= rom_data_b_i;
@@ -212,6 +224,29 @@ begin
         end if;
     end process;
 
-end architecture;
+    -- Mux de Dados (DMem) - READY (Handshake)
+    -- Retorna o ready do escravo selecionado. Se nenhum selecionado, ready=1 (para não travar CPU).
+    process (s_dmem_sel_rom, s_dmem_sel_uart, s_dmem_sel_ram, s_dmem_sel_gpio, 
+             s_dmem_sel_vga, s_dmem_sel_npu, rom_ready_i, uart_ready_i, 
+             ram_ready_i, gpio_ready_i, vga_ready_i, npu_ready_i)
+    begin
+        if s_dmem_sel_rom = '1' then
+            dmem_ready_o <= rom_ready_i;
+        elsif s_dmem_sel_uart = '1' then
+            dmem_ready_o <= uart_ready_i;
+        elsif s_dmem_sel_ram = '1' then
+            dmem_ready_o <= ram_ready_i;
+        elsif s_dmem_sel_gpio = '1' then
+            dmem_ready_o <= gpio_ready_i;
+        elsif s_dmem_sel_vga = '1' then
+            dmem_ready_o <= vga_ready_i;
+        elsif s_dmem_sel_npu = '1' then  
+            dmem_ready_o <= npu_ready_i;
+        else
+            dmem_ready_o <= '1'; -- Endereço inválido não deve travar a CPU
+        end if;
+    end process;
+
+end architecture; -- rtl
 
 ------------------------------------------------------------------------------------------------------------------

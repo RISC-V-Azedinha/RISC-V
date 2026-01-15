@@ -38,6 +38,7 @@ entity vga_peripheral is
         cpu_addr_i  : in  std_logic_vector(16 downto 0);   -- Endereço de 17 bits (320x240 = 76800 endereços)
         cpu_data_i  : in  std_logic_vector(31 downto 0);   -- Dados de 32 bits para escrita
         cpu_data_o  : out std_logic_vector(31 downto 0);   -- Dados de 32 bits lidos
+        ready_o     : out std_logic;
         
         -- === Interface Física (VGA Monitor) === -----------------------------------------------------------------
 
@@ -88,6 +89,9 @@ architecture rtl of vga_peripheral is
     signal y_scaled   : integer range 0 to 300;            -- Coordenada Y escalada para 320x240
 
 begin
+
+    -- Handshake: Resposta imediata
+    ready_o <= '1';
 
     -- LÓGICA DE ALINHAMENTO (MUX): escolhe o byte certo baseado nos 2 últimos bits do endereço
         

@@ -66,7 +66,12 @@ entity processor_top is
     DMem_addr_o         : out std_logic_vector(31 downto 0);      -- Endereço de 32 bits para a memória de dados
     DMem_data_o         : out std_logic_vector(31 downto 0);      -- Dados de 32 bits a serem escritos na memória de dados
     DMem_data_i         : in  std_logic_vector(31 downto 0);      -- Dados de 32 bits lidos da memória de dados
-    DMem_writeEnable_o  : out std_logic_vector( 3 downto 0)       -- Sinal de habilitação de escrita na memória de dados (ativo em nível alto)
+    DMem_writeEnable_o  : out std_logic_vector( 3 downto 0);      -- Sinal de habilitação de escrita na memória de dados (ativo em nível alto)
+
+    -- Handshake 
+    
+    DMem_ready_i        : in  std_logic;                          -- Barramento indica que dado está pronto/escrito
+    DMem_valid_o        : out std_logic                           -- Processador indica intenção de transação
 
   ) ;
 
@@ -106,6 +111,10 @@ begin
                     -- Sinais de Sincronismo 
                     Clk_i              => CLK_i,          -- CLOCK global
                     Reset_i            => Reset_i,        -- Master-Reset
+
+                    -- Interface de Handshake 
+                    dmem_ready_i       => DMem_ready_i,
+                    dmem_valid_o       => DMem_valid_o,
 
                     -- Interface de dados
                     Instruction_i      => s_instruction,  -- Instrução buscada na memória

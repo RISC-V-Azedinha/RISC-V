@@ -35,6 +35,7 @@ entity gpio_controller is
         addr_i      : in  std_logic_vector( 3 downto 0);  -- Offset do endereço
         data_i      : in  std_logic_vector(31 downto 0);
         data_o      : out std_logic_vector(31 downto 0);
+        ready_o     : out std_logic;
         
         -- Pinos Externos
         gpio_leds   : out std_logic_vector(15 downto 0);
@@ -54,6 +55,7 @@ begin
     
     -- Conexão física
     gpio_leds <= r_leds;
+    ready_o <= '1';
 
     -- Processo de Escrita (CPU -> LEDs)
     process(clk)

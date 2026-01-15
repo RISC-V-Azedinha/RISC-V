@@ -40,8 +40,10 @@ entity boot_rom is
         data_a_o : out std_logic_vector(31 downto 0);            -- Dados de 32 bits lidos (instrução)
 
         -- Porta B: Dedicada ao LOAD/STORE (Dados)
+        en_b_i   : in  std_logic;
         addr_b_i : in  std_logic_vector(31 downto 0);            -- Endereço de 32 bits para leitura de dados
-        data_b_o : out std_logic_vector(31 downto 0)             -- Dados de 32 bits lidos (dados)
+        data_b_o : out std_logic_vector(31 downto 0);            -- Dados de 32 bits lidos (dados)
+        ready_b_o: out std_logic
     );
 end entity;
 
@@ -102,11 +104,21 @@ begin
         variable v_addr_idx : std_logic_vector(ADDR_WIDTH-1 downto 0);
     begin
         if rising_edge(clk) then
-            v_addr_idx := addr_b_i(ADDR_WIDTH+1 downto 2);
-            if Is_X(v_addr_idx) then
-                data_b_o <= (others => '0');
+            -- Geração do Ready (1 ciclo de latência)
+            if en_b_i = '1' then
+                ready_b_o <= '1';
             else
-                data_b_o <= rom_content(to_integer(unsigned(v_addr_idx)));
+                ready_b_o <= '0';
+            end if;
+
+            -- Leitura de Dados
+            if en_b_i = '1' then
+                v_addr_idx := addr_b_i(ADDR_WIDTH+1 downto 2);
+                if Is_X(v_addr_idx) then
+                    data_b_o <= (others => '0');
+                else
+                    data_b_o <= rom_content(to_integer(unsigned(v_addr_idx)));
+                end if;
             end if;
         end if;
     end process;

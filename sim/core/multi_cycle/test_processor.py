@@ -111,83 +111,79 @@ def flush_buffer_to_mem(mem, addr, bytes_list):
 
 async def memory_and_mmio_controller(dut, mem_data, halt_event):
     """
-    Simula Memória BRAM Síncrona Robusta.
-    Amostra sinais na borda de descida (FallingEdge) para garantir estabilidade
-    e escreve/lê na borda de subida (RisingEdge).
+    Simula Memória com Latência e Handshake.
+    Garante que cada transação (Valid=1) seja processada apenas uma vez.
     """
-    log_info("Controlador de Memória (Síncrono/Falling Sample) Ativo.")
+    log_info("Controlador de Memória (Handshake Ready/Valid) Ativo.")
     console_buffer = ""
+    
+    # Estado interno para evitar processamento duplo
+    transaction_in_progress = False
 
-    # Registradores de Pipeline (Latch)
-    latched_i_addr = 0
-    latched_d_addr = 0
-    latched_d_we   = 0
-    latched_d_data = 0
+    # Inicializa Ready em 0
+    dut.DMem_ready_i.value = 0
 
     while True:
-        # ------------------------------------------------------------------
-        # 1. BORDA DE SUBIDA (Rising Edge): Ação da Memória
-        # ------------------------------------------------------------------
         await RisingEdge(dut.CLK_i)
+        
+        # 1. Captura sinais atuais do processador
+        # Usamos .value para ler os sinais no início do ciclo
+        current_valid = int(dut.DMem_valid_o.value) if str(dut.DMem_valid_o.value) not in "xuz" else 0
+        i_addr = int(dut.IMem_addr_o.value) if str(dut.IMem_addr_o.value) not in "xuz" else 0
 
-        # [LEITURA] Entrega o dado correspondente ao endereço amostrado no ciclo anterior
-        # (Simula latência de 1 ciclo da BRAM)
-        dut.IMem_data_i.value = mem_data.get(latched_i_addr & 0xFFFFFFFC, 0)
-        dut.DMem_data_i.value = mem_data.get(latched_d_addr & 0xFFFFFFFC, 0)
+        # [IMEM] Fetch sempre disponível (Harvard Simples)
+        dut.IMem_data_i.value = mem_data.get(i_addr & 0xFFFFFFFC, 0)
 
-        # [ESCRITA] Efetiva a escrita se foi solicitada no ciclo anterior
-        if latched_d_we > 0:
-            
-            # MMIO: Console
-            if latched_d_addr == MMIO_CONSOLE_ADDR:
-                char = chr(latched_d_data & 0xFF)
-                if char == '\n':
-                    log_console(f"{console_buffer}")
-                    console_buffer = ""
-                else:
-                    console_buffer += char
-            
-            # MMIO: Halt
-            elif latched_d_addr == MMIO_HALT_ADDR:
-                log_success("Sinal de HALT recebido via MMIO!")
-                halt_event.set()
-                break # Encerra o loop do controlador
-
-            # MMIO: Debug Int
-            elif latched_d_addr == MMIO_INT_ADDR:
-                val_signed = latched_d_data if latched_d_data < 0x80000000 else latched_d_data - 0x100000000
-                log_int(f"{val_signed}")
-            
-            # RAM Store
-            else:
-                aligned_addr = latched_d_addr & 0xFFFFFFFC
-                current_word = mem_data.get(aligned_addr, 0)
-                new_word = current_word
+        # [DMEM] Lógica de Handshake
+        if current_valid == 1:
+            if not transaction_in_progress:
+                # --- NOVA TRANSAÇÃO DETECTADA ---
+                transaction_in_progress = True
                 
-                if (latched_d_we & 0x1): new_word = (new_word & 0xFFFFFF00) | (latched_d_data & 0x000000FF)
-                if (latched_d_we & 0x2): new_word = (new_word & 0xFFFF00FF) | (latched_d_data & 0x0000FF00)
-                if (latched_d_we & 0x4): new_word = (new_word & 0xFF00FFFF) | (latched_d_data & 0x00FF0000)
-                if (latched_d_we & 0x8): new_word = (new_word & 0x00FFFFFF) | (latched_d_data & 0xFF000000)
-                mem_data[aligned_addr] = new_word
+                # Sinaliza que estamos prontos
+                dut.DMem_ready_i.value = 1
+                
+                # Captura dados da transação
+                addr = int(dut.DMem_addr_o.value)
+                we   = int(dut.DMem_writeEnable_o.value)
+                data_w = int(dut.DMem_data_o.value)
 
-        # ------------------------------------------------------------------
-        # 2. BORDA DE DESCIDA (Falling Edge): Amostragem (Setup)
-        # ------------------------------------------------------------------
-        await FallingEdge(dut.CLK_i)
+                # Processa Leitura
+                dut.DMem_data_i.value = mem_data.get(addr & 0xFFFFFFFC, 0)
 
-        # Amostra os sinais agora que estão estáveis (meio do ciclo)
-        try:
-            latched_i_addr = int(dut.IMem_addr_o.value)
-        except ValueError: latched_i_addr = 0
-
-        try:
-            latched_d_addr = int(dut.DMem_addr_o.value)
-            latched_d_data = int(dut.DMem_data_o.value)
-            latched_d_we   = int(dut.DMem_writeEnable_o.value)
-        except ValueError:
-            latched_d_addr = 0
-            latched_d_data = 0
-            latched_d_we   = 0
+                # Processa Escrita (RAM ou MMIO)
+                if we > 0:
+                    if addr == MMIO_CONSOLE_ADDR:
+                        char = chr(data_w & 0xFF)
+                        if char == '\n':
+                            log_console(f"{console_buffer}")
+                            console_buffer = ""
+                        else:
+                            console_buffer += char
+                    elif addr == MMIO_HALT_ADDR:
+                        log_success("Sinal de HALT recebido!")
+                        halt_event.set()
+                    elif addr == MMIO_INT_ADDR:
+                        val = data_w if data_w < 0x80000000 else data_w - 0x100000000
+                        log_int(f"{val}")
+                    else:
+                        # Escrita normal na RAM
+                        aligned_addr = addr & 0xFFFFFFFC
+                        current_word = mem_data.get(aligned_addr, 0)
+                        new_word = current_word
+                        if (we & 0x1): new_word = (new_word & 0xFFFFFF00) | (data_w & 0x000000FF)
+                        if (we & 0x2): new_word = (new_word & 0xFFFF00FF) | (data_w & 0x0000FF00)
+                        if (we & 0x4): new_word = (new_word & 0xFF00FFFF) | (data_w & 0x00FF0000)
+                        if (we & 0x8): new_word = (new_word & 0x00FFFFFF) | (data_w & 0xFF000000)
+                        mem_data[aligned_addr] = new_word
+            else:
+                # Transação já foi processada, mas CPU ainda não baixou o Valid.
+                # Mantemos Ready=1 para garantir que a CPU veja e saia do estado.
+                dut.DMem_ready_i.value = 1
+        else:
+            # CPU não está pedindo nada (Valid=0)
+            transaction_in_progress = False
+            dut.DMem_ready_i.value = 0
 
 # ================================================================================================================
 # 3. TESTE PRINCIPAL (Main Test)
@@ -241,6 +237,7 @@ async def test_processor_execution(dut):
     # Inicializa barramentos de entrada para evitar estados indeterminados ('X')
     dut.IMem_data_i.value = 0
     dut.DMem_data_i.value = 0
+    dut.DMem_ready_i.value = 0
     
     # Segura o Reset por 2 ciclos de clock
     await RisingEdge(dut.CLK_i)

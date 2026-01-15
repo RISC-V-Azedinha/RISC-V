@@ -40,10 +40,12 @@ entity dual_port_ram is
         data_out_a : out std_logic_vector(DATA_WIDTH-1 downto 0);
         
         -- Porta B
+        en_b_i     : in  std_logic;
         we_b       : in  std_logic_vector((DATA_WIDTH/8)-1 downto 0);
         addr_b     : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
         data_in_b  : in  std_logic_vector(DATA_WIDTH-1 downto 0);
-        data_out_b : out std_logic_vector(DATA_WIDTH-1 downto 0)
+        data_out_b : out std_logic_vector(DATA_WIDTH-1 downto 0);
+        ready_b_o  : out std_logic
     );
 end entity;
 
@@ -98,15 +100,21 @@ begin
 
         if rising_edge(clk) then
 
-            -- 1. Leitura (Read-First)
-            data_out_b <= ram(to_integer(unsigned(addr_b)));
+            if en_b_i = '1' then
+                ready_b_o <= '1';
+            else
+                ready_b_o <= '0';
+            end if;
 
-            -- 2. Escrita com Byte Enable
-            for i in 0 to (DATA_WIDTH/8)-1 loop
-                if we_b(i) = '1' then
-                    ram(to_integer(unsigned(addr_b)))(8*i+7 downto 8*i) := data_in_b(8*i+7 downto 8*i);
-                end if;
-            end loop;
+            -- Acesso à Memória
+            if en_b_i = '1' then
+                data_out_b <= ram(to_integer(unsigned(addr_b)));
+                for i in 0 to (DATA_WIDTH/8)-1 loop
+                    if we_b(i) = '1' then
+                        ram(to_integer(unsigned(addr_b)))(8*i+7 downto 8*i) := data_in_b(8*i+7 downto 8*i);
+                    end if;
+                end loop;
+            end if;
 
         end if;
 
