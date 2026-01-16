@@ -130,7 +130,7 @@ architecture rtl of soc_top is
     signal s_npu_we       : std_logic;
     signal s_npu_vld      : std_logic;
     signal s_npu_rst_n    : std_logic;
-    signal s_npu_rdy      : std_logic := '1';
+    signal s_npu_rdy      : std_logic;
 
 begin
 
@@ -332,11 +332,12 @@ begin
             rst_n   => s_npu_rst_n,
             
             -- Conexão com o Bus Interconnect
-            sel_i   => s_npu_vld,
+            vld_i   => s_npu_vld,
             we_i    => s_npu_we,
             addr_i  => s_npu_addr,
             data_i  => s_npu_data_tx,
-            data_o  => s_npu_data_rx
+            data_o  => s_npu_data_rx,
+            rdy_o   => s_npu_rdy
         );
 
 end architecture; -- rtl
