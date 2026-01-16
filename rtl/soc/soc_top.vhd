@@ -74,57 +74,57 @@ architecture rtl of soc_top is
     signal s_dmem_we                  : std_logic_vector( 3 downto 0);
 
     -- Sinais de Handshake (Core <-> Hub)
-    signal s_dmem_valid               : std_logic; 
-    signal s_dmem_ready               : std_logic; 
+    signal s_dmem_vld                 : std_logic; 
+    signal s_dmem_rdy                 : std_logic; 
 
     -- === Sinais de Interconexão (Hub <-> Componentes) ===
     
     -- Boot ROM
     signal s_rom_addr_a, s_rom_addr_b : std_logic_vector(31 downto 0);
     signal s_rom_data_a, s_rom_data_b : std_logic_vector(31 downto 0);
-    signal s_rom_sel_b                : std_logic;
-    signal s_rom_ready                : std_logic;
+    signal s_rom_vld_b                : std_logic;
+    signal s_rom_rdy                  : std_logic;
 
     -- RAM
     signal s_ram_addr_a, s_ram_addr_b : std_logic_vector(31 downto 0);
     signal s_ram_data_a, s_ram_data_b : std_logic_vector(31 downto 0); -- Saídas da RAM
     signal s_ram_data_w               : std_logic_vector(31 downto 0); -- Entrada da RAM
     signal s_ram_we_b                 : std_logic_vector( 3 downto 0);
-    signal s_ram_sel_b                : std_logic;
-    signal s_ram_ready                : std_logic;
+    signal s_ram_vld_b                : std_logic;
+    signal s_ram_rdy                  : std_logic;
 
     -- UART
     signal s_uart_addr                : std_logic_vector( 3 downto 0);
     signal s_uart_data_rx             : std_logic_vector(31 downto 0);
     signal s_uart_data_tx             : std_logic_vector(31 downto 0);
     signal s_uart_we                  : std_logic;
-    signal s_uart_sel                 : std_logic;
-    signal s_uart_ready               : std_logic;
+    signal s_uart_vld                 : std_logic;
+    signal s_uart_rdy                 : std_logic;
 
     -- GPIO
     signal s_gpio_addr    : std_logic_vector(3 downto 0);
     signal s_gpio_data_rx : std_logic_vector(31 downto 0); -- Do GPIO para o Bus
     signal s_gpio_data_tx : std_logic_vector(31 downto 0); -- Do Bus para o GPIO
     signal s_gpio_we      : std_logic;
-    signal s_gpio_sel     : std_logic;
-    signal s_gpio_ready   : std_logic;
+    signal s_gpio_vld     : std_logic;
+    signal s_gpio_rdy     : std_logic;
 
     -- VGA
     signal s_vga_addr   : std_logic_vector(16 downto 0);
     signal s_vga_data_rx: std_logic_vector(31 downto 0); -- Dado lido da VRAM
     signal s_vga_data_tx: std_logic_vector(31 downto 0); -- Dado escrito na VRAM (Cor)
     signal s_vga_we     : std_logic;
-    signal s_vga_sel    : std_logic;
-    signal s_vga_ready  : std_logic;
+    signal s_vga_vld    : std_logic;
+    signal s_vga_rdy    : std_logic;
 
     -- NPU (Neural Processing Unit)
     signal s_npu_addr     : std_logic_vector(31 downto 0);
     signal s_npu_data_rx  : std_logic_vector(31 downto 0); -- NPU -> Bus
     signal s_npu_data_tx  : std_logic_vector(31 downto 0); -- Bus -> NPU
     signal s_npu_we       : std_logic;
-    signal s_npu_sel      : std_logic;
+    signal s_npu_vld      : std_logic;
     signal s_npu_rst_n    : std_logic;
-    signal s_npu_ready    : std_logic := '1';
+    signal s_npu_rdy      : std_logic := '1';
 
 begin
 
@@ -141,9 +141,9 @@ begin
             DMem_addr_o         => s_dmem_addr,
             DMem_data_o         => s_dmem_data_w,
             DMem_data_i         => s_dmem_data_r,
-            DMem_writeEnable_o  => s_dmem_we,
-            DMem_ready_i        => s_dmem_ready,
-            DMem_valid_o        => s_dmem_valid
+            DMem_we_o           => s_dmem_we,
+            DMem_rdy_i          => s_dmem_rdy,
+            DMem_vld_o          => s_dmem_vld
         );
 
     -- =========================================================================
@@ -161,16 +161,16 @@ begin
             dmem_data_o     => s_dmem_data_r,
 
             -- Handshake Core
-            dmem_valid_i    => s_dmem_valid,
-            dmem_ready_o    => s_dmem_ready,
+            dmem_vld_i      => s_dmem_vld,
+            dmem_rdy_o      => s_dmem_rdy,
 
             -- Interface ROM
             rom_addr_a_o    => s_rom_addr_a,
             rom_data_a_i    => s_rom_data_a,
             rom_addr_b_o    => s_rom_addr_b,
             rom_data_b_i    => s_rom_data_b,
-            rom_sel_b_o     => s_rom_sel_b,
-            rom_ready_i     => s_rom_ready,
+            rom_vld_b_o     => s_rom_vld_b,
+            rom_rdy_i       => s_rom_rdy,
 
             -- Interface RAM
             ram_addr_a_o    => s_ram_addr_a,
@@ -179,40 +179,40 @@ begin
             ram_data_b_i    => s_ram_data_b,
             ram_data_b_o    => s_ram_data_w,
             ram_we_b_o      => s_ram_we_b,
-            ram_sel_b_o     => s_ram_sel_b,
-            ram_ready_i     => s_ram_ready,
+            ram_vld_b_o     => s_ram_vld_b,
+            ram_rdy_i       => s_ram_rdy,
 
             -- Interface UART
             uart_addr_o     => s_uart_addr,
             uart_data_i     => s_uart_data_rx,
             uart_data_o     => s_uart_data_tx,
             uart_we_o       => s_uart_we,
-            uart_sel_o      => s_uart_sel,
-            uart_ready_i    => s_uart_ready,
+            uart_vld_o      => s_uart_vld,
+            uart_rdy_i      => s_uart_rdy,
 
             -- Interface GPIO
             gpio_addr_o     => s_gpio_addr,
             gpio_data_i     => s_gpio_data_rx,
             gpio_data_o     => s_gpio_data_tx,
             gpio_we_o       => s_gpio_we,
-            gpio_sel_o      => s_gpio_sel,
-            gpio_ready_i    => s_gpio_ready,
+            gpio_vld_o      => s_gpio_vld,
+            gpio_rdy_i      => s_gpio_rdy,
 
             -- Interface VGA
             vga_addr_o      => s_vga_addr,
             vga_data_i      => s_vga_data_rx, 
             vga_data_o      => s_vga_data_tx, 
             vga_we_o        => s_vga_we,
-            vga_sel_o       => s_vga_sel,
-            vga_ready_i     => s_vga_ready,
+            vga_vld_o       => s_vga_vld,
+            vga_rdy_i       => s_vga_rdy,
 
             -- Interface NPU 
             npu_addr_o      => s_npu_addr,
             npu_data_i      => s_npu_data_rx,
             npu_data_o      => s_npu_data_tx,
             npu_we_o        => s_npu_we,
-            npu_sel_o       => s_npu_sel,
-            npu_ready_i     => s_npu_ready
+            npu_vld_o       => s_npu_vld,
+            npu_rdy_i       => s_npu_rdy
 
         );
 
@@ -225,29 +225,29 @@ begin
             INIT_FILE => INIT_FILE
         )
         port map (
-            clk      => CLK_i,
-            addr_a_i => s_rom_addr_a,
-            data_a_o => s_rom_data_a,
-            en_b_i   => s_rom_sel_b,
-            addr_b_i => s_rom_addr_b,
-            data_b_o => s_rom_data_b,
-            ready_b_o=> s_rom_ready
+            clk          => CLK_i,
+            addr_a_i     => s_rom_addr_a,
+            data_a_o     => s_rom_data_a,
+            vld_b_i      => s_rom_vld_b,
+            addr_b_i     => s_rom_addr_b,
+            data_b_o     => s_rom_data_b,
+            rdy_b_o      => s_rom_rdy
         );
 
     U_RAM: entity work.dual_port_ram
         generic map (ADDR_WIDTH => 15)  -- 128 KB de RAM
         port map (
-            clk        => CLK_i,
-            we_a       => (others => '0'),
-            addr_a     => s_ram_addr_a(16 downto 2),
-            data_in_a  => (others => '0'),
-            data_out_a => s_ram_data_a,
-            en_b_i     => s_ram_sel_b,
-            we_b       => s_ram_we_b,
-            addr_b     => s_ram_addr_b(16 downto 2),
-            data_in_b  => s_ram_data_w,
-            data_out_b => s_ram_data_b,
-            ready_b_o  => s_ram_ready
+            clk          => CLK_i,
+            we_a         => (others => '0'),
+            addr_a       => s_ram_addr_a(16 downto 2),
+            data_a_i     => (others => '0'),
+            data_a_o     => s_ram_data_a,
+            vld_b_i      => s_ram_vld_b,
+            we_b         => s_ram_we_b,
+            addr_b       => s_ram_addr_b(16 downto 2),
+            data_b_i     => s_ram_data_w,
+            data_b_o     => s_ram_data_b,
+            rdy_b_o      => s_ram_rdy
         );
 
     U_UART : entity work.uart_controller
@@ -261,9 +261,9 @@ begin
             addr_i       => s_uart_addr,      
             data_i       => s_uart_data_tx,   
             data_o       => s_uart_data_rx,  
-            ready_o      => s_uart_ready, 
+            rdy_o        => s_uart_rdy, 
             we_i         => s_uart_we,        
-            sel_i        => s_uart_sel,
+            vld_i        => s_uart_vld,
             uart_tx_pin  => UART_TX_o,
             uart_rx_pin  => UART_RX_i
         );
@@ -274,12 +274,12 @@ begin
             rst         => Reset_i,
             
             -- Conexão com o Bus Interconnect
-            sel_i       => s_gpio_sel,
+            vld_i       => s_gpio_vld,
             we_i        => s_gpio_we,
             addr_i      => s_gpio_addr,
             data_i      => s_gpio_data_tx,
             data_o      => s_gpio_data_rx,
-            ready_o     => s_gpio_ready,
+            rdy_o       => s_gpio_rdy,
             gpio_leds   => GPIO_LEDS_o,
             gpio_sw     => GPIO_SW_i
         );
@@ -290,11 +290,12 @@ begin
             rst         => Reset_i,
             
             -- Interface com o Processador
-            cpu_we_i    => s_vga_we,
-            cpu_addr_i  => s_vga_addr,
-            cpu_data_i  => s_vga_data_tx,
-            cpu_data_o  => s_vga_data_rx,
-            ready_o     => s_vga_ready,
+            we_i        => s_vga_we,
+            addr_i      => s_vga_addr,
+            data_i      => s_vga_data_tx,
+            data_o      => s_vga_data_rx,
+            rdy_o       => s_vga_rdy,
+            vld_i       => s_vga_vld,
             
             -- Interface Física
             vga_hs_o    => VGA_HS_o,
@@ -313,13 +314,13 @@ begin
             rst_n   => s_npu_rst_n,
             
             -- Conexão com o Bus Interconnect
-            sel_i   => s_npu_sel,
+            sel_i   => s_npu_vld,
             we_i    => s_npu_we,
             addr_i  => s_npu_addr,
             data_i  => s_npu_data_tx,
             data_o  => s_npu_data_rx
         );
 
-end architecture;
+end architecture; -- rtl
 
 ------------------------------------------------------------------------------------------------------------------

@@ -39,12 +39,12 @@ entity uart_controller is
 
         -- Interface de Barramento
 
-        sel_i       : in  std_logic; 
+        vld_i       : in  std_logic; 
         we_i        : in  std_logic;                         -- 1=Write, 0=Read
         addr_i      : in  std_logic_vector( 3 downto 0);     -- Apenas o Offset (0x0, 0x4...)
         data_i      : in  std_logic_vector(31 downto 0);     -- Dado vindo da CPU
         data_o      : out std_logic_vector(31 downto 0);     -- Dado indo para CPU
-        ready_o     : out std_logic;
+        rdy_o       : out std_logic;
 
         -- Pinos Físicos
 
@@ -145,7 +145,7 @@ architecture rtl of uart_controller is
 begin
 
     -- Handshake: Resposta imediata
-    ready_o <= '1';
+    rdy_o <= '1';
 
     -- Status da FIFO
 
@@ -338,7 +338,7 @@ begin
                 w_rd_en        <= '0';
 
                 -- Se a CPU escreveu
-                if sel_i = '1' and we_i = '1' then
+                if vld_i = '1' and we_i = '1' then
                     if unsigned(addr_i) = 0 then
                         -- Transmitir (TX)
                         if tx_busy_flag = '0' then

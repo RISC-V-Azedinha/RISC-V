@@ -46,8 +46,8 @@ entity main_fsm is
 
         -- Para Memória de DADOS (Load/Store)
 
-            dmem_ready_i   : in  std_logic; -- Vem do Barramento 
-            dmem_valid_o   : out std_logic; -- Vai pro Barramento 
+            dmem_rdy_i   : in  std_logic; -- Vem do Barramento 
+            dmem_vld_o   : out std_logic; -- Vai pro Barramento 
 
         ----------------------------------------------------------------------------------------------------------
         -- Interface de sinais de controle
@@ -143,7 +143,7 @@ begin
 
     -- 2. Lógica de Próximo Estado (Combinacional)
 
-    process(current_state, Opcode_i, dmem_ready_i)
+    process(current_state, Opcode_i, dmem_rdy_i)
     begin
         -- Default: manter estado 
         next_state <= current_state;
@@ -184,7 +184,7 @@ begin
 
             -- MEMORY READ (HANDSHAKE)
             when S_MEM_RD   => 
-                if dmem_ready_i = '1' then
+                if dmem_rdy_i = '1' then
                     next_state <= S_WB_REG; -- Sucesso, avança
                 else
                     next_state <= S_MEM_RD; -- STALL: Fica esperando
@@ -192,7 +192,7 @@ begin
 
             -- MEMORY WRITE (HANDSHAKE)
             when S_MEM_WR   => 
-                if dmem_ready_i = '1' then
+                if dmem_rdy_i = '1' then
                     next_state <= S_IF;     -- Sucesso, próxima instrução
                 else
                     next_state <= S_MEM_WR; -- STALL: Fica esperando
@@ -209,7 +209,7 @@ begin
     end process;
 
     -- 3. Lógica de Saída (Combinacional - Moore)
-    process(current_state, Opcode_i, s_fetch_wait, dmem_ready_i)
+    process(current_state, Opcode_i, s_fetch_wait, dmem_rdy_i)
     begin
         
         -- Default Outputs (por segurança)
@@ -221,7 +221,7 @@ begin
         RegWrite_o    <= '0';
         ALUrWrite_o   <= '0';
         MDRWrite_o    <= '0';
-        dmem_valid_o  <= '0';
+        dmem_vld_o  <= '0';
         
         -- Default Muxes (por segurança)
         PCSrc_o       <= "00"; -- PC+4
@@ -301,16 +301,16 @@ begin
             -- Estados de MEMÓRIA (HANDSHAKE)
             when S_MEM_RD =>
                 -- Validamos o pedido de leitura
-                dmem_valid_o <= '1';
+                dmem_vld_o <= '1';
                 
                 -- Só grava no MDR quando o dado estiver PRONTO (Ready=1)
-                if dmem_ready_i = '1' then
+                if dmem_rdy_i = '1' then
                     MDRWrite_o <= '1';
                 end if;
                 
             when S_MEM_WR =>
                 -- Validamos o pedido de escrita
-                dmem_valid_o <= '1';
+                dmem_vld_o <= '1';
                 MemWrite_o   <= '1'; -- WE Físico
 
             -- Estados de WRITE-BACK

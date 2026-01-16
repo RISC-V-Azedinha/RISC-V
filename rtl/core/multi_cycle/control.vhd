@@ -49,8 +49,8 @@ entity control is
 
         -- Estes sinais passam direto para a Main FSM
 
-            dmem_ready_i   : in  std_logic;
-            dmem_valid_o   : out std_logic;
+            dmem_rdy_i     : in  std_logic;
+            dmem_vld_o     : out std_logic;
 
         ----------------------------------------------------------------------------------------------------------
         -- Interface com o Datapath
@@ -119,8 +119,8 @@ begin
         Opcode_i       => s_opcode,
 
         -- Conexão do Handshake
-        dmem_ready_i   => dmem_ready_i,
-        dmem_valid_o   => dmem_valid_o,
+        dmem_rdy_i     => dmem_rdy_i,
+        dmem_vld_o     => dmem_vld_o,
 
         -- Saídas de Controle de Escrita/Enable
         PCWrite_o      => s_fsm_pc_write,                            -- Escrita Incondicional

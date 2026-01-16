@@ -34,11 +34,12 @@ entity vga_peripheral is
         
         -- === Interface com o Processador (CPU) === --------------------------------------------------------------
         
-        cpu_we_i    : in  std_logic;                       -- Sinal de escrita 
-        cpu_addr_i  : in  std_logic_vector(16 downto 0);   -- Endereço de 17 bits (320x240 = 76800 endereços)
-        cpu_data_i  : in  std_logic_vector(31 downto 0);   -- Dados de 32 bits para escrita
-        cpu_data_o  : out std_logic_vector(31 downto 0);   -- Dados de 32 bits lidos
-        ready_o     : out std_logic;
+        we_i    : in  std_logic;                       -- Sinal de escrita 
+        addr_i  : in  std_logic_vector(16 downto 0);   -- Endereço de 17 bits (320x240 = 76800 endereços)
+        data_i  : in  std_logic_vector(31 downto 0);   -- Dados de 32 bits para escrita
+        data_o  : out std_logic_vector(31 downto 0);   -- Dados de 32 bits lidos
+        vld_i   : in  std_logic;
+        rdy_o   : out std_logic;
         
         -- === Interface Física (VGA Monitor) === -----------------------------------------------------------------
 
@@ -72,6 +73,7 @@ architecture rtl of vga_peripheral is
     
     signal vram_addr  : std_logic_vector(16 downto 0);     -- Endereço para a Video RAM
     signal vram_data  : std_logic_vector(7 downto 0);      -- Dados lidos da Video RAM
+    signal s_vram_we  : std_logic;
     
     -- Sinal para o dado alinhado
 
@@ -90,18 +92,21 @@ architecture rtl of vga_peripheral is
 
 begin
 
+    -- O sinal de escrita só é real se o mestre disser que a transação é VÁLIDA
+    s_vram_we <= we_i and vld_i;
+
     -- Handshake: Resposta imediata
-    ready_o <= '1';
+    rdy_o <= '1';
 
     -- LÓGICA DE ALINHAMENTO (MUX): escolhe o byte certo baseado nos 2 últimos bits do endereço
         
-        process(cpu_addr_i, cpu_data_i)
+        process(addr_i, data_i)
         begin
-            case cpu_addr_i(1 downto 0) is
-                when "00"   => s_data_aligned <= cpu_data_i(7 downto 0);
-                when "01"   => s_data_aligned <= cpu_data_i(15 downto 8);
-                when "10"   => s_data_aligned <= cpu_data_i(23 downto 16);
-                when "11"   => s_data_aligned <= cpu_data_i(31 downto 24);
+            case addr_i(1 downto 0) is
+                when "00"   => s_data_aligned <= data_i(7 downto 0);
+                when "01"   => s_data_aligned <= data_i(15 downto 8);
+                when "10"   => s_data_aligned <= data_i(23 downto 16);
+                when "11"   => s_data_aligned <= data_i(31 downto 24);
                 when others => s_data_aligned <= (others => '0');
             end case;
         end process;
@@ -111,8 +116,8 @@ begin
         U_VRAM: entity work.video_ram
             port map (
                 clk     => clk,
-                we_a    => cpu_we_i,
-                addr_a  => cpu_addr_i,
+                we_a    => s_vram_we,
+                addr_a  => addr_i,
                 data_a  => s_data_aligned,
                 addr_b  => vram_addr,
                 data_b  => vram_data
@@ -167,12 +172,12 @@ begin
 
     -- Lógica de Leitura do Processador (Retorna o estado do VSYNC no endereço 0x1FFFF)
 
-        process(cpu_addr_i, s_vsync)
+        process(addr_i, s_vsync, vld_i)
         begin
-            if cpu_addr_i = "11111111111111111" then -- Endereço 0x1FFFF (Máximo de 17 bits)
-                cpu_data_o <= (0 => s_vsync, others => '0'); -- Retorna bit 0 = VSYNC
+            if vld_i = '1' and addr_i = "11111111111111111" then -- Endereço 0x1FFFF (Máximo de 17 bits)
+                data_o <= (0 => s_vsync, others => '0'); -- Retorna bit 0 = VSYNC
             else
-                cpu_data_o <= (others => '0');
+                data_o <= (others => '0');
             end if;
         end process;
 

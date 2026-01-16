@@ -66,12 +66,12 @@ entity processor_top is
     DMem_addr_o         : out std_logic_vector(31 downto 0);      -- Endereço de 32 bits para a memória de dados
     DMem_data_o         : out std_logic_vector(31 downto 0);      -- Dados de 32 bits a serem escritos na memória de dados
     DMem_data_i         : in  std_logic_vector(31 downto 0);      -- Dados de 32 bits lidos da memória de dados
-    DMem_writeEnable_o  : out std_logic_vector( 3 downto 0);      -- Sinal de habilitação de escrita na memória de dados (ativo em nível alto)
+    DMem_we_o           : out std_logic_vector( 3 downto 0);      -- Sinal de habilitação de escrita na memória de dados (ativo em nível alto)
 
     -- Handshake 
     
-    DMem_ready_i        : in  std_logic;                          -- Barramento indica que dado está pronto/escrito
-    DMem_valid_o        : out std_logic                           -- Processador indica intenção de transação
+    DMem_rdy_i          : in  std_logic;                          -- Barramento indica que dado está pronto/escrito
+    DMem_vld_o          : out std_logic                           -- Processador indica intenção de transação
 
   ) ;
 
@@ -113,8 +113,8 @@ begin
                     Reset_i            => Reset_i,        -- Master-Reset
 
                     -- Interface de Handshake 
-                    dmem_ready_i       => DMem_ready_i,
-                    dmem_valid_o       => DMem_valid_o,
+                    dmem_rdy_i         => DMem_rdy_i,
+                    dmem_vld_o         => DMem_vld_o,
 
                     -- Interface de dados
                     Instruction_i      => s_instruction,  -- Instrução buscada na memória
@@ -136,7 +136,7 @@ begin
                     DMem_addr_o        => DMem_addr_o,
                     DMem_data_o        => DMem_data_o,
                     DMem_data_i        => DMem_data_i,
-                    DMem_writeEnable_o => DMem_writeEnable_o,
+                    DMem_writeEnable_o => DMem_we_o,
                     Control_i          => s_ctrl,
                     Instruction_o      => s_instruction,
                     ALU_Zero_o         => s_alu_zero

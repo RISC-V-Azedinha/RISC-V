@@ -33,17 +33,17 @@ entity boot_rom is
     );
     port (
         -- Sinal de controle de clock (sincronização da leitura)
-        clk      : in  std_logic;
+        clk       : in  std_logic;
         
         -- Porta A: Dedicada ao Fetch (Instruções)
-        addr_a_i : in  std_logic_vector(31 downto 0);            -- Endereço de 32 bits para leitura de instruções
-        data_a_o : out std_logic_vector(31 downto 0);            -- Dados de 32 bits lidos (instrução)
+        addr_a_i  : in  std_logic_vector(31 downto 0);            -- Endereço de 32 bits para leitura de instruções
+        data_a_o  : out std_logic_vector(31 downto 0);            -- Dados de 32 bits lidos (instrução)
 
         -- Porta B: Dedicada ao LOAD/STORE (Dados)
-        en_b_i   : in  std_logic;
-        addr_b_i : in  std_logic_vector(31 downto 0);            -- Endereço de 32 bits para leitura de dados
-        data_b_o : out std_logic_vector(31 downto 0);            -- Dados de 32 bits lidos (dados)
-        ready_b_o: out std_logic
+        vld_b_i : in  std_logic;
+        addr_b_i  : in  std_logic_vector(31 downto 0);            -- Endereço de 32 bits para leitura de dados
+        data_b_o  : out std_logic_vector(31 downto 0);            -- Dados de 32 bits lidos (dados)
+        rdy_b_o : out std_logic
     );
 end entity;
 
@@ -105,14 +105,14 @@ begin
     begin
         if rising_edge(clk) then
             -- Geração do Ready (1 ciclo de latência)
-            if en_b_i = '1' then
-                ready_b_o <= '1';
+            if vld_b_i = '1' then
+                rdy_b_o <= '1';
             else
-                ready_b_o <= '0';
+                rdy_b_o <= '0';
             end if;
 
             -- Leitura de Dados
-            if en_b_i = '1' then
+            if vld_b_i = '1' then
                 v_addr_idx := addr_b_i(ADDR_WIDTH+1 downto 2);
                 if Is_X(v_addr_idx) then
                     data_b_o <= (others => '0');

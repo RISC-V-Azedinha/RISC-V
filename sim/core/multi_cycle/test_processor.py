@@ -121,31 +121,31 @@ async def memory_and_mmio_controller(dut, mem_data, halt_event):
     transaction_in_progress = False
 
     # Inicializa Ready em 0
-    dut.DMem_ready_i.value = 0
+    dut.DMem_rdy_i.value = 0
 
     while True:
         await RisingEdge(dut.CLK_i)
         
         # 1. Captura sinais atuais do processador
         # Usamos .value para ler os sinais no início do ciclo
-        current_valid = int(dut.DMem_valid_o.value) if str(dut.DMem_valid_o.value) not in "xuz" else 0
+        current_vld = int(dut.DMem_vld_o.value) if str(dut.DMem_vld_o.value) not in "xuz" else 0
         i_addr = int(dut.IMem_addr_o.value) if str(dut.IMem_addr_o.value) not in "xuz" else 0
 
         # [IMEM] Fetch sempre disponível (Harvard Simples)
         dut.IMem_data_i.value = mem_data.get(i_addr & 0xFFFFFFFC, 0)
 
         # [DMEM] Lógica de Handshake
-        if current_valid == 1:
+        if current_vld == 1:
             if not transaction_in_progress:
                 # --- NOVA TRANSAÇÃO DETECTADA ---
                 transaction_in_progress = True
                 
                 # Sinaliza que estamos prontos
-                dut.DMem_ready_i.value = 1
+                dut.DMem_rdy_i.value = 1
                 
                 # Captura dados da transação
                 addr = int(dut.DMem_addr_o.value)
-                we   = int(dut.DMem_writeEnable_o.value)
+                we   = int(dut.DMem_we_o.value)
                 data_w = int(dut.DMem_data_o.value)
 
                 # Processa Leitura
@@ -179,11 +179,11 @@ async def memory_and_mmio_controller(dut, mem_data, halt_event):
             else:
                 # Transação já foi processada, mas CPU ainda não baixou o Valid.
                 # Mantemos Ready=1 para garantir que a CPU veja e saia do estado.
-                dut.DMem_ready_i.value = 1
+                dut.DMem_rdy_i.value = 1
         else:
             # CPU não está pedindo nada (Valid=0)
             transaction_in_progress = False
-            dut.DMem_ready_i.value = 0
+            dut.DMem_rdy_i.value = 0
 
 # ================================================================================================================
 # 3. TESTE PRINCIPAL (Main Test)
@@ -237,7 +237,7 @@ async def test_processor_execution(dut):
     # Inicializa barramentos de entrada para evitar estados indeterminados ('X')
     dut.IMem_data_i.value = 0
     dut.DMem_data_i.value = 0
-    dut.DMem_ready_i.value = 0
+    dut.DMem_rdy_i.value = 0
     
     # Segura o Reset por 2 ciclos de clock
     await RisingEdge(dut.CLK_i)

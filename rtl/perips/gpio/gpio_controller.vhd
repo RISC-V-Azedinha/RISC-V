@@ -30,12 +30,12 @@ entity gpio_controller is
         rst         : in  std_logic;
         
         -- Interface do Barramento
-        sel_i       : in  std_logic;                      -- Chip Select (Ativo quando endereço é 0x2...)
+        vld_i       : in  std_logic;                      -- Chip Select (Ativo quando endereço é 0x2...)
         we_i        : in  std_logic;                      -- Write Enable
         addr_i      : in  std_logic_vector( 3 downto 0);  -- Offset do endereço
         data_i      : in  std_logic_vector(31 downto 0);
         data_o      : out std_logic_vector(31 downto 0);
-        ready_o     : out std_logic;
+        rdy_o       : out std_logic;
         
         -- Pinos Externos
         gpio_leds   : out std_logic_vector(15 downto 0);
@@ -55,7 +55,7 @@ begin
     
     -- Conexão física
     gpio_leds <= r_leds;
-    ready_o <= '1';
+    rdy_o <= '1';
 
     -- Processo de Escrita (CPU -> LEDs)
     process(clk)
@@ -63,7 +63,7 @@ begin
         if rising_edge(clk) then
             if rst = '1' then
                 r_leds <= (others => '0');
-            elsif sel_i = '1' and we_i = '1' then
+            elsif vld_i = '1' and we_i = '1' then
                 -- Offset 0x00: Registrador de LEDs
                 if unsigned(addr_i) = 0 then
                     r_leds <= data_i(15 downto 0);
