@@ -36,14 +36,16 @@ entity boot_rom is
         clk       : in  std_logic;
         
         -- Porta A: Dedicada ao Fetch (Instruções)
+        vld_a_i   : in  std_logic;
         addr_a_i  : in  std_logic_vector(31 downto 0);            -- Endereço de 32 bits para leitura de instruções
         data_a_o  : out std_logic_vector(31 downto 0);            -- Dados de 32 bits lidos (instrução)
+        rdy_a_o   : out std_logic;
 
         -- Porta B: Dedicada ao LOAD/STORE (Dados)
-        vld_b_i : in  std_logic;
+        vld_b_i   : in  std_logic;
         addr_b_i  : in  std_logic_vector(31 downto 0);            -- Endereço de 32 bits para leitura de dados
         data_b_o  : out std_logic_vector(31 downto 0);            -- Dados de 32 bits lidos (dados)
-        rdy_b_o : out std_logic
+        rdy_b_o   : out std_logic
     );
 end entity;
 
@@ -85,21 +87,30 @@ architecture rtl of boot_rom is
 
 begin
 
-    -- Leitura Síncrona - Porta A
+    -- Leitura Síncrona - Porta A (FETCH)
     process(clk)
         variable v_addr_idx : std_logic_vector(ADDR_WIDTH-1 downto 0);
     begin
         if rising_edge(clk) then
-            v_addr_idx := addr_a_i(ADDR_WIDTH+1 downto 2);
-            if Is_X(v_addr_idx) then
-                data_a_o <= (others => '0');
+            if vld_a_i = '1' then
+                rdy_a_o <= '1';
             else
-                data_a_o <= rom_content(to_integer(unsigned(v_addr_idx)));
+                rdy_a_o <= '0';
+            end if;
+
+            -- Busca da Instrução
+            if vld_a_i = '1' then
+                v_addr_idx := addr_a_i(ADDR_WIDTH+1 downto 2);
+                if Is_X(v_addr_idx) then
+                    data_a_o <= (others => '0');
+                else
+                    data_a_o <= rom_content(to_integer(unsigned(v_addr_idx)));
+                end if;
             end if;
         end if;
     end process;
 
-    -- Leitura Síncrona - Porta B
+    -- Leitura Síncrona - Porta B (DADOS)
     process(clk)
         variable v_addr_idx : std_logic_vector(ADDR_WIDTH-1 downto 0);
     begin

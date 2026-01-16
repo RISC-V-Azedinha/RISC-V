@@ -44,10 +44,15 @@ entity main_fsm is
         -- Interface de Handshake 
         ----------------------------------------------------------------------------------------------------------
 
+        -- Para Memória de Instruções (IMem)
+
+            imem_rdy_i     : in  std_logic; 
+            imem_vld_o     : out std_logic;
+
         -- Para Memória de DADOS (Load/Store)
 
-            dmem_rdy_i   : in  std_logic; -- Vem do Barramento 
-            dmem_vld_o   : out std_logic; -- Vai pro Barramento 
+            dmem_rdy_i   : in  std_logic; 
+            dmem_vld_o   : out std_logic;  
 
         ----------------------------------------------------------------------------------------------------------
         -- Interface de sinais de controle
@@ -100,50 +105,24 @@ architecture rtl of main_fsm is
 
     signal current_state, next_state : t_state;
 
-    -- Espera no acesso à memória ---------------------------------------------------------------------------------
-
-    -- Controle de espera para o FETCH (Instruction Memory)
-    -- Como não implementamos handshake na IMem, mantemos a espera fixa de 1 ciclo para ler a ROM/RAM síncrona.
-    signal s_fetch_wait : std_logic := '0';
-
 begin
 
     -- 1. Registrador de Estado (Processo Síncrono)
 
     process(Clk_i)
     begin
-        
         if rising_edge(Clk_i) then
-
             if Reset_i = '1' then
-
-                -- Reset Assíncrono para o estado Instruction Fetch (IF)
-                current_state <= S_IF;  
-                s_fetch_wait  <= '0';
-
+                current_state <= S_IF;
             else 
-
-                -- Lógica específica para o FETCH (Wait State fixo)
-                if current_state = S_IF and s_fetch_wait = '0' then
-
-                    s_fetch_wait  <= '1'; -- Espera 1 ciclo
-                    current_state <= S_IF; -- Mantém estado
-
-                else
-
-                    s_fetch_wait  <= '0'; -- Reseta wait
-                    current_state <= next_state; -- Avança
-                    
-                end if;
-
+                current_state <= next_state;
             end if;    
         end if;
-
     end process;
 
     -- 2. Lógica de Próximo Estado (Combinacional)
 
-    process(current_state, Opcode_i, dmem_rdy_i)
+    process(current_state, Opcode_i, dmem_rdy_i, imem_rdy_i)
     begin
         -- Default: manter estado 
         next_state <= current_state;
@@ -151,7 +130,12 @@ begin
         case current_state is
             -- FETCH: Busca Instrução
             when S_IF =>
-                next_state <= S_ID;
+                -- STALL DE INSTRUÇÃO: Só avança se a memória entregar a instrução
+                if imem_rdy_i = '1' then
+                    next_state <= S_ID;
+                else
+                    next_state <= S_IF;
+                end if;
 
             -- DECODE: Decodifica e lê registradores
             when S_ID =>
@@ -209,7 +193,7 @@ begin
     end process;
 
     -- 3. Lógica de Saída (Combinacional - Moore)
-    process(current_state, Opcode_i, s_fetch_wait, dmem_rdy_i)
+    process(current_state, Opcode_i, dmem_rdy_i, imem_rdy_i)
     begin
         
         -- Default Outputs (por segurança)
@@ -221,7 +205,8 @@ begin
         RegWrite_o    <= '0';
         ALUrWrite_o   <= '0';
         MDRWrite_o    <= '0';
-        dmem_vld_o  <= '0';
+        dmem_vld_o    <= '0';
+        imem_vld_o    <= '0';
         
         -- Default Muxes (por segurança)
         PCSrc_o       <= "00"; -- PC+4
@@ -234,9 +219,9 @@ begin
             
             -- Estado IF: IRWrite=1, PCWrite=1, OPCWrite=1
             when S_IF =>
-                -- Ciclo 1 (wait='0'): Só apresenta endereço (PC). Não escreve nada.
-                -- Ciclo 2 (wait='1'): Memória pronta. Escreve IR, PC e OldPC.
-                if s_fetch_wait = '1' then
+                imem_vld_o     <= '1';
+                -- Só atualiza o registrador de instrução e PC quando o dado chega
+                if imem_rdy_i = '1' then
                     IRWrite_o  <= '1';
                     PCWrite_o  <= '1';
                     OPCWrite_o <= '1';

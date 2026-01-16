@@ -70,6 +70,8 @@ entity processor_top is
 
     -- Handshake 
     
+    IMem_rdy_i          : in  std_logic;
+    IMem_vld_o          : out std_logic;
     DMem_rdy_i          : in  std_logic;                          -- Barramento indica que dado está pronto/escrito
     DMem_vld_o          : out std_logic                           -- Processador indica intenção de transação
 
@@ -113,6 +115,8 @@ begin
                     Reset_i            => Reset_i,        -- Master-Reset
 
                     -- Interface de Handshake 
+                    imem_rdy_i         => IMem_rdy_i,
+                    imem_vld_o         => IMem_vld_o,
                     dmem_rdy_i         => DMem_rdy_i,
                     dmem_vld_o         => DMem_vld_o,
 

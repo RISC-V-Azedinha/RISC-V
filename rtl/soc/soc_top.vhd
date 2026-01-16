@@ -74,6 +74,8 @@ architecture rtl of soc_top is
     signal s_dmem_we                  : std_logic_vector( 3 downto 0);
 
     -- Sinais de Handshake (Core <-> Hub)
+    signal s_imem_vld                 : std_logic; 
+    signal s_imem_rdy                 : std_logic;
     signal s_dmem_vld                 : std_logic; 
     signal s_dmem_rdy                 : std_logic; 
 
@@ -82,16 +84,20 @@ architecture rtl of soc_top is
     -- Boot ROM
     signal s_rom_addr_a, s_rom_addr_b : std_logic_vector(31 downto 0);
     signal s_rom_data_a, s_rom_data_b : std_logic_vector(31 downto 0);
+    signal s_rom_vld_a                : std_logic; 
+    signal s_rom_rdy_a                : std_logic;
     signal s_rom_vld_b                : std_logic;
-    signal s_rom_rdy                  : std_logic;
+    signal s_rom_rdy_b                : std_logic;
 
     -- RAM
     signal s_ram_addr_a, s_ram_addr_b : std_logic_vector(31 downto 0);
     signal s_ram_data_a, s_ram_data_b : std_logic_vector(31 downto 0); -- Saídas da RAM
     signal s_ram_data_w               : std_logic_vector(31 downto 0); -- Entrada da RAM
     signal s_ram_we_b                 : std_logic_vector( 3 downto 0);
+    signal s_ram_vld_a                : std_logic; 
+    signal s_ram_rdy_a                : std_logic;
     signal s_ram_vld_b                : std_logic;
-    signal s_ram_rdy                  : std_logic;
+    signal s_ram_rdy_b                : std_logic;
 
     -- UART
     signal s_uart_addr                : std_logic_vector( 3 downto 0);
@@ -138,6 +144,8 @@ begin
             Reset_i             => Reset_i,
             IMem_addr_o         => s_imem_addr,
             IMem_data_i         => s_imem_data,
+            IMem_vld_o          => s_imem_vld, 
+            IMem_rdy_i          => s_imem_rdy,
             DMem_addr_o         => s_dmem_addr,
             DMem_data_o         => s_dmem_data_w,
             DMem_data_i         => s_dmem_data_r,
@@ -161,6 +169,8 @@ begin
             dmem_data_o     => s_dmem_data_r,
 
             -- Handshake Core
+            imem_vld_i      => s_imem_vld, 
+            imem_rdy_o      => s_imem_rdy,
             dmem_vld_i      => s_dmem_vld,
             dmem_rdy_o      => s_dmem_rdy,
 
@@ -169,8 +179,10 @@ begin
             rom_data_a_i    => s_rom_data_a,
             rom_addr_b_o    => s_rom_addr_b,
             rom_data_b_i    => s_rom_data_b,
+            rom_vld_a_o     => s_rom_vld_a, 
+            rom_rdy_a_i     => s_rom_rdy_a,
             rom_vld_b_o     => s_rom_vld_b,
-            rom_rdy_i       => s_rom_rdy,
+            rom_rdy_b_i     => s_rom_rdy_b,
 
             -- Interface RAM
             ram_addr_a_o    => s_ram_addr_a,
@@ -179,8 +191,10 @@ begin
             ram_data_b_i    => s_ram_data_b,
             ram_data_b_o    => s_ram_data_w,
             ram_we_b_o      => s_ram_we_b,
+            ram_vld_a_o     => s_ram_vld_a, 
+            ram_rdy_a_i     => s_ram_rdy_a,
             ram_vld_b_o     => s_ram_vld_b,
-            ram_rdy_i       => s_ram_rdy,
+            ram_rdy_b_i     => s_ram_rdy_b,
 
             -- Interface UART
             uart_addr_o     => s_uart_addr,
@@ -226,18 +240,22 @@ begin
         )
         port map (
             clk          => CLK_i,
+            vld_a_i      => s_rom_vld_a, 
+            rdy_a_o      => s_rom_rdy_a,
             addr_a_i     => s_rom_addr_a,
             data_a_o     => s_rom_data_a,
             vld_b_i      => s_rom_vld_b,
             addr_b_i     => s_rom_addr_b,
             data_b_o     => s_rom_data_b,
-            rdy_b_o      => s_rom_rdy
+            rdy_b_o      => s_rom_rdy_b
         );
 
     U_RAM: entity work.dual_port_ram
         generic map (ADDR_WIDTH => 15)  -- 128 KB de RAM
         port map (
             clk          => CLK_i,
+            vld_a_i      => s_ram_vld_a, 
+            rdy_a_o      => s_ram_rdy_a,
             we_a         => (others => '0'),
             addr_a       => s_ram_addr_a(16 downto 2),
             data_a_i     => (others => '0'),
@@ -247,7 +265,7 @@ begin
             addr_b       => s_ram_addr_b(16 downto 2),
             data_b_i     => s_ram_data_w,
             data_b_o     => s_ram_data_b,
-            rdy_b_o      => s_ram_rdy
+            rdy_b_o      => s_ram_rdy_b
         );
 
     U_UART : entity work.uart_controller

@@ -34,18 +34,21 @@ entity dual_port_ram is
         clk        : in  std_logic;
         
         -- Porta A
+        vld_a_i    : in  std_logic; 
         we_a       : in  std_logic_vector((DATA_WIDTH/8)-1 downto 0);
         addr_a     : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
-        data_a_i  : in  std_logic_vector(DATA_WIDTH-1 downto 0);
-        data_a_o : out std_logic_vector(DATA_WIDTH-1 downto 0);
+        data_a_i   : in  std_logic_vector(DATA_WIDTH-1 downto 0);
+        data_a_o   : out std_logic_vector(DATA_WIDTH-1 downto 0);
+        rdy_a_o    : out std_logic;
         
         -- Porta B
         vld_b_i    : in  std_logic;
         we_b       : in  std_logic_vector((DATA_WIDTH/8)-1 downto 0);
         addr_b     : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
-        data_b_i  : in  std_logic_vector(DATA_WIDTH-1 downto 0);
-        data_b_o : out std_logic_vector(DATA_WIDTH-1 downto 0);
+        data_b_i   : in  std_logic_vector(DATA_WIDTH-1 downto 0);
+        data_b_o   : out std_logic_vector(DATA_WIDTH-1 downto 0);
         rdy_b_o    : out std_logic
+
     );
 end entity;
 
@@ -76,17 +79,21 @@ begin
 
         if rising_edge(clk) then
 
-            -- MODO READ-FIRST:
-            -- 1. Lemos a variável para a saída (pega o valor atual/antigo)
-            data_a_o <= ram(to_integer(unsigned(addr_a)));
+            if vld_a_i = '1' then
+                rdy_a_o <= '1';
+            else
+                rdy_a_o <= '0';
+            end if;
 
-            -- 2. Escrita com Byte Enable
-            for i in 0 to (DATA_WIDTH/8)-1 loop
-                if we_a(i) = '1' then
-                    -- Escreve apenas no byte correspondente (i*8 até i*8+7)
-                    ram(to_integer(unsigned(addr_a)))(8*i+7 downto 8*i) := data_a_i(8*i+7 downto 8*i);
-                end if;
-            end loop;
+            -- Acesso à Memória
+            if vld_a_i = '1' then
+                data_a_o <= ram(to_integer(unsigned(addr_a)));
+                for i in 0 to (DATA_WIDTH/8)-1 loop
+                    if we_a(i) = '1' then
+                        ram(to_integer(unsigned(addr_a)))(8*i+7 downto 8*i) := data_a_i(8*i+7 downto 8*i);
+                    end if;
+                end loop;
+            end if;
 
         end if;
         

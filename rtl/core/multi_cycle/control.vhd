@@ -49,6 +49,8 @@ entity control is
 
         -- Estes sinais passam direto para a Main FSM
 
+            imem_rdy_i     : in  std_logic;
+            imem_vld_o     : out std_logic;
             dmem_rdy_i     : in  std_logic;
             dmem_vld_o     : out std_logic;
 
@@ -119,6 +121,8 @@ begin
         Opcode_i       => s_opcode,
 
         -- Conexão do Handshake
+        imem_rdy_i     => imem_rdy_i,
+        imem_vld_o     => imem_vld_o,
         dmem_rdy_i     => dmem_rdy_i,
         dmem_vld_o     => dmem_vld_o,
 

@@ -37,6 +37,10 @@ entity bus_interconnect is
         imem_addr_i         : in  std_logic_vector(31 downto 0);
         imem_data_o         : out std_logic_vector(31 downto 0);
 
+        -- Handshake da CPU
+        imem_vld_i          : in  std_logic; 
+        imem_rdy_o          : out std_logic;
+
         -- Barramento de Dados (DMem - Load/Store)
         dmem_addr_i         : in  std_logic_vector(31 downto 0);
         dmem_data_i         : in  std_logic_vector(31 downto 0); -- Dados para escrita
@@ -57,8 +61,10 @@ entity bus_interconnect is
         rom_data_a_i        : in  std_logic_vector(31 downto 0);
         rom_addr_b_o        : out std_logic_vector(31 downto 0);
         rom_data_b_i        : in  std_logic_vector(31 downto 0);
-        rom_vld_b_o         : out std_logic; -- Seleção para leitura de dados
-        rom_rdy_i           : in  std_logic;
+        rom_vld_a_o         : out std_logic; 
+        rom_rdy_a_i         : in  std_logic;
+        rom_vld_b_o         : out std_logic; 
+        rom_rdy_b_i         : in  std_logic;
 
         -- Interface: RAM (Dual Port)
 
@@ -68,8 +74,10 @@ entity bus_interconnect is
         ram_data_b_i        : in  std_logic_vector(31 downto 0); -- Leitura
         ram_data_b_o        : out std_logic_vector(31 downto 0); -- Escrita
         ram_we_b_o          : out std_logic_vector( 3 downto 0);
+        ram_vld_a_o         : out std_logic;
+        ram_rdy_a_i         : in  std_logic;
         ram_vld_b_o         : out std_logic;
-        ram_rdy_i           : in  std_logic;
+        ram_rdy_b_i         : in  std_logic;
 
         -- Interface: UART
 
@@ -125,8 +133,8 @@ architecture rtl of bus_interconnect is
     signal s_dmem_vld_npu  : std_logic;
 
     -- Sinais internos de decodificação para o lado de INSTRUÇÕES (IMem)
-    signal s_imem_sel_rom  : std_logic;
-    signal s_imem_sel_ram  : std_logic;
+    signal s_imem_vld_rom  : std_logic;
+    signal s_imem_vld_ram  : std_logic;
 
 begin
 
@@ -149,8 +157,8 @@ begin
     s_dmem_vld_npu  <= '1' when dmem_addr_i(31 downto 28) = x"9" else '0';
 
     -- Lado de Instruções (Baseado no bit 31 para distinguir ROM de RAM)
-    s_imem_sel_rom  <= '1' when imem_addr_i(31 downto 28) = x"0" else '0';
-    s_imem_sel_ram  <= '1' when imem_addr_i(31 downto 28) = x"8" else '0';
+    s_imem_vld_rom  <= '1' when imem_addr_i(31 downto 28) = x"0" else '0';
+    s_imem_vld_ram  <= '1' when imem_addr_i(31 downto 28) = x"8" else '0';
 
     -- -------------------------------------------------------------------------
     -- 2. ROTEAMENTO PARA COMPONENTES (Saídas)
@@ -159,6 +167,7 @@ begin
     -- ROM
     rom_addr_a_o <= imem_addr_i;
     rom_addr_b_o <= dmem_addr_i;
+    rom_vld_a_o  <= s_imem_vld_rom and imem_vld_i;
     rom_vld_b_o  <= s_dmem_vld_rom and dmem_vld_i;
 
     -- RAM
@@ -166,6 +175,7 @@ begin
     ram_addr_b_o <= dmem_addr_i;
     ram_data_b_o <= dmem_data_i;
     ram_we_b_o   <= dmem_we_i when (s_dmem_vld_ram = '1' and dmem_vld_i = '1') else (others => '0');
+    ram_vld_a_o  <= s_imem_vld_ram and imem_vld_i;
     ram_vld_b_o  <= s_dmem_vld_ram and dmem_vld_i;
 
     -- UART
@@ -196,11 +206,29 @@ begin
     -- 3. MULTIPLEXAÇÃO DE RETORNO AO PROCESSADOR (Leitura)
     -- -------------------------------------------------------------------------
 
-    -- Mux de Instrução (IMem)
-    -- Só retorna dado se estiver estritamente na faixa da ROM ou RAM
-    imem_data_o <= rom_data_a_i when s_imem_sel_rom = '1' else 
-                   ram_data_a_i when s_imem_sel_ram = '1' else 
-                   (others => '0'); -- Retorna 0 para endereços inválidos (como 0x5...)
+    -- Mux de Instrução (IMem) - DADOS
+    process (s_imem_vld_rom, s_imem_vld_ram, rom_data_a_i, ram_data_a_i)
+    begin
+        if s_imem_vld_rom = '1' then
+            imem_data_o <= rom_data_a_i;
+        elsif s_imem_vld_ram = '1' then
+            imem_data_o <= ram_data_a_i;
+        else
+            imem_data_o <= (others => '0');
+        end if;
+    end process;
+
+    -- Mux de Instrução (IMem) - READY (Handshake) 
+    process (s_imem_vld_rom, s_imem_vld_ram, rom_rdy_a_i, ram_rdy_a_i)
+    begin
+        if s_imem_vld_rom = '1' then
+            imem_rdy_o <= rom_rdy_a_i;
+        elsif s_imem_vld_ram = '1' then
+            imem_rdy_o <= ram_rdy_a_i;
+        else
+            imem_rdy_o <= '1'; -- Endereço inválido retorna Ready=1 para não travar o core
+        end if;
+    end process;
 
     -- Mux de Dados (DMem)
     process (s_dmem_vld_rom, s_dmem_vld_uart, s_dmem_vld_ram, s_dmem_vld_gpio, 
@@ -227,15 +255,15 @@ begin
     -- Mux de Dados (DMem) - READY (Handshake)
     -- Retorna o ready do escravo selecionado. Se nenhum selecionado, ready=1 (para não travar CPU).
     process (s_dmem_vld_rom, s_dmem_vld_uart, s_dmem_vld_ram, s_dmem_vld_gpio, 
-             s_dmem_vld_vga, s_dmem_vld_npu, rom_rdy_i, uart_rdy_i, 
-             ram_rdy_i, gpio_rdy_i, vga_rdy_i, npu_rdy_i)
+             s_dmem_vld_vga, s_dmem_vld_npu, rom_rdy_b_i, uart_rdy_i, 
+             ram_rdy_b_i, gpio_rdy_i, vga_rdy_i, npu_rdy_i)
     begin
         if s_dmem_vld_rom = '1' then
-            dmem_rdy_o <= rom_rdy_i;
+            dmem_rdy_o <= rom_rdy_b_i;
         elsif s_dmem_vld_uart = '1' then
             dmem_rdy_o <= uart_rdy_i;
         elsif s_dmem_vld_ram = '1' then
-            dmem_rdy_o <= ram_rdy_i;
+            dmem_rdy_o <= ram_rdy_b_i;
         elsif s_dmem_vld_gpio = '1' then
             dmem_rdy_o <= gpio_rdy_i;
         elsif s_dmem_vld_vga = '1' then
