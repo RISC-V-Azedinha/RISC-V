@@ -1,19 +1,20 @@
 # ==============================================================================
 # File: sim/soc/test_soc_top.py
 # ==============================================================================
+
 import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge
-
 import test_utils as tu
 
 # ==============================================================================
 # CONSTANTES DE MEMÓRIA E MMIO
 # ==============================================================================
+
 ROM_BASE      = 0x00000000
 ROM_LIMIT     = 0x00001000  # Tamanho estimado da ROM
 RAM_BASE      = 0x80000000
-MMIO_OUT_ADDR = 0x10000004  # Endereço virtual usado pelo C para output
+MMIO_OUT_ADDR = 0x10000004  # Endereço virtual usado pelo C para output (Snoop)
 
 @cocotb.test()
 async def test_execution_monitor(dut):
@@ -25,7 +26,7 @@ async def test_execution_monitor(dut):
     """
     
     tu.log_header("INICIANDO SIMULAÇÃO COMPLETA DO SOC RISC-V")
-    tu.log_info("Arquitetura: Multi-Cycle | SW: Bootloader + Fibonacci")
+    tu.log_info("Arquitetura: Harvard Modificada (CPU + DMA) | SW: Bootloader + Fibonacci")
 
     # --------------------------------------------------------------------------
     # 1. INICIALIZAÇÃO (Clock & Reset)
@@ -34,7 +35,7 @@ async def test_execution_monitor(dut):
     
     tu.log_info("Resetando o processador...")
     dut.Reset_i.value = 1
-    dut.UART_RX_i.value = 1
+    dut.UART_RX_i.value = 1 # Idle state da UART
     
     for _ in range(10): await RisingEdge(dut.CLK_i)
     
@@ -63,22 +64,27 @@ async def test_execution_monitor(dut):
     for cycle in range(CYCLES_MAX):
         await RisingEdge(dut.CLK_i)
         
-        # --- Leitura Segura dos Sinais Internos ---
+        # --- Leitura Segura dos Sinais Internos (Atualizados para soc_top.vhd) ---
         try:
-            # Sinais de Busca (Instruction Fetch)
-            pc    = int(dut.s_imem_addr.value)
-            instr = int(dut.s_imem_data.value)
+            # Sinais de Busca (Instruction Fetch) - Nomes atualizados (_cpu_)
+            pc    = int(dut.s_cpu_imem_addr.value)
+            instr = int(dut.s_cpu_imem_data.value)
             
-            # Sinais de Dados (Data Memory Access)
-            dmem_we   = int(dut.s_dmem_we.value)
-            dmem_addr = int(dut.s_dmem_addr.value)
-            dmem_data = int(dut.s_dmem_data_w.value)
+            # Sinais de Dados (Data Memory Access) - Nomes atualizados (_cpu_)
+            dmem_we   = int(dut.s_cpu_dmem_we.value)
+            dmem_addr = int(dut.s_cpu_dmem_addr.value)
+            dmem_data = int(dut.s_cpu_dmem_wdata.value)
+            
         except ValueError:
+            # Captura 'X', 'Z' ou 'U' no início da simulação
             pc, instr, dmem_we, dmem_addr, dmem_data = 0, 0, 0, 0, 0
+        except AttributeError:
+             # Caso grave onde o sinal não foi encontrado
+             tu.log_error("Erro de acesso aos sinais internos. Verifique os nomes no test_soc_top.py")
+             raise
 
         # --- A. DETECÇÃO DE INSTRUÇÃO (Execução) ---
-        # Só imprimimos quando o PC muda, para não poluir o log com os ciclos
-        # de espera da arquitetura multi-ciclo.
+        # Só imprimimos quando o PC muda
         if pc != last_pc:
             
             # Determina a região de memória para colorir/identificar o log
@@ -98,10 +104,9 @@ async def test_execution_monitor(dut):
                 boot_completed = True
 
             # Imprime a linha de rastro da instrução
-            # Formato: [ROM/RAM] Ciclo | PC | Instrução
             log_msg = f"[{region}] Cycle {cycle:5d} | PC: 0x{pc:08X} | Instr: 0x{instr:08X}"
             
-            # Usa o logger do cocotb diretamente para aplicar a cor customizada na linha toda
+            # Usa o logger do cocotb diretamente para aplicar a cor
             cocotb.log.info(f"{color}{log_msg}{tu.Colors.ENDC}")
 
             last_pc = pc
@@ -110,7 +115,6 @@ async def test_execution_monitor(dut):
         # Verifica se houve escrita no endereço especial 0x10000004
         if dmem_we != 0 and last_we == 0 and dmem_addr == MMIO_OUT_ADDR:
             
-            # Usa o log_int do seu utilitário
             tu.log_int(f"Valor escrito no barramento: {dmem_data}")
             
             # Validação
