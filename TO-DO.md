@@ -4,7 +4,7 @@ Este plano visa transformar o SoC RISC-V atual em um sistema de alto desempenho 
 
 ---
 
-## 📅 Fase 1: Upgrade do Barramento (Protocolo Ready/Valid)
+## 📅 Fase 1: Protocolo Ready/Validbom, \[CONCLUÍDA\]
 **Objetivo:** Implementar controle de fluxo. O mestre coloca dados e sinaliza `VALID`. O escravo processa e sinaliza `READY`. A transferência só ocorre quando `VALID=1` e `READY=1`.
 
 ### 1.1. Definição da Interface
@@ -48,7 +48,7 @@ Este plano visa transformar o SoC RISC-V atual em um sistema de alto desempenho 
 
 ---
 
-## ⚡ Fase 3: Controlador DMA (Direct Memory Access)
+## ⚡ Fase 3: Controlador DMA (Direct Memory Access) \[CONCLUÍDA\]
 **Objetivo:** Mover dados RAM <-> NPU sem ocupar a CPU (Fetch/Decode/Execute).
 
 ### 3.1. Hardware do DMA (`dma_controller.vhd`)
