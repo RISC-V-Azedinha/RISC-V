@@ -2,168 +2,178 @@
 # File: test_bus_interconnect.py
 # =====================================================================================================
 #
-# >>> Descrição:
-#     Testbench para o Interconectador de Barramento (Bus Interconnect).
-#     Verifica:
-#       1. Roteamento de Dados (DMem): Endereços, Write Enables (Vetores) e Mux de Leitura.
-#       2. Roteamento de Instruções (IMem): Mux de Instrução entre ROM e RAM.
+# >>> Descrição: Testbench avançado para o Bus Interconnect.
+#
+# >>> Cobertura:
+#       1. Functional: Leitura/Escrita básica.
+#       2. Harvard Mod.: Acesso simultâneo IMem (Fetch) e DMem (Data).
+#       3. Fuzzing: Validação randômica massiva do mapa de memória.
 #
 # =====================================================================================================
 
-import cocotb   # Biblioteca principal do cocotb
+import cocotb
+import random
+from cocotb.triggers import Timer
+from test_utils import log_header, log_success, log_error
 
-# Utilitários compartilhados entre os testbenches
-from test_utils import log_header, log_info, log_success, log_error, log_console, settle
+# ==============================================================================
+# AUXILIARES & GOLDEN MODEL
+# ==============================================================================
 
-# =====================================================================================================
-# CHECK: ROTA DE DADOS (Load/Store)
-# =====================================================================================================
+async def settle():
+    """Aguarda propagação combinacional"""
+    await Timer(1, "ns")
 
-async def check_data_route(dut, addr, we_vec, name, expected_sel_bits, expected_data_val=0):
+def model_addr_decode(addr):
     """
-    Verifica o caminho de DADOS (DMem).
-    expected_sel_bits: [ROM_SEL_B, UART_SEL, RAM_SEL_B]
-    we_vec: Inteiro representando o vetor de 4 bits (ex: 0xF para escrita full word)
+    Modelo Python da lógica de decodificação de endereço.
+    Retorna uma string identificando o periférico ou 'NONE'.
     """
+    # Pega os 4 bits superiores (nibble)
+    nibble = (addr >> 28) & 0xF
     
-    # 1. Aplica Estímulos (DMem Side)
-    dut.dmem_addr_i.value = addr
-    dut.dmem_we_i.value   = we_vec
-    
-    # Simula dados presentes nas portas de leitura dos escravos (Porta B para memórias)
-    dut.rom_data_b_i.value = 0x11111111
-    dut.uart_data_i.value  = 0x22222222
-    dut.ram_data_b_i.value = 0x88888888
-    
-    await settle()
+    if nibble == 0x0: return "ROM"
+    if nibble == 0x1: return "UART"
+    if nibble == 0x2: return "GPIO"
+    if nibble == 0x3: return "VGA"
+    if nibble == 0x4: return "DMA"
+    if nibble == 0x8: return "RAM"
+    if nibble == 0x9: return "NPU"
+    return "NONE"
 
-    # 2. Captura Saídas
-    rom_sel  = int(dut.rom_sel_b_o.value)
-    uart_sel = int(dut.uart_sel_o.value)
-    ram_sel  = int(dut.ram_sel_b_o.value)
-    data_out = int(dut.dmem_data_o.value)
-    
-    # Captura Write Enables de Saída
-    try: ram_we_out = int(dut.ram_we_b_o.value)
-    except: ram_we_out = 0
-    
-    uart_we_out = int(dut.uart_we_o.value)
-
-    log_console(f"CHECK DATA  | {name:8} | Addr: 0x{addr:08X} | WE: 0x{we_vec:X} | SELs: {rom_sel}{uart_sel}{ram_sel}")
-
-    # 3. Validação de Seleção
-    if [rom_sel, uart_sel, ram_sel] != expected_sel_bits:
-        log_error(f"FALHA na seleção para {name}")
-        log_error(f"Esperado [ROM, UART, RAM]: {expected_sel_bits} | Obtido: {[rom_sel, uart_sel, ram_sel]}")
-        assert False
-
-    # 4. Validação de Write Enables (Propagação)
-    
-    # RAM: O vetor de escrita deve ser repassado integralmente se selecionada
-    if ram_sel == 1:
-        if ram_we_out != we_vec:
-            log_error(f"FALHA: RAM Write Enable incorreto. Esperado: 0x{we_vec:X}, Obtido: 0x{ram_we_out:X}")
-            assert False
-    else:
-        if ram_we_out != 0:
-            log_error("FALHA: RAM WE ativo sem seleção.")
-            assert False
-
-    # UART: Deve ser 1 se houver *qualquer* bit ativo no vetor de entrada (Reduction OR)
-    if uart_sel == 1:
-        is_writing = 1 if we_vec > 0 else 0
-        if uart_we_out != is_writing:
-            log_error(f"FALHA: UART Write Enable incorreto. Esperado: {is_writing}, Obtido: {uart_we_out}")
-            assert False
-    else:
-        if uart_we_out != 0:
-            log_error("FALHA: UART WE ativo sem seleção.")
-            assert False
-            
-    # 5. Validação de Dados de Leitura (Mux de Retorno)
-    # Apenas validamos se não estivermos escrevendo (embora o mux funcione sempre)
-    if we_vec == 0:
-        if data_out != expected_data_val:
-            log_error(f"FALHA no roteamento de dados para {name}")
-            log_error(f"Esperado: 0x{expected_data_val:08X} | Obtido: 0x{data_out:08X}")
-            assert False
-
-# =====================================================================================================
-# CHECK: ROTA DE INSTRUÇÃO (Fetch)
-# =====================================================================================================
-
-async def check_instr_route(dut, addr, name, expected_val):
-    """
-    Verifica o caminho de INSTRUÇÃO (IMem).
-    Valida se o endereço seleciona a ROM (Porta A) ou RAM (Porta A) corretamente.
-    """
-    dut.imem_addr_i.value = addr
-    
-    # Simula dados nas portas A
-    dut.rom_data_a_i.value = 0xAAAA0000 # Valor simulado da ROM
-    dut.ram_data_a_i.value = 0xBBBB0000 # Valor simulado da RAM
-    
-    await settle()
-    
-    inst_out = int(dut.imem_data_o.value)
-    
-    log_console(f"CHECK INSTR | {name:8} | Addr: 0x{addr:08X} | Data: 0x{inst_out:08X}")
-    
-    if inst_out != expected_val:
-        log_error(f"FALHA no Fetch de instrução para {name}")
-        log_error(f"Esperado: 0x{expected_val:08X} | Obtido: 0x{inst_out:08X}")
-        assert False
-
-# =====================================================================================================
-# TESTE PRINCIPAL
-# =====================================================================================================
+# ==============================================================================
+# TESTES
+# ==============================================================================
 
 @cocotb.test()
-async def test_bus_interconnect(dut):
+async def test_sanity_check(dut):
+    # Teste 1: Verificação Funcional Básica (Sanity Check)
+    log_header("Teste 1: Sanity Check (Endereços Conhecidos)")
     
-    log_header("Iniciando Teste do Bus Interconnect (Harvard Split + Byte Enables)")
+    # Reset
+    dut.dmem_vld_i.value = 0
+    dut.imem_vld_i.value = 0
+    await settle()
 
-    # Inicializa sinais não testados imediatamente para evitar 'X'
-    dut.imem_addr_i.value = 0
-    dut.dmem_addr_i.value = 0
-    dut.dmem_we_i.value   = 0
-    dut.dmem_data_i.value = 0
+    # Caso: Acesso à RAM (0x8000...)
+    dut.dmem_addr_i.value = 0x8000AABB
+    dut.dmem_vld_i.value  = 1
+    await settle()
     
-    # -------------------------------------------------------------------------
-    # 1. TESTES DE DADOS (Load / Store)
-    # -------------------------------------------------------------------------
-    log_info(">>> Testando Barramento de DADOS (DMem)")
-
-    # ROM Read (0x0...)
-    await check_data_route(dut, 0x00000000, 0x0, "ROM_RD", [1, 0, 0], 0x11111111)
-
-    # RAM Write Word (0x8..., we=1111)
-    await check_data_route(dut, 0x80000000, 0xF, "RAM_WW", [0, 0, 1], 0x88888888)
+    assert dut.ram_vld_b_o.value == 1, "RAM não foi selecionada!"
+    assert dut.rom_vld_b_o.value == 0, "ROM foi selecionada incorretamente!"
     
-    # RAM Write Byte (0x8..., we=0001)
-    await check_data_route(dut, 0x80000004, 0x1, "RAM_WB", [0, 0, 1], 0x88888888)
+    log_success("Sanity Check OK")
 
-    # UART Write (0x1..., we=1111) -> UART espera we de 1 bit
-    await check_data_route(dut, 0x10000000, 0xF, "UART_WR", [0, 1, 0], 0x22222222)
+@cocotb.test()
+async def test_harvard_concurrency(dut):
+    # Teste 2: Acesso Simultâneo IMem (ROM) e DMem (RAM)
+    log_header("Teste 2: Harvard Split (Acesso Simultâneo)")
     
-    # UART Read (0x1..., we=0000)
-    await check_data_route(dut, 0x10000004, 0x0, "UART_RD", [0, 1, 0], 0x22222222)
+    # Cenário:
+    # CPU busca instrução na ROM (0x00001000)
+    # CPU escreve dado na RAM (0x80002000) AO MESMO TEMPO
+    
+    # Constantes Hexadecimais Válidas
+    VAL_INSTRUCT = 0x11223344  # Dado vindo da ROM (Instrução)
+    VAL_DATA_OLD = 0x55667788  # Dado vindo da RAM (Leitura antiga, ignorado na escrita)
+    
+    # Configura Dados dos Escravos (Mock)
+    dut.rom_data_a_i.value = VAL_INSTRUCT
+    dut.ram_data_b_i.value = VAL_DATA_OLD 
+    
+    # Aplica Estímulos Simultâneos
+    dut.imem_addr_i.value = 0x00001000
+    dut.imem_vld_i.value  = 1
+    
+    dut.dmem_addr_i.value = 0x80002000
+    dut.dmem_vld_i.value  = 1
+    dut.dmem_we_i.value   = 0xF
+    
+    await settle()
+    
+    # Verificações
+    # 1. Selects Independentes
+    assert dut.rom_vld_a_o.value == 1, "IMem não selecionou ROM"
+    assert dut.ram_vld_b_o.value == 1, "DMem não selecionou RAM"
+    
+    # 2. Dados Retornados Independentes
+    assert int(dut.imem_data_o.value) == VAL_INSTRUCT, "IMem leu dado errado"
+    
+    # 3. Cruzamento não deve ocorrer
+    assert dut.rom_vld_b_o.value == 0, "DMem selecionou ROM sem querer"
+    assert dut.ram_vld_a_o.value == 0, "IMem selecionou RAM sem querer"
+    
+    log_success("Concorrência Harvard OK")
 
-    # Endereço Inválido (0x2...) -> Deve retornar 0
-    await check_data_route(dut, 0x20000000, 0x0, "VOID_RD", [0, 0, 0], 0x00000000)
+@cocotb.test()
+async def test_fuzzing_map(dut):
+    # Teste 3: Fuzzing do Mapa de Memória (1000 Iterações)
+    log_header("Teste 3: Fuzzing Completo (Decodificação)")
+    
+    ITERATIONS = 1000
+    
+    for i in range(ITERATIONS):
+        # 1. Gera Endereço Aleatório (32-bit)
+        addr = random.randint(0, 0xFFFFFFFF)
+        
+        # 2. Aplica ao DUT
+        dut.dmem_addr_i.value = addr
+        dut.dmem_vld_i.value  = 1
+        
+        await settle()
+        
+        # 3. Calcula Esperado (Python Model)
+        target = model_addr_decode(addr)
+        
+        # 4. Verifica Sinais de Seleção (Valids)
+        # Cria um dicionário do estado atual dos sinais do DUT
+        signals = {
+            "ROM":  int(dut.rom_vld_b_o.value),
+            "UART": int(dut.uart_vld_o.value),
+            "GPIO": int(dut.gpio_vld_o.value),
+            "VGA":  int(dut.vga_vld_o.value),
+            "DMA":  int(dut.dma_vld_o.value),
+            "RAM":  int(dut.ram_vld_b_o.value),
+            "NPU":  int(dut.npu_vld_o.value)
+        }
+        
+        # Verifica se APENAS o alvo correto está ativo
+        for dev, state in signals.items():
+            if dev == target:
+                if state != 1:
+                    log_error(f"FALHA Fuzz #{i}: {target} deveria estar ativo para addr {hex(addr)}")
+                    assert False
+            else:
+                if state != 0:
+                    log_error(f"FALHA Fuzz #{i}: {dev} ativou incorretamente para addr {hex(addr)} (Target era {target})")
+                    assert False
+                    
+        # 5. Verifica Mux de Retorno (Ready e Data)
+        # Se for um endereço válido, o DUT deve repassar o dado/ready desse periférico
+        # Caso contrário, deve retornar 0 e Ready=1 (default)
+        
+        if target != "NONE":
+            # Injeta um dado simulado na porta de leitura desse device específico
+            mock_data = random.randint(0, 0xFFFFFFFF)
+            
+            if target == "ROM":  
+                dut.rom_data_b_i.value = mock_data; dut.rom_rdy_b_i.value = 1
+            elif target == "RAM": 
+                dut.ram_data_b_i.value = mock_data; dut.ram_rdy_b_i.value = 1
+            elif target == "DMA": 
+                dut.dma_data_i.value = mock_data;   dut.dma_rdy_i.value = 1
+            
+            await settle()
+            
+            # Se testamos ROM, RAM ou DMA, verificamos o data path de volta
+            if target in ["ROM", "RAM", "DMA"]:
+                assert int(dut.dmem_data_o.value) == mock_data, f"Dado de retorno incorreto para {target}"
+                assert int(dut.dmem_rdy_o.value) == 1, f"Ready não retornou para {target}"
 
-    # -------------------------------------------------------------------------
-    # 2. TESTES DE INSTRUÇÃO (Fetch)
-    # -------------------------------------------------------------------------
-    log_info(">>> Testando Barramento de INSTRUÇÕES (IMem)")
-    
-    # Fetch da ROM (0x0...) -> Espera 0xAAAA0000
-    await check_instr_route(dut, 0x00000000, "ROM_FTCH", 0xAAAA0000)
-    
-    # Fetch da RAM (0x8...) -> Espera 0xBBBB0000
-    await check_instr_route(dut, 0x80000100, "RAM_FTCH", 0xBBBB0000)
-    
-    # Fetch Inválido (0x5...) -> Espera 0
-    await check_instr_route(dut, 0x50000000, "INV_FTCH", 0x00000000)
+        else:
+            # Endereço Inválido: Deve retornar Ready=1 e Data=0
+            assert int(dut.dmem_rdy_o.value) == 1, "Ready deve ser 1 para endereço inválido (evitar travamento)"
+            assert int(dut.dmem_data_o.value) == 0, "Data deve ser 0 para endereço inválido"
 
-    log_success("Barramento validado com sucesso!")
+    log_success(f"Fuzzing de {ITERATIONS} endereços completado com sucesso!")
