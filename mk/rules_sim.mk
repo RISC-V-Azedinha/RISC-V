@@ -19,7 +19,7 @@ APP_HEX_PATH = $(if $(findstring $(FPGA_SW_DIR),$(SRC_FILE)),$(BUILD_FPGA)/$(SW)
 BOOT_SIM_PATH = $(ABS_BUILD_DIR)/cocotb/boot/bootloader.hex
 
 # Injeção de Bootloader (Lógica para saber se é teste de sistema ou unitário)
-IS_SYSTEM_TEST := $(filter soc% boot% bus_interconnect% dual_port_ram% memory_system%,$(TOP)$(TEST))
+IS_SYSTEM_TEST := $(filter soc% boot% memory_system% memory_wrapper%,$(TOP)$(TEST))
 
 ifdef IS_SYSTEM_TEST
     SIM_ARGS_EXTRA = -gINIT_FILE=$(BOOT_SIM_PATH)
