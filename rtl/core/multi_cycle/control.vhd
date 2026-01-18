@@ -98,10 +98,29 @@ architecture rtl of control is
     
     signal s_alu_function      : std_logic_vector(3 downto 0);       -- Determina operação da ALU
 
+    -- Registrador da flag Zero da ALU (vinda do datapath)
+
+    signal r_alu_zero : std_logic;
+
 begin
 
     --------------------------------------------------------------------------------------------------------------
-    -- 1. Extração dos Campos da Instrução
+    -- Registrador da Flag Zero 
+    --------------------------------------------------------------------------------------------------------------
+
+    process(Clk_i)
+    begin
+        if rising_edge(Clk_i) then
+            if Reset_i = '1' then
+                r_alu_zero <= '0';
+            else
+                r_alu_zero <= ALU_Zero_i;
+            end if;
+        end if;
+    end process;
+
+    --------------------------------------------------------------------------------------------------------------
+    -- Extração dos Campos da Instrução
     --------------------------------------------------------------------------------------------------------------
 
     s_opcode <= Instruction_i(6 downto 0);
@@ -109,7 +128,7 @@ begin
     s_funct7 <= Instruction_i(31 downto 25);
 
     --------------------------------------------------------------------------------------------------------------
-    -- 2. Instância da FSM Principal (Sequenciador)
+    -- Instância da FSM Principal (Sequenciador)
     --------------------------------------------------------------------------------------------------------------
 
     u_main_fsm : entity work.main_fsm
@@ -150,7 +169,7 @@ begin
     );
 
     --------------------------------------------------------------------------------------------------------------
-    -- 3. Instância da Unidade de Controle da ALU (Combinacional)
+    -- Instância da Unidade de Controle da ALU (Combinacional)
     --------------------------------------------------------------------------------------------------------------
 
     -- Traduz o 'ALUOp' da FSM + Funct3/7 em sinais específicos para a ALU
@@ -167,7 +186,7 @@ begin
     Control_o.alu_control <= s_alu_function;
 
     --------------------------------------------------------------------------------------------------------------
-    -- 4. Instância da Unidade de Branch (Combinacional)
+    -- Instância da Unidade de Branch (Combinacional)
     --------------------------------------------------------------------------------------------------------------
 
     -- Decide se o salto deve ser tomado com base no Funct3 e na flag Zero
@@ -176,12 +195,12 @@ begin
     port map (
         Branch_i       => s_fsm_pc_write_cond,
         Funct3_i       => s_funct3,
-        ALU_Zero_i     => ALU_Zero_i,
+        ALU_Zero_i     => r_alu_zero,
         BranchTaken_o  => s_branch_taken
     );
 
     --------------------------------------------------------------------------------------------------------------
-    -- 5. Lógica de habilitação condicional + incondicional de PCWrite
+    -- Lógica de habilitação condicional + incondicional de PCWrite
     --------------------------------------------------------------------------------------------------------------
 
     -- O PC deve ser escrito se:

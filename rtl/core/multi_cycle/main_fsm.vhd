@@ -105,24 +105,48 @@ architecture rtl of main_fsm is
 
     signal current_state, next_state : t_state;
 
+    -- Microestado para o Branch ----------------------------------------------------------------------------------
+
+    -- Feito para quebrar o critical path e estabilizar o timing
+
+    signal s_br_wait_q : std_logic;  -- 0: Comp, 1: Decide
+
+    ---------------------------------------------------------------------------------------------------------------
+
 begin
 
-    -- 1. Registrador de Estado (Processo Síncrono)
+    -- 1. Registrador de Estado (Processo Síncrono) ---------------------------------------------------------------
 
     process(Clk_i)
     begin
+
         if rising_edge(Clk_i) then
+
             if Reset_i = '1' then
+
                 current_state <= S_IF;
+                s_br_wait_q   <= '0'; 
+
             else 
+
                 current_state <= next_state;
+
+                -- Lógica do "Wait State" do Branch
+                if current_state = S_EX_BR and s_br_wait_q = '0' then
+                    s_br_wait_q <= '1';
+                elsif current_state /= S_EX_BR then
+                    s_br_wait_q <= '0';
+                end if;
+
             end if;    
+
         end if;
+
     end process;
 
-    -- 2. Lógica de Próximo Estado (Combinacional)
+    -- 2. Lógica de Próximo Estado (Combinacional) ----------------------------------------------------------------
 
-    process(current_state, Opcode_i, dmem_rdy_i, imem_rdy_i)
+    process(current_state, Opcode_i, dmem_rdy_i, imem_rdy_i, s_br_wait_q)
     begin
         -- Default: manter estado 
         next_state <= current_state;
@@ -160,7 +184,13 @@ begin
                     next_state <= S_MEM_WR; -- Store
                 end if;
 
-            when S_EX_BR    => next_state <= S_IF; -- Branch decide e volta
+            when S_EX_BR => 
+                if s_br_wait_q = '0' then
+                    next_state <= S_EX_BR; -- STALL INTERNO: Espera ALU calcular
+                else
+                    next_state <= S_IF;    -- DECISÃO TOMADA: Segue fluxo
+                end if;
+
             when S_EX_JAL   => next_state <= S_WB_JAL;
             when S_EX_JALR  => next_state <= S_WB_JALR;
             when S_EX_LUI   => next_state <= S_WB_REG;
@@ -192,7 +222,8 @@ begin
         end case;
     end process;
 
-    -- 3. Lógica de Saída (Combinacional - Moore)
+    -- 3. Lógica de Saída (Combinacional - Moore) -----------------------------------------------------------------
+
     process(current_state, Opcode_i, dmem_rdy_i, imem_rdy_i)
     begin
         
@@ -254,11 +285,18 @@ begin
                 ALUSrcB_o   <= '1';  -- Imediato (Offset)
 
             when S_EX_BR =>
-                PCWriteCond_o <= '1';  -- Habilita escrita condicional
-                PCSrc_o       <= "01"; -- Alvo do Branch (Somador Dedicado)
-                ALUOp_o       <= "01"; -- Branch Logic (Sub/Slt...)
-                ALUSrcA_o     <= "00"; -- rs1
-                ALUSrcB_o     <= '0';  -- rs2
+
+                -- Mantemos a ALU operando nos dois ciclos
+                ALUOp_o       <= "01"; 
+                ALUSrcA_o     <= "00"; 
+                ALUSrcB_o     <= '0';
+
+                -- Só habilitamos a escrita no PC no segundo microestado (ciclo 1)
+                -- quando o registrador r_alu_zero já tem o valor estável.
+                if s_br_wait_q = '1' then
+                    PCWriteCond_o <= '1'; 
+                    PCSrc_o       <= "01";
+                end if;
 
             when S_EX_JAL =>
                 -- JAL só espera (somador dedicado calcula alvo). PC atualiza no WB.
