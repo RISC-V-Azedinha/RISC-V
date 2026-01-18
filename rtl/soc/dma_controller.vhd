@@ -13,7 +13,7 @@
 --             Suporta modo de destino fixo (para FIFOs) ou incremental.
 --
 -- Autor     : [André Maiolini]
--- Data      : [16/01/2026]   
+-- Data      : [18/01/2026]   
 --
 ------------------------------------------------------------------------------------------------------------------
 
@@ -111,7 +111,13 @@ architecture rtl of dma_controller is
         -- o dado vindo de m_data_i e guarda num registrador temporário (r_data_buffer) e transita
         -- para o estado WRITE_REQ.
 
-        READ_REQ,              
+        READ_REQ,     
+        
+        -- READ_WAIT: Estado de espera intermediário.
+        -- O DMA baixa o sinal 'm_vld_o' por um ciclo. Isso é necessário para sinalizar ao bus_arbiter
+        -- que a transação de leitura terminou, permitindo que ele saia do estado de travamento (WAIT_M1).
+        
+        READ_WAIT,
 
         -- WRITE_REQ: o DMA coloca o endereço 'r_dst_addr' e o dado guardado no 'r_data_buffer' no barramento.
         -- Levanta as flags 'm_vld_o' e 'm_we_o' - sinalizando requisição de escrita. Então, aguarda a 
@@ -123,14 +129,7 @@ architecture rtl of dma_controller is
         -- 'r_src_addr' (+4 bytes) e aplica a lógica de destino: se 'fixed_dst = 0', incrementa 'r_dst_addr' (+4);
         -- caso 'fixed_dst = 1', mantém 'r_dst_addr' (para buffer FIFO).
 
-        CHECK_DONE,
-        
-        -- YIELD: 
-
-        YIELD,
-        YIELD_1,
-        YIELD_2,
-        YIELD_3
+        CHECK_DONE
 
     );
 
@@ -147,6 +146,7 @@ begin
     process(clk_i, rst_i)
     begin
         if rst_i = '1' then
+
             r_src_addr       <= (others => '0');
             r_dst_addr       <= (others => '0');
             r_count          <= (others => '0');
@@ -154,6 +154,7 @@ begin
             r_busy           <= '0'; -- Auto-clears on finish
             current_state    <= IDLE;
             r_data_buffer    <= (others => '0');
+
         elsif rising_edge(clk_i) then
 
             -- Atualiza Estado
@@ -242,8 +243,17 @@ begin
                 m_we_o   <= '0'; -- Leitura
                 
                 if m_rdy_i = '1' then
-                    next_state <= WRITE_REQ;
+                    -- Vamos para READ_WAIT em vez de WRITE_REQ diretamente.
+                    -- Isso força m_vld_o a '0' por um ciclo, satisfazendo o Bus Arbiter.
+                    next_state <= READ_WAIT;
                 end if;
+
+            when READ_WAIT =>
+                
+                -- m_vld_o está em '0' (pelos defaults).
+                -- O Bus Arbiter verá isso, sairá do estado de travamento e estará pronto
+                -- para aceitar a nova requisição (WRITE) no próximo ciclo.
+                next_state <= WRITE_REQ;
 
             when WRITE_REQ =>
                 m_addr_o <= std_logic_vector(r_dst_addr);
@@ -262,23 +272,11 @@ begin
                     next_state <= IDLE;
                     irq_done_o <= '1';
                 else
-                    next_state <= YIELD;
+                    next_state <= READ_REQ;
                 end if;
-
-            when YIELD =>
-                next_state <= YIELD_1; -- Espera ciclo 1
-
-            when YIELD_1 =>
-                next_state <= YIELD_2; -- Espera ciclo 2
-
-            when YIELD_2 =>
-                next_state <= YIELD_3; -- Espera ciclo 3
-
-            when YIELD_3 =>
-                next_state <= READ_REQ; -- Volta ao trabalho no ciclo 4
                 
-            when others =>
-                next_state <= IDLE;
+            when others => next_state <= IDLE;
+            
         end case;
     end process;
 

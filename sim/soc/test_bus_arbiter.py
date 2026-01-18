@@ -100,39 +100,60 @@ async def test_priority_switchover(dut):
     log_header("Teste de Troca de Prioridade (Switchover)")
     await setup_dut(dut)
 
+    # 1. CPU solicita barramento
     dut.m0_addr_i.value = 0xCAFE
     dut.m0_vld_i.value  = 1
 
-    await RisingEdge(dut.clk_i)  # CPU registrado
+    await RisingEdge(dut.clk_i)  # CPU ganha GRANT_M0 e saída registra
 
+    # 2. DMA solicita também (mas CPU já está no meio da transação)
     dut.m1_addr_i.value = 0xFACE
     dut.m1_vld_i.value  = 1
 
-    await RisingEdge(dut.clk_i)  # CPU ainda esperando
+    await RisingEdge(dut.clk_i)  # CPU ainda usando
 
+    # 3. Slave termina transação da CPU
     dut.s_rdy_i.value = 1
-    await RisingEdge(dut.clk_i)  # CPU termina
+    await RisingEdge(dut.clk_i)  # Arbiter vê RDY e vai para WAIT_M0
     dut.s_rdy_i.value = 0
+    
+    # --- CORREÇÃO AQUI ---
+    # O Mestre (CPU) PRECISA baixar o valid para sair do estado WAIT_M0
+    dut.m0_vld_i.value = 0      
+    # ---------------------
 
-    # FSM síncrona > IDLE > GRANT_M1 > saída válida
-    await RisingEdge(dut.clk_i)  # IDLE
-    await RisingEdge(dut.clk_i)  # GRANT_M1
-    await RisingEdge(dut.clk_i)  # saída registrada
+    # Ciclos de transição do novo Arbiter:
+    # Ciclo 1: WAIT_M0 -> IDLE (pois m0_vld caiu)
+    await RisingEdge(dut.clk_i) 
+    # Ciclo 2: IDLE -> GRANT_M1 (DMA ganha prioridade)
+    await RisingEdge(dut.clk_i) 
+    # Ciclo 3: GRANT_M1 -> Saída Registrada (Datapath update)
+    await RisingEdge(dut.clk_i) 
+    
     await Timer(1, unit="ns")
 
+    # Agora sim, deve ser o DMA
     assert dut.s_vld_o.value == 1
     assert int(dut.s_addr_o.value) == 0xFACE, "Arbiter não trocou para DMA"
 
+    # 4. Finaliza transação do DMA
     dut.s_rdy_i.value = 1
-    await RisingEdge(dut.clk_i)
+    await RisingEdge(dut.clk_i) # Arbiter vai para WAIT_M1
     dut.s_rdy_i.value = 0
 
-    dut.m1_vld_i.value = 0
+    dut.m1_vld_i.value = 0      # DMA baixa valid (correto)
 
-    # FIX: retorno síncrono ao CPU
+    # Se queremos testar a volta da CPU, ela precisa pedir de novo!
+    dut.m0_vld_i.value = 1      
+
+    # Ciclos de retorno:
+    # Ciclo 1: WAIT_M1 -> IDLE (pois m1_vld caiu)
     await RisingEdge(dut.clk_i)
+    # Ciclo 2: IDLE -> GRANT_M0 (CPU ganha)
     await RisingEdge(dut.clk_i)
+    # Ciclo 3: GRANT_M0 -> Saída Registrada
     await RisingEdge(dut.clk_i)
+    
     await Timer(1, unit="ns")
 
     assert int(dut.s_addr_o.value) == 0xCAFE, "Arbiter não devolveu para CPU"
