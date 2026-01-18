@@ -144,15 +144,12 @@ architecture rtl of uart_controller is
 
 begin
 
-    -- Handshake: Resposta imediata
-    rdy_o <= '1';
-
-    -- Status da FIFO
+    -- Status da FIFO ---------------------------------------------------------------------------------------------
 
     w_fifo_full  <= '1' when r_count = FIFO_DEPTH else '0';
     w_fifo_empty <= '1' when r_count = 0 else '0';
 
-    -- Sincronizador RX
+    -- Sincronizador RX -------------------------------------------------------------------------------------------
 
     rx_bit_val <= rx_pin_sync(1);
     process(clk)
@@ -162,7 +159,7 @@ begin
         end if;
     end process;
 
-    -- Gerenciamento da FIFO
+    -- Gerenciamento da FIFO --------------------------------------------------------------------------------------
 
     process(clk)
     begin
@@ -206,7 +203,7 @@ begin
 
     end process;
 
-    -- 1. TX STATE MACHINE
+    -- 1. TX STATE MACHINE ----------------------------------------------------------------------------------------
 
     process(clk)
     begin
@@ -269,7 +266,7 @@ begin
 
     end process;
 
-    -- 2. RX STATE MACHINE
+    -- 2. RX STATE MACHINE ----------------------------------------------------------------------------------------
 
     process(clk)
     begin
@@ -323,34 +320,60 @@ begin
 
     end process;
 
-    -- 3. INTERFACE DE CONTROLE
+    -- 3. INTERFACE DE CONTROLE -----------------------------------------------------------------------------------
 
     process(clk)
     begin
 
         if rising_edge(clk) then
             if rst = '1' then
+                rdy_o           <= '0';
+                data_o          <= (others => '0');
                 tx_start_pulse  <= '0';
                 w_rd_en         <= '0';
                 r_tx_data_latch <= (others => '0');
             else
-                tx_start_pulse <= '0';
-                w_rd_en        <= '0';
+                
+                -- Defaults (Pulsos de 1 ciclo e limpeza de barramento)
+                rdy_o           <= '0';
+                tx_start_pulse  <= '0';
+                w_rd_en         <= '0';
+                data_o          <= (others => '0'); 
 
-                -- Se a CPU escreveu
-                if vld_i = '1' and we_i = '1' then
-                    if unsigned(addr_i) = 0 then
-                        -- Transmitir (TX)
-                        if tx_busy_flag = '0' then
-                            tx_start_pulse  <= '1';
-                            r_tx_data_latch <= data_i(7 downto 0); -- Latch
-                        end if;
+                -- Se há uma requisição válida do Mestre
+                if vld_i = '1' then
                     
-                    elsif unsigned(addr_i) = 4 then
-                        -- Comando de Controle: Avançar FIFO (Pop)
-                        if data_i(0) = '1' then
-                            w_rd_en <= '1';      -- Move o ponteiro 'tail'
+                    -- Handshake: Resposta no ciclo T+1
+                    rdy_o <= '1'; 
+
+                    -- LOGICA DE ESCRITA (CPU -> Periférico)
+                    if we_i = '1' then
+                        if unsigned(addr_i) = 0 then
+                            -- Transmitir (TX)
+                            if tx_busy_flag = '0' then
+                                tx_start_pulse  <= '1';
+                                r_tx_data_latch <= data_i(7 downto 0); -- Latch do dado
+                            end if;
+                        
+                        elsif unsigned(addr_i) = 4 then
+                            -- Comando de Controle: Avançar FIFO (Pop)
+                            if data_i(0) = '1' then
+                                w_rd_en <= '1';      -- Move o ponteiro 'tail'
+                            end if;
                         end if;
+
+                    -- LOGICA DE LEITURA (Periférico -> CPU)
+                    else
+                        case to_integer(unsigned(addr_i)) is
+                            when 0 => 
+                                -- Lê o dado que está na ponta da FIFO (Tail)
+                                data_o(7 downto 0) <= r_fifo(r_tail);
+                            when 4 => 
+                                -- Status Register
+                                data_o(0) <= tx_busy_flag;
+                                data_o(1) <= not w_fifo_empty; 
+                            when others => null;
+                        end case;
                     end if;
                 end if;
             end if;
@@ -358,23 +381,7 @@ begin
 
     end process;
 
-    -- 4. SAÍDA (ASYNC/COMBINACIONAL)
-
-    process(addr_i, r_fifo, r_tail, tx_busy_flag, w_fifo_empty)
-    begin
-
-        data_o <= (others => '0');
-        case to_integer(unsigned(addr_i)) is
-            when 0 => 
-                -- Lê o dado que está na ponta da FIFO (Tail)
-                data_o(7 downto 0) <= r_fifo(r_tail);
-            when 4 => 
-                data_o(0) <= tx_busy_flag;
-                data_o(1) <= not w_fifo_empty; 
-            when others => null;
-        end case;
-
-    end process;
+    ---------------------------------------------------------------------------------------------------------------
 
 end architecture; -- rtl 
 

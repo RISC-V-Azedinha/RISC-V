@@ -56,11 +56,9 @@ end entity;
 -- Arquitetura: Definição do comportamento do Controlador do Periférico VGA
 -------------------------------------------------------------------------------------------------------------------
 
--- Abstrai a comunicação usando o conceito de MMIO (Memory-Mapped I/O). O processador acessa o periférico VGA
--- através de endereços específicos na memória. A VRAM é mapeada em um espaço de 17 bits (0x00000 a 0x1FFFF),
--- permitindo armazenar até 76.800 bytes (320x240 pixels, 1 byte por pixel).
-
--- Ou seja, faz parte do espaço de endereçamento do processador, permitindo que o CPU leia e escreva diretamente na VRAM.
+-- Abstrai a comunicação usando o conceito de MMIO (Memory-Mapped I/O).
+-- O processador acessa o periférico VGA através de endereços específicos na memória.
+-- A VRAM é mapeada em um espaço de 17 bits (0x00000 a 0x1FFFF).
 
 architecture rtl of vga_peripheral is
 
@@ -95,10 +93,9 @@ begin
     -- O sinal de escrita só é real se o mestre disser que a transação é VÁLIDA
     s_vram_we <= we_i and vld_i;
 
-    -- Handshake: Resposta imediata
-    rdy_o <= '1';
+    -- LÓGICA DE ALINHAMENTO (MUX) --------------------------------------------------------------------------------
 
-    -- LÓGICA DE ALINHAMENTO (MUX): escolhe o byte certo baseado nos 2 últimos bits do endereço
+    -- Escolhe o byte certo baseado nos 2 últimos bits do endereço 
         
         process(addr_i, data_i)
         begin
@@ -111,7 +108,7 @@ begin
             end case;
         end process;
 
-    -- Instância da Memória (usa o dado alinhado)
+    -- Instância da Memória (usa o dado alinhado) -----------------------------------------------------------------
 
         U_VRAM: entity work.video_ram
             port map (
@@ -123,7 +120,7 @@ begin
                 data_b  => vram_data
             );
 
-    -- Instância do Sync Generator
+    -- Instância do Sync Generator --------------------------------------------------------------------------------
 
         U_SYNC: entity work.vga_sync
             port map (
@@ -136,11 +133,11 @@ begin
                 video_on => video_on
             );
 
-    -- Sinal interno na saída
+    -- Sinal interno na saída -------------------------------------------------------------------------------------
         
         vga_vs_o <= s_vsync;
 
-    -- Lógica de Endereço de Leitura e Saída de Cor (Igual ao anterior)
+    -- Lógica de Endereço de Leitura e Saída de Cor ---------------------------------------------------------------
         
     -- -- Cálculo do processo de upscaling das coordenadas (divisão por 2),
     -- -- para mapear as coordenadas de 640x480 para 320x240.
@@ -170,17 +167,39 @@ begin
             end if;
         end process;
 
-    -- Lógica de Leitura do Processador (Retorna o estado do VSYNC no endereço 0x1FFFF)
+    -- Interface de Leitura e Handshake (RDY/VLD) -----------------------------------------------------------------
 
-        process(addr_i, s_vsync, vld_i)
+        process(clk)
         begin
-            if vld_i = '1' and addr_i = "11111111111111111" then -- Endereço 0x1FFFF (Máximo de 17 bits)
-                data_o <= (0 => s_vsync, others => '0'); -- Retorna bit 0 = VSYNC
-            else
-                data_o <= (others => '0');
+            if rising_edge(clk) then
+                if rst = '1' then
+                    rdy_o  <= '0';
+                    data_o <= (others => '0');
+                else
+                    -- Default
+                    rdy_o  <= '0';
+                    data_o <= (others => '0');
+
+                    if vld_i = '1' then
+                        -- Handshake: Resposta no ciclo T+1
+                        rdy_o <= '1';
+                        
+                        -- Leitura de Registradores (Ex: VSYNC)
+                        if we_i = '0' then
+                            if addr_i = "11111111111111111" then -- Endereço 0x1FFFF
+                                data_o <= (0 => s_vsync, others => '0'); -- Retorna bit 0 = VSYNC
+                            end if;
+                        end if;
+                        
+                        -- Para escritas (WE=1), o 'rdy_o' serve apenas como ACK,
+                        -- pois a escrita na BRAM já foi engatilhada pelo s_vram_we.
+                    end if;
+                end if;
             end if;
         end process;
 
+    ---------------------------------------------------------------------------------------------------------------
+
 end architecture; -- rtl
 
-------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------

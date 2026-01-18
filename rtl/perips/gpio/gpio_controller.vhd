@@ -53,39 +53,53 @@ architecture rtl of gpio_controller is
 
 begin
     
-    -- Conexão física
-    gpio_leds <= r_leds;
-    rdy_o <= '1';
+    -- Conexão física ---------------------------------------------------------------------------------------------
 
-    -- Processo de Escrita (CPU -> LEDs)
+    gpio_leds <= r_leds;
+
+    -- Processo de Escrita (CPU -> GPIO) --------------------------------------------------------------------------
+    
     process(clk)
     begin
+
         if rising_edge(clk) then
+
             if rst = '1' then
+
                 r_leds <= (others => '0');
-            elsif vld_i = '1' and we_i = '1' then
-                -- Offset 0x00: Registrador de LEDs
-                if unsigned(addr_i) = 0 then
-                    r_leds <= data_i(15 downto 0);
+                rdy_o  <= '0';
+                data_o <= (others => '0');
+            
+            else
+            
+                -- Default: Ready baixa se não houver valid
+                rdy_o  <= '0';
+                data_o <= (others => '0');
+
+                if vld_i = '1' then
+                    -- Handshake: Resposta no próximo ciclo (Latência 1)
+                    rdy_o <= '1';
+
+                    -- ESCRITA
+                    if we_i = '1' then
+                        if unsigned(addr_i) = 0 then
+                            r_leds <= data_i(15 downto 0);
+                        end if;
+                    
+                    -- LEITURA
+                    else
+                        case to_integer(unsigned(addr_i)) is
+                            when 0 => data_o(15 downto 0) <= r_leds;
+                            when 4 => data_o(15 downto 0) <= gpio_sw;
+                            when others => null;
+                        end case;
+                    end if;
                 end if;
             end if;
         end if;
     end process;
 
-    -- Processo de Leitura (CPU <- Switches/LEDs)
-    process(addr_i, r_leds, gpio_sw)
-    begin
-        data_o <= (others => '0'); -- Default
-        
-        case to_integer(unsigned(addr_i)) is
-            when 0 => -- Lê o estado atual dos LEDs
-                data_o(15 downto 0) <= r_leds;
-            when 4 => -- Lê os Switches (Offset 0x04)
-                data_o(15 downto 0) <= gpio_sw;
-            when others =>
-                null;
-        end case;
-    end process;
+    ---------------------------------------------------------------------------------------------------------------
 
 end architecture; -- rtl
 
