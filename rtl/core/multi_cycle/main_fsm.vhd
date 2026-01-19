@@ -224,7 +224,7 @@ begin
 
     -- 3. Lógica de Saída (Combinacional - Moore) -----------------------------------------------------------------
 
-    process(current_state, Opcode_i, dmem_rdy_i, imem_rdy_i)
+    process(current_state, Opcode_i, dmem_rdy_i, imem_rdy_i, s_br_wait_q)
     begin
         
         -- Default Outputs (por segurança)
