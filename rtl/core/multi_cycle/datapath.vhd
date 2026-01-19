@@ -112,23 +112,6 @@ architecture rtl of datapath is
 
     -- ============== DECLARAÇÃO DOS SINAIS INTERNOS DO DATAPATH ==============
 
-    -- Sinais para desempacotar Control_i
-
-    signal s_pc_write             : std_logic := '0';                                     -- Habilita escrita do PC
-    signal s_opc_write            : std_logic := '0';                                     -- Habilita escrita de OldPC
-    signal s_ir_write             : std_logic := '0';                                     -- Habilita escrita de IR
-    signal s_mdr_write            : std_logic := '0';                                     -- Habilita escrita de MDR
-    signal s_rs1_write            : std_logic := '0';                                     -- Habilita escrita de RS1
-    signal s_rs2_write            : std_logic := '0';                                     -- Habilita escrita de RS2
-    signal s_alur_write           : std_logic := '0';                                     -- Habilita escrita de ALU Result
-    signal s_reg_write            : std_logic := '0';                                     -- Habilita escrita WB em rd (reg_file)
-    signal s_alu_src_a            : std_logic_vector(1 downto 0) := (others => '0');      -- Seleciona o operando A da ALU
-    signal s_alu_src_b            : std_logic := '0';                                     -- Seleciona o operando B da ALU     
-    signal s_mem_write            : std_logic := '0';                                     -- Habilita escrita na DMem
-    signal s_wb_sel               : std_logic_vector(1 downto 0) := (others => '0');      -- Seleciona a entrada de WB do reg_file
-    signal s_pc_src               : std_logic_vector(1 downto 0) := (others => '0');      -- Seleciona o próximo PC
-    signal s_alucontrol           : std_logic_vector(3 downto 0) := (others => '0');      -- Seleciona a operação da ALU
-
     -- Sinais internos do datapath
 
     signal s_pc_next              : std_logic_vector(31 downto 0) := (others => '0');     -- Próximo valor do PC
@@ -157,23 +140,6 @@ architecture rtl of datapath is
 
 begin
 
-    -- Desempacota os sinais de Control_i (vindos da unidade de controle)
-
-        s_pc_write       <= Control_i.pc_write;
-        s_opc_write      <= Control_i.opc_write;
-        s_ir_write       <= Control_i.ir_write;
-        s_mdr_write      <= Control_i.mdr_write;
-        s_rs1_write      <= Control_i.rs1_write;
-        s_rs2_write      <= Control_i.rs2_write;
-        s_alur_write     <= Control_i.alur_write;
-        s_reg_write      <= Control_i.reg_write;
-        s_alu_src_a      <= Control_i.alu_src_a;
-        s_alu_src_b      <= Control_i.alu_src_b;
-        s_mem_write      <= Control_i.mem_write;
-        s_wb_sel         <= Control_i.wb_sel;
-        s_pc_src         <= Control_i.pc_src;
-        s_alucontrol     <= Control_i.alu_control;
-
     -- Saídas para o control path
 
         Instruction_o    <= r_IR;
@@ -199,27 +165,27 @@ begin
 
                 else 
 
-                    if s_opc_write = '1' then
+                    if Control_i.opc_write = '1' then
                         r_OldPC <= r_PC;               -- Registra o valor de PC referente à instrução atual
                     end if;
 
-                    if s_ir_write = '1' then
+                    if Control_i.ir_write = '1' then
                         r_IR <= s_instruction;         -- Registrado para ser usado em ID
                     end if;
 
-                    if s_mdr_write = '1' then
+                    if Control_i.mdr_write = '1' then
                         r_MDR <= s_lsu_data_out;       -- Registrado para ser usado em WB
                     end if;
                     
-                    if s_rs1_write = '1' then
+                    if Control_i.rs1_write = '1' then
                         r_RS1 <= s_read_data_1;        -- Registrado para ser usado em EX
                     end if;
 
-                    if s_rs2_write = '1' then
+                    if Control_i.rs2_write = '1' then
                         r_RS2 <= s_read_data_2;        -- Registrado para ser usado em EX
                     end if;
 
-                    if s_alur_write = '1' then
+                    if Control_i.alur_write = '1' then
                         r_ALUResult <= s_alu_result;   -- Registrado para ser usado em MEM
                     end if;
 
@@ -240,7 +206,7 @@ begin
                     if Reset_i = '1' then
                         r_PC <= (others => '0');
                     else 
-                        if s_pc_write = '1' then
+                        if Control_i.pc_write = '1' then
                             r_PC <= s_pc_next;
                         end if;
                     end if;
@@ -268,7 +234,7 @@ begin
             U_REG_FILE: entity work.reg_file
                 port map (
                     clk_i        => CLK_i,                            -- Clock do processador
-                    RegWrite_i   => s_reg_write,                      -- Habilita escrita no banco de registradores
+                    RegWrite_i   => Control_i.reg_write,              -- Habilita escrita no banco de registradores
                     ReadAddr1_i  => r_IR(19 downto 15),               -- rs1 (bits [19:15]) - 5 bits
                     ReadAddr2_i  => r_IR(24 downto 20),               -- rs2 (bits [24:20]) - 5 bits
                     WriteAddr_i  => r_IR(11 downto 7),                -- rd  (bits [11: 7]) - 5 bits
@@ -283,13 +249,13 @@ begin
         -- Se s_alusrc_b='0' (R-Type, Branch), usa o valor do registrador s_read_data_2.
         -- Se s_alusrc_b='1' (I-Type, Load, Store), usa a constante s_immediate.
 
-            with s_alu_src_a select
+            with Control_i.alu_src_a select
                 s_alu_in_a <= r_RS1       when "00",    -- Padrão (rs1)
                               r_OldPC     when "01",    -- AUIPC (PC)
                               x"00000000" when "10",    -- LUI (Zero)
                               r_RS1       when others;  -- Necessário para compilação
 
-            s_alu_in_b <= r_RS2 when s_alu_src_b = '0' else s_immediate;
+            s_alu_in_b <= r_RS2 when Control_i.alu_src_b = '0' else s_immediate;
 
         -- A ULA executa a operação comandada pelo s_alu_control.
         -- O resultado (s_alu_result) pode ser um valor aritmético, um endereço de memória ou um resultado de comparação.
@@ -298,7 +264,7 @@ begin
                 port map (
                     A_i => s_alu_in_a,
                     B_i => s_alu_in_b,
-                    ALUControl_i => s_alucontrol,
+                    ALUControl_i => Control_i.alu_control,
                     Result_o => s_alu_result,
                     Zero_o => s_alu_zero
                 );
@@ -316,7 +282,7 @@ begin
                 -- Interface com o Datapath (Entradas)
                 Addr_i        => r_ALUResult,                         -- Endereço calculado pela ALU
                 WriteData_i   => r_RS2,                               -- Dado de rs2 para escrita
-                MemWrite_i    => s_mem_write,                         -- Sinal de controle WE
+                MemWrite_i    => Control_i.mem_write,                 -- Sinal de controle WE
                 Funct3_i      => r_IR(14 downto 12),                  -- Funct3 define B, H, W
                 
                 -- Interface com a Memória Física (DMem)
@@ -333,7 +299,7 @@ begin
 
         -- Mux WRITE-BACK DATA: decide o que será escrito de volta no registrador
 
-            with s_wb_sel select
+            with Control_i.wb_sel select
                 s_write_back_data <= r_ALUResult       when "00",     -- Tipo-R, Tipo-I (Aritmética)
                                      r_MDR             when "01",     -- Loads
                                      r_PC              when "10",     -- JAL / JALR
@@ -352,7 +318,7 @@ begin
         -- Mux final que alimenta o registrador do PC no próximo ciclo de clock
         -- - A prioridade é: Jumps têm precedência sobre Branches, que têm precedência sobre PC+4.
 
-            with s_pc_src select
+            with Control_i.pc_src select
                 s_pc_next <= s_pc_plus_4                     when "00", -- PC <- PC + 4
                              s_branch_or_jal_addr            when "01", -- PC <- Endereço de Branch ou JAL
                              r_ALUResult(31 downto 1) & '0'  when "10", -- PC <- Endereço do JALR (rs1 + imm)
