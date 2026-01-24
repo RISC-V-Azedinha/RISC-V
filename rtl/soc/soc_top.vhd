@@ -178,6 +178,15 @@ architecture rtl of soc_top is
         signal s_npu_rst_n    : std_logic;
         signal s_npu_rdy      : std_logic;
 
+    -- TIMER
+
+        signal s_timer_addr    : std_logic_vector(3 downto 0);
+        signal s_timer_data_rx : std_logic_vector(31 downto 0);
+        signal s_timer_data_tx : std_logic_vector(31 downto 0);
+        signal s_timer_we      : std_logic;
+        signal s_timer_vld     : std_logic;
+        signal s_timer_rdy     : std_logic;
+
     -- === Auxiliares =============================================================================================
 
     -- Sinais Auxiliares para o DMA WE expandido
@@ -332,7 +341,16 @@ begin
             dma_data_o   => s_dma_s_wdata, -- Interconnect escreve no DMA
             dma_we_o     => s_dma_s_we,
             dma_vld_o    => s_dma_s_vld,
-            dma_rdy_i    => s_dma_s_rdy
+            dma_rdy_i    => s_dma_s_rdy,
+
+            -- Interface TIMER
+            timer_addr_o  => s_timer_addr,
+            timer_data_i  => s_timer_data_rx,
+            timer_data_o  => s_timer_data_tx,
+            timer_we_o    => s_timer_we,
+            timer_vld_o   => s_timer_vld,
+            timer_rdy_i   => s_timer_rdy
+            
         );
 
     -- ============================================================================================================
@@ -426,6 +444,18 @@ begin
             vga_r_o     => VGA_R_o,
             vga_g_o     => VGA_G_o,
             vga_b_o     => VGA_B_o
+        );
+
+    U_TIMER: entity work.timer_controller
+        port map (
+            clk_i   => CLK_i,
+            rst_i   => Reset_i,
+            addr_i  => s_timer_addr,
+            data_i  => s_timer_data_tx,
+            data_o  => s_timer_data_rx,
+            we_i    => s_timer_we,
+            vld_i   => s_timer_vld,
+            rdy_o   => s_timer_rdy
         );
 
     -- Inverte o Reset 

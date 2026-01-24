@@ -130,7 +130,16 @@ entity bus_interconnect is
             dma_data_o          : out std_logic_vector(31 downto 0); -- Write Config
             dma_we_o            : out std_logic;
             dma_vld_o           : out std_logic;
-            dma_rdy_i           : in  std_logic 
+            dma_rdy_i           : in  std_logic;
+
+        -- Interface Timer
+
+            timer_addr_o        : out std_logic_vector(3 downto 0);
+            timer_data_i        : in  std_logic_vector(31 downto 0);
+            timer_data_o        : out std_logic_vector(31 downto 0);
+            timer_we_o          : out std_logic;
+            timer_vld_o         : out std_logic;
+            timer_rdy_i         : in  std_logic
 
         -- ========================================================================================
 
@@ -145,7 +154,7 @@ end entity;
 architecture rtl of bus_interconnect is
 
     type slave_t is (
-        SLV_NONE, SLV_ROM, SLV_RAM, SLV_UART, SLV_GPIO, SLV_VGA, SLV_NPU, SLV_DMA
+        SLV_NONE, SLV_ROM, SLV_RAM, SLV_UART, SLV_GPIO, SLV_VGA, SLV_NPU, SLV_DMA, SLV_TIMER
     );
 
     signal imem_slv : slave_t;
@@ -156,17 +165,18 @@ begin
     --------------------------------------------------------------------------
     -- Address decode (com latch implícito)
     --------------------------------------------------------------------------
-    imem_slv <= SLV_ROM when imem_addr_i(31 downto 28) = x"0" else
-                SLV_RAM when imem_addr_i(31 downto 28) = x"8" else
+    imem_slv <= SLV_ROM   when imem_addr_i(31 downto 28) = x"0" else
+                SLV_RAM   when imem_addr_i(31 downto 28) = x"8" else
                 SLV_NONE;
 
-    dmem_slv <= SLV_ROM  when dmem_addr_i(31 downto 28) = x"0" else
-                SLV_UART when dmem_addr_i(31 downto 28) = x"1" else
-                SLV_GPIO when dmem_addr_i(31 downto 28) = x"2" else
-                SLV_VGA  when dmem_addr_i(31 downto 28) = x"3" else
-                SLV_DMA  when dmem_addr_i(31 downto 28) = x"4" else
-                SLV_RAM  when dmem_addr_i(31 downto 28) = x"8" else
-                SLV_NPU  when dmem_addr_i(31 downto 28) = x"9" else
+    dmem_slv <= SLV_ROM   when dmem_addr_i(31 downto 28) = x"0" else
+                SLV_UART  when dmem_addr_i(31 downto 28) = x"1" else
+                SLV_GPIO  when dmem_addr_i(31 downto 28) = x"2" else
+                SLV_VGA   when dmem_addr_i(31 downto 28) = x"3" else
+                SLV_DMA   when dmem_addr_i(31 downto 28) = x"4" else
+                SLV_TIMER when dmem_addr_i(31 downto 28) = x"5" else
+                SLV_RAM   when dmem_addr_i(31 downto 28) = x"8" else
+                SLV_NPU   when dmem_addr_i(31 downto 28) = x"9" else
                 SLV_NONE;
 
     --------------------------------------------------------------------------
@@ -222,24 +232,31 @@ begin
     dma_we_o   <= '1' when (dmem_slv = SLV_DMA and dmem_we_i /= "0000") else '0';
     dma_vld_o  <= dmem_vld_i when dmem_slv = SLV_DMA else '0';
 
+    timer_addr_o <= dmem_addr_i(3 downto 0);
+    timer_data_o <= dmem_data_i;
+    timer_we_o   <= '1' when (dmem_slv = SLV_TIMER and dmem_we_i /= "0000") else '0';
+    timer_vld_o  <= dmem_vld_i when dmem_slv = SLV_TIMER else '0';
+
     dmem_data_o <=
-        rom_data_b_i  when dmem_slv = SLV_ROM  else
-        ram_data_b_i  when dmem_slv = SLV_RAM  else
-        uart_data_i   when dmem_slv = SLV_UART else
-        gpio_data_i   when dmem_slv = SLV_GPIO else
-        vga_data_i    when dmem_slv = SLV_VGA  else
-        npu_data_i    when dmem_slv = SLV_NPU  else
-        dma_data_i    when dmem_slv = SLV_DMA  else
+        rom_data_b_i  when dmem_slv = SLV_ROM   else
+        ram_data_b_i  when dmem_slv = SLV_RAM   else
+        uart_data_i   when dmem_slv = SLV_UART  else
+        gpio_data_i   when dmem_slv = SLV_GPIO  else
+        vga_data_i    when dmem_slv = SLV_VGA   else
+        npu_data_i    when dmem_slv = SLV_NPU   else
+        dma_data_i    when dmem_slv = SLV_DMA   else
+        timer_data_i  when dmem_slv = SLV_TIMER else
         (others => '0');
 
     dmem_rdy_o <=
-        rom_rdy_b_i when dmem_slv = SLV_ROM  else
-        ram_rdy_b_i when dmem_slv = SLV_RAM  else
-        uart_rdy_i  when dmem_slv = SLV_UART else
-        gpio_rdy_i  when dmem_slv = SLV_GPIO else
-        vga_rdy_i   when dmem_slv = SLV_VGA  else
-        npu_rdy_i   when dmem_slv = SLV_NPU  else
-        dma_rdy_i   when dmem_slv = SLV_DMA  else
+        rom_rdy_b_i when dmem_slv = SLV_ROM   else
+        ram_rdy_b_i when dmem_slv = SLV_RAM   else
+        uart_rdy_i  when dmem_slv = SLV_UART  else
+        gpio_rdy_i  when dmem_slv = SLV_GPIO  else
+        vga_rdy_i   when dmem_slv = SLV_VGA   else
+        npu_rdy_i   when dmem_slv = SLV_NPU   else
+        dma_rdy_i   when dmem_slv = SLV_DMA   else
+        timer_rdy_i when dmem_slv = SLV_TIMER else
         '0';
 
 end architecture; -- rtl
