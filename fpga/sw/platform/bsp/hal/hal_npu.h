@@ -2,55 +2,106 @@
 #define HAL_NPU_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
-/* Definições de Flags de Controle (para facilitar o uso) */
-#define NPU_CTRL_RELU       (1 << 0)
-#define NPU_CTRL_LOAD       (1 << 1)
-#define NPU_CTRL_CLEAR      (1 << 2)
-#define NPU_CTRL_DUMP       (1 << 3)
+// Estrutura para facilitar a configuração de Quantização
+typedef struct {
+    uint32_t mult;          // Multiplicador (Ponto Fixo)
+    uint32_t shift;         // Shift à direita (0-31)
+    uint32_t zero_point;    // Ponto Zero (Offset)
+    bool     relu;          // true = Ativar ReLU, false = Desativar
+} npu_quant_params_t;
+
+// ============================================================================
+// DMA
+// ============================================================================
 
 /*
- * Inicializa a NPU (Zera controle, limpa FIFOs se necessário).
+ * Habilita ou desabilita o uso de DMA para transferências.
+ * enable: true => tenta usar DMA se possível.
+ *         false => força uso da CPU (loop de escrita).
+ */
+void hal_npu_set_dma_enabled(bool enable);
+
+// ============================================================================
+// CONTROLE E STATUS
+// ============================================================================
+
+/* 
+ * Inicializa a NPU (reseta ponteiros globais e limpa estado).
+ * Deve ser chamada antes de qualquer operação.
  */
 void hal_npu_init(void);
 
 /*
- * Configura os parâmetros de quantização e escala.
- * shift: Quantos bits deslocar à direita (divisão por 2^n).
- * zero_point: Valor de ponto zero (para soma pós-scaling).
- * multiplier: Fator multiplicativo da PPU.
+ * Verifica se a NPU está ocupada.
+ * Retorna: 1 se 'busy', 0 se 'idle'.
  */
-void hal_npu_config(uint8_t shift, uint8_t zero_point, uint32_t multiplier);
+int hal_npu_is_busy(void);
 
 /*
- * Define o registrador de controle diretamente.
- * Ex: hal_npu_set_ctrl(NPU_CTRL_RELU | NPU_CTRL_LOAD);
+ * Aguarda a conclusão do processamento atual (Blocking).
+ * Faz polling no bit DONE.
  */
-void hal_npu_set_ctrl(uint32_t flags);
+void hal_npu_wait_done(void);
+
+// ============================================================================
+// CONFIGURAÇÃO
+// ============================================================================
 
 /*
- * Envia um pacote de 4 pesos (Int8) para a FIFO de Pesos.
- * (Blocking: Espera se a FIFO estiver cheia).
- * Os pesos devem estar empacotados: [w3, w2, w1, w0] (w0 é o byte menos significativo).
+ * Configura os parâmetros de execução.
+ * k_dim: Profundidade da acumulação (número de iterações/ciclos).
+ * quant: Ponteiro para struct com parâmetros de quantização.
  */
-void hal_npu_write_weight(int8_t w0, int8_t w1, int8_t w2, int8_t w3);
+void hal_npu_configure(uint32_t k_dim, npu_quant_params_t *quant);
 
 /*
- * Envia um pacote de 4 ativações (Int8) para a FIFO de Entrada.
- * (Blocking: Espera se a FIFO estiver cheia).
+ * Carrega o vetor de BIAS.
+ * bias_buffer: Array de 4 valores (32-bit cada).
  */
-void hal_npu_write_input(int8_t i0, int8_t i1, int8_t i2, int8_t i3);
+void hal_npu_load_bias(const uint32_t *bias_buffer);
+
+// ============================================================================
+// TRANSFERÊNCIA DE DADOS
+// ============================================================================
 
 /*
- * Lê um pacote de 4 resultados (Int8) da FIFO de Saída.
- * (Blocking: Espera até que o dado esteja disponível).
+ * Carrega Pesos (Weights) na FIFO interna.
+ * data: Buffer de dados (já empacotados em 32-bit: int8x4).
+ * num_words: Quantidade de palavras de 32 bits a escrever.
  */
-uint32_t hal_npu_read_output(void);
+void hal_npu_load_weights(const uint32_t *data, uint32_t num_words);
 
 /*
- * Verifica se há resultado pronto para leitura.
- * Retorna: 1 se houver dado, 0 se vazio.
+ * Carrega Entradas (Inputs/Activations) na FIFO interna.
+ * data: Buffer de dados (já empacotados em 32-bit: int8x4).
+ * num_words: Quantidade de palavras de 32 bits a escrever.
  */
-int hal_npu_result_ready(void);
+void hal_npu_load_inputs(const uint32_t *data, uint32_t num_words);
+
+/*
+ * Lê os resultados da FIFO de saída.
+ * buffer: Onde os dados serão salvos.
+ * num_words: Quantidade de palavras de 32 bits a ler.
+ */
+void hal_npu_read_output(uint32_t *buffer, uint32_t num_words);
+
+// ============================================================================
+// EXECUÇÃO
+// ============================================================================
+
+/*
+ * Dispara a execução da NPU (Non-blocking).
+ * Automaticamente aplica as flags de reset de leitura (RST_RD) e clear (ACC_CLEAR)
+ * para garantir uma execução limpa padrão.
+ */
+void hal_npu_start(void);
+
+/*
+ * Dispara a execução SEM limpar os acumuladores.
+ * Útil para operações de Tiling (quebrar matrizes grandes em pedaços).
+ */
+void hal_npu_start_accumulate(void);
 
 #endif /* HAL_NPU_H */
