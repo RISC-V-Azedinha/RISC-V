@@ -67,7 +67,7 @@ read_dir "$npu_root/rtl/core"   "*.vhd"
 read_dir "$npu_root/rtl/ppu"    "*.vhd"
 
 # NPU Top Level
-read_vhdl "$npu_root/rtl/npu_top.vhd"
+read_dir "$npu_root/rtl/"       "*.vhd"
 
 # Core Common
 read_dir "./rtl/core/common" "*.vhd"
@@ -111,7 +111,7 @@ puts "\n------------------------------------------------------------------------
 puts ">>> [3/6] Executando Sintese do Projeto...\n"
 
 if {[catch {
-    synth_design -top $topEntity -part $targetPart -generic "INIT_FILE=$bootHex" -flatten_hierarchy rebuilt -retiming -quiet
+    synth_design -top $topEntity -part $targetPart -generic "INIT_FILE=$bootHex" -flatten_hierarchy rebuilt -retiming 
 } err]} {
     puts "\n!!! FALHA NA SINTESE !!!"
     puts "$err"

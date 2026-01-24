@@ -24,7 +24,6 @@ NPU_SRCS := \
     $(NPU_ROOT)/rtl/core/mac_pe.vhd \
     $(NPU_ROOT)/rtl/core/systolic_array.vhd \
     $(NPU_ROOT)/rtl/core/input_buffer.vhd \
-    $(NPU_ROOT)/rtl/core/output_buffer.vhd \
     $(NPU_ROOT)/rtl/core/npu_core.vhd \
     $(NPU_ROOT)/rtl/ppu/post_process.vhd \
     $(NPU_ROOT)/rtl/npu_top.vhd
