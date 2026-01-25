@@ -127,52 +127,50 @@
 }
 
 
-% folha de rosto 
+% Folha de rosto 
 
 \makeatletter
 
-\renewcommand{\imprimirfolhaderosto}{
+\renewcommand{\folhaderosto}{
   \begin{center}
-    
-    {\textsc{\textbf{\imprimiruniversidade}}}\\ \ \\
-    {\textsc{\textbf{\imprimirfaculdade}}}\\ \ \\
-    {\textsc{\textbf{\imprimircurso}}}\\ \ \\
+    % Autor no topo
+    {\ABNTEXchapterfont\large\textbf{\textsc{\imprimirautor}}}
 
-    \vspace*{2.6cm}
-
-    {\textsc{\textbf{\imprimirautor}}}
-
-    \vspace*{\fill}\vspace*{\fill}
-
-    \begin{center}
-    \large\textsc{\textbf{\imprimirtitulo}}
-    \end{center}
-
+    % Espaço flexível entre Autor e Título
     \vspace*{\fill}
 
+    % Título
+    \begin{center}
+      \ABNTEXchapterfont\Large\textbf{\textsc{\imprimirtitulo}}
+    \end{center}
+
+    % Espaço flexível entre Título e Preâmbulo
+    \vspace*{\fill}
+
+    % Bloco do Preâmbulo (Natureza do Trabalho)
     \abntex@ifnotempty{\imprimirpreambulo}{%
       \hspace{.45\textwidth}
       \begin{minipage}{.5\textwidth}
-      \SingleSpacing
-      \normalsize\imprimirpreambulo
-      
-      \vspace*{0.352cm}
-      
-      {\normalsize\imprimirorientadorRotulo~\imprimirorientador\par}
+        \SingleSpacing
+        \normalsize\imprimirpreambulo
+        
+        \vspace*{0.5cm} % Espaço entre o texto e o orientador
+        
+        {\normalsize\imprimirorientadorRotulo~\imprimirorientador\par}
+        
+        \abntex@ifnotempty{\imprimircoorientador}{%
+          {\normalsize\imprimircoorientadorRotulo~\imprimircoorientador}%
+        }%
       \end{minipage}%
+      
       \vspace*{\fill}
     }%
 
-    \abntex@ifnotempty{\imprimircoorientador}{%
-      {\normalsize\imprimircoorientadorRotulo~\imprimircoorientador}%
-    }%
-
-    \vspace*{\fill}
-
-    {\normalsize\textbf\imprimirlocal}\\
+    % Local e Data
+    {\normalsize\textbf\imprimirlocal}
+    \par
     {\normalsize\textbf\imprimirdata}
     
-    \vspace*{1cm}
   \end{center}
 }
 

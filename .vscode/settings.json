@@ -42,5 +42,10 @@
     "latex-workshop.latex.autoBuild.run": "onFileChange",
     "latex-workshop.view.pdf.viewer": "tab",
     "latex-workshop.latex.autoClean.run": "onBuilt",
-    "latex-workshop.latex.clean.subfolder.enabled": true
+    "latex-workshop.latex.clean.subfolder.enabled": true,
+    "[latex]": {
+        "editor.wordWrap": "on",
+        "editor.wordWrapColumn": 80,
+        "editor.indentSize": 2
+    }
 }

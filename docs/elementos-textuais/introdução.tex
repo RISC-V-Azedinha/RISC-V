@@ -1,78 +1,50 @@
 \chapter{Introdução}
 \label{cap:introducao}
 
-A computação moderna é construída sobre camadas de abstração. Do clique de um mouse à 
-execução de uma inteligência artificial, existem bilhões de transistores operando em uma 
-sinfonia lógica precisa. No entanto, para a maioria dos profissionais da área, essa base 
-opera como uma "caixa-preta". O hardware tornou-se algo que se usa, mas não necessariamente 
-se compreende.
+A computação moderna é construída sobre múltiplas camadas de abstração. Do clique de um mouse à execução de uma inteligência artificial, existem bilhões de transistores operando em uma  sinfonia lógica coordenada. No entanto, para a maioria dos profissionais da área, essa base  opera como uma caixa-preta. O hardware tornou-se algo que se usa, mas não é necessariamente  compreendido.
 
-Este trabalho propõe romper com essa visão utilitária. O projeto aqui documentado não é apenas 
-a construção de um microprocessador, mas, uma investigação prática sobre os fundamentos que 
-sustentam toda a era digital. Ao projetar, implementar e validar um sistema computacional 
-completo, buscamos resgatar o domínio sobre a camada de hardware subjacente.
+Este trabalho propõe romper com a visão estritamente utilitária. O projeto aqui documentado não  se limita à construção de um microprocessador funcional, mas constitui uma investigação prática  sobre os fundamentos arquiteturais que sustentam toda a era digital. Por meio do projeto, implementação e validação de um sistema-em-chip (SoC) completo baseado na arquitetura RISC-V, busca-se rersgatar o domínio sobre a camada de hardware subjacente às abstrações modernas.
 
-A arquitetura escolhida para guiar esta jornada é o RISC-V, um conjunto de instruções (ISA) 
-aberto que, por sua simplicidade e modularidade, serve como o veículo perfeito para o estudo de 
-arquitetura e organização de computadores.
+A arquitetura RISC-V foi adotada como eixo central deste estudo por sua natureza aberta, modular e pedagogicamente adequada. Sua simplicidade estrutural permite observar, de forma explícita, a relação entre o conjunto de instruções, o datapath, os sinais de controle e o comportamento temporal do sistema. Dessa forma, o processador desenvolvido não é tratado apenas como um meio para execução de programas, mas como um objeto de análise arquitetural, no qual decisões de projeto impactam diretamente desempenho, previsibilidade e uso de recursos.
+
+À medida que aplicações contemporâneas passam a demandar volumes crescentes de processamento especializado - especialmente em domínios como aprendizado de máquina e inferência em dispositivos embarcados - torna-se evidente a limitação de arquiteturas puramente generalistas. Nesse contexto, aceleradores dedicados emergem como uma extensão natural do sistema computacional. Assim, este trabalho evolui a partir do núcleo RISC-V para a integração de uma Unidade de Processamento Neural (\textit{Neural Processing Unit} - NPU), utilizada como estudo de caso para explorar os efeitos da especialização arquitetural dentro de um SoC. 
+
+A NPU não é apresentada como um fim em si mesma, mas como uma consequência direta da análise das camadas de abstração do sistema. Sua iniclusão permite investigar, de forma controlada, como a divisão de reponsabilidades entre CPU e aceleradores impacta métricas como latência, throughput, movimentação de dados e limites teóricos de aceleração - destravando a era da computação heterogênea. Dessa forma, o projeto estabele uma ponte concreta entre fundamentos clássicos de arquitetura de computadores e desagios atuais da computação embarcada e de edge-AI.
 
 \section{Motivação}
 
-Por que, na era da computação em nuvem e linguagens de altíssimo nível, um engenheiro deve 
-despender tempo entendendo barramentos, datapaths e sinais de controle? A despeito do avanço das 
-abstrações oferecidas por linguagens modernas, frameworks e plataformas em nuvem, os sistemas 
-computacionais continuam fundamentados em princípios microarquiteturais que determinam seu 
-desempenho, seu comportamento e suas limitações. Esses conhecimentos permanecem essenciais porque 
-tais componentes constituem o nível de base sobre o qual todas as abstrações são 
-construídas. Sem essa compreensão, o engenheiro passa a operar máquinas sem entender suas 
-características - tais como: latência, gargalos, paralelismo, hierarquia de memória e restrições — 
-que afetam diretamente a eficiência e a confiabilidade de qualquer solução de software ou hardware 
-desenvolvida.
+Por que, na era da computação em nuvem e linguagens de altíssimo nível, um engenheiro deve  despender tempo entendendo barramentos, datapaths e sinais de controle? A despeito do avanço das abstrações oferecidas por linguagens modernas, frameworks e plataformas em nuvem, os sistemas  computacionais continuam fundamentados em princípios microarquiteturais que determinam seu  desempenho, seu comportamento e suas limitações. Esses conhecimentos permanecem essenciais porque tais componentes constituem o nível de base sobre o qual todas as abstrações são  construídas. Sem essa compreensão, o engenheiro passa a operar máquinas sem entender suas  características - tais como: latência, gargalos, paralelismo, hierarquia de memória e restrições — que afetam diretamente a eficiência e a confiabilidade de qualquer solução de software ou hardware desenvolvida.
 
-Do ponto de vista formativo, a familiaridade com os elementos internos do processador também 
-capacita o engenheiro a compreender o funcionamento da cadeia completa de execução — da 
-especificação de uma instrução ao seu efeito no hardware físico. Essa visão abrangente é 
-indispensável em áreas como sistemas embarcados, computação de alto desempenho, aceleradores 
-especializados, dispositivos IoT, aplicações críticas e de tempo real, nas quais a interação 
-direta com o hardware é frequente e decisiva.
+Do ponto de vista formativo, a familiaridade com os elementos internos do processador também  capacita o engenheiro a compreender o funcionamento da cadeia completa de execução — da  especificação de uma instrução ao seu efeito no hardware físico. Essa visão abrangente é  indispensável em áreas como sistemas embarcados, computação de alto desempenho, aceleradores  especializados, dispositivos IoT, aplicações críticas e de tempo real, nas quais a interação  direta com o hardware é frequente e decisiva.
 
-Em suma, mesmo em um cenário em que as abstrações se tornam cada vez mais sofisticadas, a 
-compreensão do nível fundamental da computação permite que o engenheiro avalie limitações, 
-explore otimizações, antecipe comportamentos do sistema e desenvolva soluções mais robustas e 
-eficientes. Assim, o estudo desses conceitos continua sendo um elemento central na formação e 
-na prática da engenharia moderna.
-
-\section{Objetivos do Projeto}
-
-O objetivo central deste trabalho é suprir o abismo entre estudar diagramas de livros-texto e 
-fazer um sinal elétrico acender um pixel na tela. Para tal, projetando um System-on-Chip (SoC) 
-baseado na arquitetura RISC-V, validando os conceitos teóricos de organização de computadores 
-através de uma aplicação prática. 
-
-Portanto, visando prover uma experiência prática acerca dos tópicos estudados, os objetivos 
-específicos desse projeto são:
+A motivação deste projeto apoia-se em três pilares fundamentais:
 
 \begin{enumerate}
-    \item \textbf{Microarquitetura}: Implementar um núcleo de processamento funcional, detalhando o 
-    fluxo de dados e a lógica de controle.
-    \item \textbf{Organização de Sistemas}: Desenvolver uma infraestrutura de comunicação 
-    (Barramento) que demonstre na prática o conceito de Mapeamento de Memória (MMIO), permitindo 
-    que a CPU interaja com o mundo externo.
-    \item \textbf{Interface Hardware/Software}: Construir o ecossistema necessário para executar 
-    código C em um ambiente sem sistema operacional (\textit{bare-metal}), desmistificando o funcionamento 
-    de bibliotecas padrão.
+
+    \item \textbf{Domínio da Arquitetura Heterogênea:} o desempenho computacional moderno é limitado majoritariamente pelo "Gargalo de Von Neumann" - o custo de mover dados entre memória e processador. Compreender como mitigar esse gargalo através de técnicas como DMA (Acesso Direto à Memória) e hardware de aceleradores especializados é uma competência esesencial para o projeto de sistemas eficientes;
+    \item \textbf{Abordagem Pedagógica e Visual:} a abstração excessiva pode ser prejudicial ao aprendizado profundo. Ao desenvolver um sistema que não inclui apenas o hardware, mas ferramentas de visualização, o projeto torna tangível conceitos abstratos. 
+
 \end{enumerate}
 
-\section{Organização do Documento}
+Em suma, mesmo em um cenário em que as abstrações se tornam cada vez mais sofisticadas, a  compreensão do nível fundamental da computação permite que o engenheiro avalie limitações,  explore otimizações, antecipe comportamentos do sistema e desenvolva soluções mais robustas e  eficientes. Assim, o estudo desses conceitos continua sendo um elemento central na formação e na prática da engenharia moderna.
 
-Este documento está organizado de forma a acompanhar evolução do projeto - abordando a concepção 
-da arquitetura e desenvolvimento da microarquitetura, organização do sistema, até a execução de 
-aplicações e simulações:
+\section{Objetivos}
+
+\subsection{Objetivo Geral}
+
+Este trabalho propõe o projeto, a implementação e a análise de um sistema-em-chip (SoC) baseado em um processador RISC-V em FPGA, investigando como decisões microarquiteturais em diferentes níveis de abstração impactam o desempenho, o comportamento temporal e os limites de aceleração do sistema. A integração de uma unidade de processamento neural (NPU) dedicada ao SoC permite estudar o desempenho de sistemas heterogêneos e avaliar os ganhos potenciais de aceleração computacional.
+
+Além disso, o projeto visa o desenvolvimento de um ecossistema educacional de ferramentas voltadas para o ensino de Arquitetura e Organização de Computadores. Diferentemente de abordagens que utilizam blocos de propriedade intelectual (IPs) proprietários fornecidos por fabricantes de FPGA, este trabalho adota uma filosofia de implementação integral da microarquitetura, permitindo inspeção detalhada de todos os componentes e favorecendo uma abordagem de pesquisa e ensino baseada em \textit{white-box}.
+
+\subsection{Objetivos Específicos}
 
 \begin{enumerate}
-    \item O \textbf{Capítulo 2} fundamenta as escolhas de arquitetura (RISC-V) e ferramentas.
-    \item O \textbf{Capítulo 3} descreve o coração do sistema: o processador e sua microarquitetura.
-    \item O \textbf{Capítulo 4} expande o horizonte para o sistema completo, detalhando o Barramento e a organização da memória.
-    \item O \textbf{Capítulo 5} aborda a camada invisível de software que torna o hardware utilizável.
-    \item O \textbf{Capítulo 6} apresenta a implementação em um hardware real, através de uma placa FPGA, consolidando todos os conceitos em uma aplicação real.
+
+    \item \textbf{Core RISC-V:} projetar um processador RV32I multiciclo, detalhando a relação entre conjunto de instruções, \textit{datapath} e unidade de controle;
+    \item \textbf{NPU Sistólica:} projetar um acelerador de redes neurais baseado em \textit{Systolic Array} com micro-sequenciador próprio, explorando a execução autônoma de cargas de trabalho de IA;
+    \item \textbf{Arquitetura de Comunicação:} implementar a infraestrutura do SoC, incluindo barramento compartilhado, arbitragem centralizada e controlador de DMA (\textit{Direct Memory Access}) para transferências de dados;
+    \item \textbf{Ecossistema Educacional:} desenvolver bibliotecas de abstração de hardware (HAL) e aplicações gráficas em Python que permitam a inspeção visual da memória e interação em tempo real com o sistema embarcado;
+    \item \textbf{Validação Experimental:} validar o sistema completo em FPGA, executando inferências reais para analisar os ganhos de desempenho da aceleração por hardware frente à execução puramente via software.
+
 \end{enumerate}
+
