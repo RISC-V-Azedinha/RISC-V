@@ -1,0 +1,56 @@
+\chapter{Desenvolvimento}
+\label{cap:desenvolvimento}
+
+\section{Metodologias de Projeto}
+
+A complexidade inerente ao desenvolvimento de um microprocessador exige uma metodologia de projeto rigorosa e estruturada. Este trabalho seguiu uma abordagem de desenvolvimento \textbf{Bottom-Up} (de baixo para cima) combinada com \textbf{Prototipagem Evolutiva}.
+
+\subsection{Desenvolvimento Modular e Hierárquico}
+
+O sistema foi decomposto em módulos fundamentais de menor complexidade. O desenvolvimento iniciou-se pelos componentes base do \textit{datapath} (Multiplexadores, ALU, Banco de Registradores), progredindo para a Unidade de Controle e, finalmente, para a integração no nível de topo (\textit{Top Level}). Cada módulo foi projetado como uma entidade independente, com interfaces (\textit{ports}) claramente definidas, facilitando o isolamento de falhas.
+
+\subsection{Estratégia de Verificação e Simulação}
+
+Dada a dificuldade de depurar erros diretamente no hardware físico, adotou-se a abordagem de testes através de simulações (\textit{textbenches}). Nenhum componente foi integrado ao sistema principal sem antes ser validado individualmente. 
+
+O ambiente de simulação utilizado foi o \textbf{GHDL}, um simulador \textit{open-source} de alto desempenho, integrado a um fluxo de automação via \textbf{GNU Make}. Isso garante que todo o processo de compilação, simulação e visualização de ondas (via GTKWave) seja reprodutível e automatizado.
+
+\section{Arquitetura de Hardware}
+
+\section{Ecossistema de Software (BARE-METAL)}
+
+\lipsum[2-3]
+
+% \begin{algorithm}[H]
+%    \SetAlgoLined
+%    \Entrada{$S,\eta, U$} 
+%    \Saida{Número esperado de nodos atingidos}
+%    \Inicio{
+%    $\sigma(S) = 0$ \\
+%     \Para{cada $u \in S$}{
+%    $\sigma(S)\leftarrow \sigma(S)+\textsc{Backtrack}(u,\eta,W,U)$\\
+%      }
+%    }
+%    \Retorna{$\sigma(S)$}
+%    \label{alg1}
+%    \caption{\textsc{Esperança}}
+%  \end{algorithm}
+
+\subsection{Toolchain RISC-V e Compilação}
+
+\subsection{Automação com Makefile}
+
+\subsection{Integração com simulação e verificações}
+
+\section{Implementação em FPGA}
+
+\lipsum[2-3]
+
+\subsection{Síntese}
+
+\subsection{Pinagem e restrições}
+
+\subsection{Testes em hardware}
+
+\section{Ecossistema Educacional e Ferramentas}
+

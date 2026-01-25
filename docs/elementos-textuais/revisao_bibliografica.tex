@@ -207,11 +207,11 @@ Outro benefício dessa abordagem é o reuso eficiente de componentes microarquit
 
 Considerações relacionadas à temporização do sistema, aos atrasos de propagação dos componentes e ao acesso às memórias serão discutidas em maior detalhe em seções posteriores.
 
-\section{Sistemas-em-Chip (SoC) e Barramentos}
+\section{Sistemas-em-Chip (SoC) e Interconexões}
 
 Um sistema-em-chip (SoC - \textit{System-on-Chip}) integra, em um único circuito, todos os componentes necessários para um sistema computacional funcional: processador, memória, interfaces de entrada/saída (E/S) e aceleradores. O desafio central no projeto de um SoC não é apenas o design dos componentes individuais, mas a eficiência da comunicação entre eles.
 
-\subsection{Interconexão}
+\subsection{Barramento de Interconexão}
 
 A comunicação em um SoC é tipicamente feita através de um barramento (\textit{bus}) - onde um protocolo define o \textit{handshaking} para leitura e escrita. Protocoolos industriais comuns incluem o AMBA (AHB/APB) da ARM e o TileLink. Neste projeto, implementa-se um protocolo de barramento customizado simplificado.
 
@@ -223,7 +223,7 @@ Em sistemas onde a CPU é o único mestre do barramento, a movimentação de gra
 
 \subsection{Arbitragem}
 
-\section{Aceleração de Hardware para Redes Neurais}
+\section{Aceleração de Hardware e Redes Neurais}
 
 A popularização da utilização de redes neurais e aprendizagem profunda expôs as limitações das CPUs de propósito geral. O treinamento e a inferência de redes neurais são dominados por operações de álgebra linear, especificamente a multiplicação de matrizes (GEMM - \textit{General Matrix Multiply}).
 
@@ -247,16 +247,5 @@ Para este trabalho, adotou-se especificamente o padrão \textbf{VHDL-2008} (IEEE
 
 A natureza reconfigurável do FPGA o torna a plataforma ideal para prototipagem de SoCs e desenvolvimento de arquiteturas experimentais (como a proposta neste trabalho), permitindo validação física do cicruito sem os custos proibitivos de fabricação de um ASIC (\textit{Application-Specific Iintegrated Circuit}).
 
-\section{Metodologias de Projeto}
+\section{Ferramentas de Ensino em Engenharia}
 
-A complexidade inerente ao desenvolvimento de um microprocessador exige uma metodologia de projeto rigorosa e estruturada. Este trabalho seguiu uma abordagem de desenvolvimento \textbf{Bottom-Up} (de baixo para cima) combinada com \textbf{Prototipagem Evolutiva}.
-
-\subsection{Desenvolvimento Modular e Hierárquico}
-
-O sistema foi decomposto em módulos fundamentais de menor complexidade. O desenvolvimento iniciou-se pelos componentes base do \textit{datapath} (Multiplexadores, ALU, Banco de Registradores), progredindo para a Unidade de Controle e, finalmente, para a integração no nível de topo (\textit{Top Level}). Cada módulo foi projetado como uma entidade independente, com interfaces (\textit{ports}) claramente definidas, facilitando o isolamento de falhas.
-
-\subsection{Estratégia de Verificação e Simulação}
-
-Dada a dificuldade de depurar erros diretamente no hardware físico, adotou-se a abordagem de testes através de simulações (\textit{textbenches}). Nenhum componente foi integrado ao sistema principal sem antes ser validado individualmente. 
-
-O ambiente de simulação utilizado foi o \textbf{GHDL}, um simulador \textit{open-source} de alto desempenho, integrado a um fluxo de automação via \textbf{GNU Make}. Isso garante que todo o processo de compilação, simulação e visualização de ondas (via GTKWave) seja reprodutível e automatizado.
