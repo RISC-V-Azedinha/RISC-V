@@ -10,7 +10,7 @@ from datetime import datetime
 # CONFIGURAÇÕES PADRÃO
 # ==============================================================================
 DEFAULT_PORT      = "COM6" 
-DEFAULT_BAUD      = 115200
+DEFAULT_BAUD      = 921600
 DEFAULT_FILENAME  = "app.bin"
 
 # ==============================================================================

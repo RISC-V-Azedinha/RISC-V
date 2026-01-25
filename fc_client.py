@@ -9,7 +9,7 @@ from datetime import datetime
 # CONFIGURAÇÃO DE USUÁRIO
 # ==============================================================================
 SERIAL_PORT = 'COM6'      
-BAUD_RATE   = 115200
+BAUD_RATE   = 921600
 
 # ==============================================================================
 # ESTÉTICA & LOGGING

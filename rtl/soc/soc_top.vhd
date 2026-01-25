@@ -31,7 +31,7 @@ entity soc_top is
 
         INIT_FILE : string  := "build/fpga/boot/bootloader.hex";
         CLK_FREQ  : integer := 100_000_000;  -- Frequência do Clock em Hz
-        BAUD_RATE : integer := 115_200       -- Taxa de Baud para a UART
+        BAUD_RATE : integer := 921_600       -- Taxa de Baud para a UART (bps)
     
     );
     port (

@@ -12,7 +12,7 @@ from sklearn.model_selection import train_test_split
 # CONFIGURAÇÃO DE USUÁRIO
 # ==============================================================================
 SERIAL_PORT = 'COM6'   
-BAUD_RATE   = 115200
+BAUD_RATE   = 921600
 HW_SHIFT    = 6        
 BIAS_CONST  = 10       
 
