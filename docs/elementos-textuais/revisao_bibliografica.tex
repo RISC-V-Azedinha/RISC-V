@@ -1,0 +1,262 @@
+\chapter{Revisão Bibliográfica}
+\label{cap:revisao}
+
+% ---
+\section{Arquitetura RISC-V}
+% ---
+
+Historicamente, o projeto de processadores seguiu duas filosofias principais de arquiteturas de conjunto de instruções (\textit{Instruction Set Architectures - ISAs}). A arquitetura CISC (\textit{Complex Instruction Set Computing}), exemplificada pela família x86 da Intel, privilegia a densidade de instruções por meio de um conjunto amplo de instruções complexas e especializadas. Em contraponto, a abordagem RISC (\textit{Reduced Instruction Set Computing}) busca um hardware mais simples e previsível, apoiando-se em um conjunto de instruções reduzido e regular \cite{patterson-hennessy-riscv}.
+
+O RISC-V é uma arquitetura de conjunto de instruções (\textit{ISA}) baseada no conceito RISC (\textit{Reduced Instruction Set Computer}). Em termos práticos, a especificação RISC-V define o contrato entre hardware e software em seu nível mais fundamental. Diferentemente de arquiteturas proprietárias, como x86 e ARM, ela é aberta e livre de royalties, permitindo que universidades, empresas e desenvolvedores a utilizem, implementem e modifiquem livremente.
+
+\vspace{1em}
+
+\FloatBarrier
+
+\begin{figure}[!htb]
+	\caption{Arquitetura geral de um núcleo RISC-V, destacando o \textit{pipeline} de execução, o banco de registradores e as interfaces de memória.}
+	\label{fig:risc-v-architecture}
+	\centering
+	\includegraphics[width=0.9\textwidth]{risc-v-architecture.jpg} \\
+	\begin{small}\textbf{Fonte: \cite{roa2018rv12}}\end{small}
+\end{figure}
+
+\FloatBarrier
+
+As principais características da arquitetura RISC-V incluem:
+\begin{enumerate}
+	\item \textbf{Modularidade:} núcleo mínimo (base ISA) e extensões opcionais.
+	\item \textbf{Simplicidade}: instruções de tamanho fixo (geralmente 32 bits).
+	\item \textbf{Portabilidade}: projetada para uso desde microcontroladores até supercomputadores.
+	\item \textbf{Ecossistema aberto}: suporte crescente em compiladores, simuladores e hardware.
+\end{enumerate}
+
+Apesar do domínio da ARM (\textit{Advanced RISC Machine}) no mercado de embarcados e móveis, a flexibilidade, o custo zero de licenciamento e a capacidade de customização do RISC-V o posicionam como um competidor formidável e uma alternativa estratégica para o futuro da computação.
+
+\subsection{Conjunto de Instruções RV32I}
+
+O conjunto de instruções RV32I constitui a especificação base da arquitetura RISC-V para processadores de 32 bits \cite{riscv-unprivileged}. Trata-se de uma arquitetura do tipo \textit{load-store}, na qual operações aritméticas e lógicas são realizadas exclusivamente sobre operandos residentes em registradores. O acesso à memória é efetuado apenas por meio de instruções explícitas de \textit{load} e \textit{store}, responsáveis, respectivamente, por transferir dados da memória para os registradores e por escrever os resultados de volta na memória. 
+
+A nomenclatura RV32I indica uma largura de palavra de 32 bits e o suporte a operações com números inteiros, que formam a base obrigatória sobre a qual todas as demais extensões da ISA RISC-V são construídas. A Tabela~\ref{tab:rv32i_instr} apresenta o conjunto de instruções fundamentais suportadas pelo núcleo RV32I.
+
+\begin{xltabular}{\textwidth}{@{} l l X @{}}
+\caption{Instruções do Conjunto RV32I} \label{tab:rv32i_instr} \\
+\toprule
+\textbf{Categoria} & \textbf{Mnemônico} & \textbf{Descrição} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Categoria} & \textbf{Mnemônico} & \textbf{Descrição} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+
+% Aritmética e Lógica (R-Type)
+\textbf{R-Type} & ADD & Soma aritmética entre registadores. \\
+ & SUB & Subtração aritmética entre registadores. \\
+ & SLL & Deslocamento lógico à esquerda (\textit{Shift Left Logical}). \\
+ & SLT & Definir se menor que (\textit{Set Less Than}, com sinal). \\
+ & SLTU & Definir se menor que (\textit{Set Less Than Unsigned}, sem sinal). \\
+ & XOR & Ou exclusivo bit a bit. \\
+ & SRL & Deslocamento lógico à direita (\textit{Shift Right Logical}). \\
+ & SRA & Deslocamento aritmético à direita (\textit{Shift Right Arithmetic}). \\
+ & OR & Ou lógico bit a bit. \\
+ & AND & E lógico bit a bit. \\
+\midrule
+
+% Aritmética e Lógica Imediata (I-Type)
+\textbf{I-Type} & ADDI & Soma com valor imediato. \\
+ & SLTI & Definir se menor que imediato (com sinal). \\
+ & SLTIU & Definir se menor que imediato (sem sinal). \\
+ & XORI & Ou exclusivo imediato. \\
+ & ORI & Ou lógico imediato. \\
+ & ANDI & E lógico imediato. \\
+ & SLLI & Deslocamento lógico à esquerda imediato. \\
+ & SRLI & Deslocamento lógico à direita imediato. \\
+ & SRAI & Deslocamento aritmético à direita imediato. \\
+\midrule
+
+% Upper Immediates (U-Type)
+\textbf{U-Type} & LUI & Carregar Imediato Superior (\textit{Load Upper Immediate}). Preenche os 20 bits mais significativos. \\
+ & AUIPC & Adicionar Imediato Superior ao PC (\textit{Add Upper Immediate to PC}). \\
+\midrule
+
+% Saltos (J-Type / I-Type)
+\textbf{Jumps} & JAL & Salto e Link (\textit{Jump and Link}). Salto incondicional relativo ao PC. \\
+ & JALR & Salto e Link Registrador (\textit{Jump and Link Register}). Salto incondicional via registrador. \\
+\midrule
+
+% Desvios Condicionais (B-Type)
+\textbf{Branches} & BEQ & Desvio se Igual (\textit{Branch if Equal}). \\
+ & BNE & Desvio se Diferente (\textit{Branch if Not Equal}). \\
+ & BLT & Desvio se Menor (\textit{Branch if Less Than}, com sinal). \\
+ & BGE & Desvio se Maior ou Igual (\textit{Branch if Greater/Equal}, com sinal). \\
+ & BLTU & Desvio se Menor (\textit{Branch if Less Than}, sem sinal). \\
+ & BGEU & Desvio se Maior ou Igual (\textit{Branch if Greater/Equal}, sem sinal). \\
+\midrule
+
+% Acesso à Memória (Loads)
+\textbf{Loads} & LB & Carregar Byte (estende sinal). \\
+ & LH & Carregar Meia-Palavra (\textit{half-word}, estende sinal). \\
+ & LW & Carregar Palavra (\textit{word}, 32 bits). \\
+ & LBU & Carregar Byte (sem sinal, preenche com zeros). \\
+ & LHU & Carregar Meia-Palavra (sem sinal, preenche com zeros). \\
+\midrule
+
+% Acesso à Memória (Stores)
+\textbf{Stores} & SB & Armazenar Byte. \\
+ & SH & Armazenar Meia-Palavra. \\
+ & SW & Armazenar Palavra. \\
+\midrule
+
+% Sistema e Sincronização
+\textbf{System} & FENCE & Sincronização de memória e I/O. \\
+ & ECALL & Chamada de sistema (\textit{Environment Call}). \\
+ & EBREAK & Paragem para depuração (\textit{Environment Break}). \\
+
+\end{xltabular}
+
+O conjunto de instruções base da RISC-V constitui a especificação mais simples e fundamental da arquitetura, servindo como ponto de partida obrigatório para qualquer implementação. Isoladamente, essa base é suficiente para a construção de um processador de propósito geral e para a execução de código completo escrito em C, desde que utilizado o compilador e a \textit{toolchain} apropriados da RISC-V.
+
+Neste projeto, adota-se o subconjunto \textbf{RV32I}, que define, entre outros aspectos fundamentais da arquitetura:
+\begin{enumerate}
+	\item Banco de 32 registradores de propósito geral (\texttt{x0} a \texttt{x31}), sendo o registrador \texttt{x0} rigidamente fixo em zero;
+	\item Um contador de programa (\texttt{PC} - \textit{Program Counter}) de 32 bits.
+\end{enumerate}
+
+A presença de um registrador constantemente nulo (\texttt{x0}) simplifica o conjunto de instruções e o hardware do processador, permitindo a implementação eficiente de operações como movimentação de dados, inicialização de registradores e comparação com zero, sem a necessidade de instruções dedicadas ou lógica adicional. Dentre os usos recorrentes estão:
+
+\begin{itemize}
+	\item \textbf{Inicialização e limpeza de registradores}: instruções como "\texttt{ADD xN, x0, x0}" ou "\texttt{ADDI xN, x0, 0}"\ permitem zerar registradores sem a necessidade de uma instrução dedicada para esse fim;
+	\item \textbf{Movimentação de dados}: a pseudo-instrução \texttt{MV} é implementada como "\texttt{ADD xD, xS, x0}", explorando o fato de \texttt{x0} sempre fornecer o valor zero;
+	\item \textbf{Comparações com zero}: instruções de desvio condicional, como \texttt{BEQ} e \texttt{BNE}, utilizam \texttt{x0} para realizar testes contra zero de forma direta e eficiente;
+	\item \textbf{Descartar resultados}: operações cujo resultado não precisa ser preservado podem ter seu destino apontado para \texttt{x0}, eliminando a necessidade de lógica adicional para supressão de escrita.
+\end{itemize}
+
+Um processador que se declara compatível com \textbf{RV32IMC}, por exemplo, implementa a base de inteiros (I), a extensão de multiplicação e divisão (M) e o conjunto de instruções comprimidas de 16 bits (C), mantendo plena compatibilidade com o ecossistema de software RISC-V.
+
+\subsection{Extensões relevantes}
+
+A arquitetura RISC-V distingue-se pela sua modularidade. O conjunto de instruções base (como o RV32I implementado neste trabalho) é a única parte obrigatória; sobre ela, projetistas podem acoplar módulos opcionais para otimizar o desempenho em domínios específicos.
+
+As extensões padronizadas são identificadas por letras sufixas à nomenclatura do processador. As principais são:
+
+\begin{itemize}
+
+    \item \textbf{M (\textit{Integer Multiplication and Division})}: adiciona hardware dedicado para multiplicação e divisão de inteiros. Sem esta extensão, estas operações devem ser realizadas via software (rotinas de emulação), o que é significativamente mais lento.
+    
+    \item \textbf{A (\textit{Atomic})}: fornece instruções de leitura-modificação-escrita atômicas. Estas são essenciais para a sincronização de memória e gerenciamento de exclusão mútua em sistemas operacionais e arquiteturas \textit{multicore}.
+    
+    \item \textbf{F/D (\textit{Single/Double Precision Floating-Point})}: adiciona um banco de registradores separado e unidades de cálculo para operações com ponto flutuante, seguindo o padrão IEEE 754 (32 bits para F e 64 bits para D).
+    
+    \item \textbf{C (\textit{Compressed})}: introduz um conjunto de instruções de 16 bits que mapeiam para as operações mais comuns de 32 bits. Isso aumenta a densidade de código, reduzindo o tamanho dos binários e o uso de largura de banda de memória.
+    
+    \item \textbf{V (\textit{Vector})}: habilita operações vetoriais (SIMD - \textit{Single Instruction, Multiple Data}), permitindo o processamento paralelo de grandes volumes de dados, comum em aplicações de IA e processamento de sinal.
+    
+    \item \textbf{B (\textit{Bit Manipulation})}: oferece instruções eficientes para manipulação de bits individuais (rotações, contagens, extrações), úteis em criptografia e drivers de dispositivos.
+
+\end{itemize}
+
+É comum na literatura encontrar a designação RV32G ou RV64G, onde 'G' (\textit{General}) representa um agrupamento das extensões mais utilizadas em sistemas de propósito geral.
+
+Cabe destacar que, embora o conjunto \textit{G} agregue as extensões mais comuns, extensões como Zicsr são frequentemente tratadas como obrigatórias na prática, pois viabilizam o uso dos registradores de controle necessários ao tratamento de exceções e interrupções.
+
+Além do padrão, a ISA reserva espaço de opcodes para \textbf{extensões customizadas (X)}. Esta característica permite a criação de aceleradores de hardware proprietários para tarefas especializadas (domain-specific architectures) sem quebrar a compatibilidade com o ecossistema de software base.
+
+\section{Microarquitetura}
+
+A microarquitetura define a organização lógica e física dos componentes internos do processador para implementar o conjunto de instruções (ISA) alvo. Geralmente, a microarquitetura é utiliza-se da separação entre o Caminho de Dados (\textit{Datapath}) - responsável pelo armazenamento e manipulação das informações - e a Unidade de Controle (\textit{Control}) — responsável por orquestrar o fluxo de dados através de sinais de controle.
+
+O caminho de dados do processador é composto por elementos de estado (memórias e registradores) e elementos combinacionais (ALU, somadores, multiplexadores). No qual o fluxo principal de execução segue a seguinte sequência lógica dentro do hardware:
+
+\begin{enumerate}
+
+    \item \textbf{Busca (Fetch):} O Contador de Programa (PC) endereça a memória de instruções.
+    \item \textbf{Decodificação (Decode):} A instrução é quebrada em campos; os registradores fonte são lidos e valores imediatos são estendidos.
+    \item \textbf{Execução (Execute):} A ALU realiza operações aritméticas/lógicas ou calcula endereços de memória.
+    \item \textbf{Memória (Memory):} Dados são lidos ou escritos na Memória de Dados (se aplicável).
+    \item \textbf{Escrita (Write-Back):} O resultado é escrito de volta no banco de registradores.
+\end{enumerate}
+
+Para uma mesma ISA, existem infinitas microarquiteturas possíveis, que variam em desempenho, área e consumo de energia. As organizações clássicas são:
+
+\begin{enumerate}
+
+	\item \textbf{Monociclo} (\textit{Single-cycle}): executa cada instrução em um único ciclo de clock, no qual todas as etapas - busca, decodificação, execução, acesso à memória e escrita de resultado - ocorrem sequencialmente. Embora conceitualmente simples, seu desempenho é limitado pelo caminho crítico mais longo do datapath (tipicamente associado a instruções de \textit{load}), o que impõe um período de clock elevado e, consequentemente, uma baixa frequência de operação;
+
+	\item \textbf{Multiciclo} (\textit{Multi-cycle}): fragmenta a execução das instruções em uma sequência de etapas menores, reutilizando os mesmos recursos de hardware ao longo de múltiplos ciclos. Cada instrução pode demandar um número variável de ciclos para ser concluída, o que resulta em um índice de ciclos por instrução $CPI > 1$, porém permite uma redução significativa do caminho crítico e do período de clock;
+
+	\item \textbf{Pipeline}: organiza a execução das instruções em estágios sobrepostos, de modo que múltiplas instruções possam estar em processamento simultaneamente. Essa abordagem maximiza o paralelismo temporal e constitui o padrão adotado em processadores de alto desempenho. Entretanto, introduz desafios adicionais, como conflitos estruturais, de controle e de dados (\textit{hazards}), além da necessidade de técnicas para mitigação de penalidades associadas a desvios de controle, como a previsão de desvios (\textit{branch prediction}). Idealmente, um processador pipeline apresenta $CPI$ próximo de 1, embora esse valor raramente seja atingido na prática;
+
+	\item \textbf{Superescalar}: estende o modelo pipeline ao permitir a emissão e execução de  múltiplas instruções por ciclo de clock, explorando paralelismo em nível de instruções  (\textit{Instruction-Level Parallelism - ILP}). Essa abordagem requer lógica adicional para despacho, escalonamento e detecção de dependências, aumentando significativamente a complexidade do hardware;
+
+	\item \textbf{Execução fora de ordem} (\textit{Out-of-Order Execution}): permite que instruções sejam executadas fora da ordem original do programa, desde que as dependências de dados e de controle sejam respeitadas. Essa técnica melhora a utilização dos recursos de execução e reduz bolhas no pipeline, à custa de estruturas complexas como filas de reordenação (\textit{Reorder Buffer - ROB}) e mecanismos de renomeação de registradores;
+
+	\item \textbf{Arquiteturas multithreaded}: suportam múltiplos contextos de execução concorrentes em um mesmo núcleo, alternando ou sobrepondo a execução de diferentes \textit{threads} para mascarar latências, especialmente de acesso à memória. Exemplos incluem \textit{fine-grained multithreading} e \textit{simultaneous multithreading} (SMT);
+
+	\item \textbf{Arquiteturas multicore}: integram múltiplos núcleos de processamento em um único sistema, explorando paralelismo em nível de tarefas (\textit{Thread-Level Parallelism - TLP}). Essa abordagem impõe desafios adicionais relacionados à coerência de cache sincronização e comunicação entre núcleos.
+	
+\end{enumerate}
+
+Este trabalho adota uma organização \textbf{multiciclo} para o núcleo de processamento. Essa escolha permite a operação em frequências de clock superiores às de uma implementação monociclo, uma vez que o período de clock passa a ser limitado pelo estágio mais lento do datapath, e não pela soma das latências de todas as etapas de uma instrução. 
+
+Além disso, a arquitetura multiciclo evita a complexidade adicional de hardware inerente a processadores \textit{pipelined}, como a necessidade de mecanismos para tratamento de \textit{hazards} e controle refinado de desvios, o que simplifica tanto o processo de depuração quanto a análise didática da microarquitetura.
+
+Outro benefício dessa abordagem é o reuso eficiente de componentes microarquiteturais ao longo dos diferentes estágios de execução, reduzindo a área de hardware ao evitar a duplicação de unidades funcionais que permaneceriam ociosas em determinados ciclos. Adicionalmente, o modelo multiciclo oferece maior flexibilidade no tratamento da latência de acesso à memória, uma vez que operações de leitura e escrita podem ser naturalmente distribuídas ao longo de múltiplos ciclos.
+
+Considerações relacionadas à temporização do sistema, aos atrasos de propagação dos componentes e ao acesso às memórias serão discutidas em maior detalhe em seções posteriores.
+
+\section{Sistemas-em-Chip (SoC) e Barramentos}
+
+Um sistema-em-chip (SoC - \textit{System-on-Chip}) integra, em um único circuito, todos os componentes necessários para um sistema computacional funcional: processador, memória, interfaces de entrada/saída (E/S) e aceleradores. O desafio central no projeto de um SoC não é apenas o design dos componentes individuais, mas a eficiência da comunicação entre eles.
+
+\subsection{Interconexão}
+
+A comunicação em um SoC é tipicamente feita através de um barramento (\textit{bus}) - onde um protocolo define o \textit{handshaking} para leitura e escrita. Protocoolos industriais comuns incluem o AMBA (AHB/APB) da ARM e o TileLink. Neste projeto, implementa-se um protocolo de barramento customizado simplificado.
+
+\subsection{Acesso Direto à Memória (DMA)}
+
+Em sistemas onde a CPU é o único mestre do barramento, a movimentação de grandes blocos de dados (e.g. copiar uma imagem da memória para um acelerador) monoopoliza o processador, impedindo-o de realizar trabalho útil. O controlador de DMA (\textit{Direct Memory Access}) resolve esse problema. Ele é um mestre secundário no barramento capaz de realizar transferências de dados de forma autônoma. A CPU configura o DMA - informando o endereço de origem, endereço de destino e o tamanho do bloco de dados - e é liberada para outras tarefas, recebendo uma interrupção apenas quando a transferência termina.
+
+\subsection{CSRs de Interface}
+
+\subsection{Arbitragem}
+
+\section{Aceleração de Hardware para Redes Neurais}
+
+A popularização da utilização de redes neurais e aprendizagem profunda expôs as limitações das CPUs de propósito geral. O treinamento e a inferência de redes neurais são dominados por operações de álgebra linear, especificamente a multiplicação de matrizes (GEMM - \textit{General Matrix Multiply}).
+
+\subsection{Gargalo de Von Neumann}
+
+Processadores tradicionais buscam dados e instruções da memória sequencialmente. [...]
+
+\subsection{Arquitetura de Arranjo Sistólico}
+
+Para mitigar esse gargalo, aceleradores como o Google TPU (\textit{Tensor Processing Unit}) utilizam a arquitetura de Arranjo Sistólico (\textit{Systolic Array}).
+
+\section{VHDL e Projeto de Hardware}
+
+A descrição de hardware deste projeto foi realizada utilizando a linguagem \textbf{VHDL} (\textit{VHSIC Hardware Description Language}). Diferente de linguagens de programação de software, que descrevem sequências de instruções, o VHDL é uma linguagem de descrição de hardware utilizada para modelar o comportamento concorrente e a estrutura de circuitos digitais.
+
+Para este trabalho, adotou-se especificamente o padrão \textbf{VHDL-2008} (IEEE 1076-2008). Esta revisão da linguagem introduz construções modernas que aumentam a legibilidade e a capacidade de síntese do código, permitindo uma descrição mais concisa de lógicas complexas sem sacrificar o rigor tipológico característico da linguagem.
+
+\section{Tecnologia de FPGA}
+
+\textit{Field-Programmable Gate Arrays} (FPGAs) são diispositivos semicondutores baseados em uma matriz de blocos lógicos configuráveis (CLBs) conectados por interconexões programáveis. Diferente de processadores que executam instruções de esoftware seqeuencialmente, o FPGA permite a construção de circuitos digitais verdadeiramente paralelos em nível de hardware. 
+
+A natureza reconfigurável do FPGA o torna a plataforma ideal para prototipagem de SoCs e desenvolvimento de arquiteturas experimentais (como a proposta neste trabalho), permitindo validação física do cicruito sem os custos proibitivos de fabricação de um ASIC (\textit{Application-Specific Iintegrated Circuit}).
+
+\section{Metodologias de Projeto}
+
+A complexidade inerente ao desenvolvimento de um microprocessador exige uma metodologia de projeto rigorosa e estruturada. Este trabalho seguiu uma abordagem de desenvolvimento \textbf{Bottom-Up} (de baixo para cima) combinada com \textbf{Prototipagem Evolutiva}.
+
+\subsection{Desenvolvimento Modular e Hierárquico}
+
+O sistema foi decomposto em módulos fundamentais de menor complexidade. O desenvolvimento iniciou-se pelos componentes base do \textit{datapath} (Multiplexadores, ALU, Banco de Registradores), progredindo para a Unidade de Controle e, finalmente, para a integração no nível de topo (\textit{Top Level}). Cada módulo foi projetado como uma entidade independente, com interfaces (\textit{ports}) claramente definidas, facilitando o isolamento de falhas.
+
+\subsection{Estratégia de Verificação e Simulação}
+
+Dada a dificuldade de depurar erros diretamente no hardware físico, adotou-se a abordagem de testes através de simulações (\textit{textbenches}). Nenhum componente foi integrado ao sistema principal sem antes ser validado individualmente. 
+
+O ambiente de simulação utilizado foi o \textbf{GHDL}, um simulador \textit{open-source} de alto desempenho, integrado a um fluxo de automação via \textbf{GNU Make}. Isso garante que todo o processo de compilação, simulação e visualização de ondas (via GTKWave) seja reprodutível e automatizado.

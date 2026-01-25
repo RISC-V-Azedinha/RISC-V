@@ -9,17 +9,11 @@
 % --------------------------------------------------------------------------
 
 \documentclass[
-	% -- opções da classe memoir --
 	12pt,				% tamanho da fonte
-	openright,			% capítulos começam em pág ímpar (insere página vazia caso preciso)
-	oneside,			% para impressão em frente e verso. Oposto a oneside
+	openright,			% capítulos começam em pág ímpar
+	twoside,			% para impressão em frente e verso. Oposto a oneside
 	a4paper,			% tamanho do papel.
-	% -- opções da classe abntex2 --
 	chapter=TITLE,		% títulos de capítulos convertidos em letras maiúsculas
-	%section=TITLE,		% títulos de seções convertidos em letras maiúsculas
-	%subsection=TITLE,	% títulos de subseções convertidos em letras maiúsculas
-	%subsubsection=TITLE,% títulos de subsubseções convertidos em letras maiúsculas
-	% -- opções do pacote babel --
 	english,			% idioma adicional para hifenização
 	brazil				% o último idioma é o principal do documento
 	]{abntex2}
@@ -28,32 +22,41 @@
 % Pacotes básicos 
 % --------------------------------------------------------------------------
 
-\usepackage{lmodern}			% Usa a fonte Latin Modern
-\usepackage{mathptmx}			% Usa a fonte Times New Roman
-\usepackage[T1]{fontenc}		% Selecao de codigos de fonte.
-\usepackage[utf8]{inputenc}		% Codificacao do documento (conversão automática dos acentos)
-\usepackage{lastpage}			% Usado pela Ficha catalográfica
-\usepackage{indentfirst}		% Indenta o primeiro parágrafo de cada seção.
-\usepackage{color}				% Controle das cores
-\usepackage{graphicx}			% Inclusão de gráficos
-\usepackage{subcaption}				% Inclusão de gráficos lado a lado
-\usepackage{microtype} 			% para melhorias de justificação
-\usepackage{tabularx,ragged2e}	% Para inserir tabelas
-\usepackage{multirow}			% Para mesclar células
-\usepackage[dvipsnames,table,xcdraw]{xcolor}		% Permite adicionar cores nas linhas de tabelas
-\usepackage{fancyvrb}			% Permite adicionar arquivos de texto
-\usepackage[portuguese, ruled, linesnumbered]{algorithm2e} % Uso de algoritmos
-\usepackage{amsfonts}			% Permite usar notação de conjuntos
-\usepackage{amsmath}			% Permite citar equações
-\usepackage{amsthm}				% Permite criar teoremas e experimentos
-\usepackage[font={bf, small}, labelsep=endash, labelfont=bf]{caption}	% Faz legenda de figuras ficarem em negrito
-\usepackage{cancel}				% Permite fazer expressão tendendo a zero
-\usepackage{epstopdf}			% Converte eps para pdf
+\usepackage{lmodern}			             % Usa a fonte Latin Modern
+\usepackage{mathptmx}			             % Usa a fonte Times New Roman
+\usepackage[T1]{fontenc}		             % Selecao de codigos de fonte.
+\usepackage[utf8]{inputenc}		             % Codificacao do documento
+\usepackage{lastpage}			             % Usado pela ficha catalográfica
+\usepackage{indentfirst}		             % Indenta o primeiro parágrafo de cada seção.
+\usepackage{color}				             % Controle das cores
+\usepackage{graphicx}			             % Inclusão de gráficos
+\usepackage{subcaption}			             % Inclusão de gráficos lado a lado
+\usepackage{microtype} 			             % para melhorias de justificação
+\usepackage{tabularx,ragged2e}	             % Para inserir tabelas
+\usepackage{multirow}			             % Para mesclar células
+\usepackage[dvipsnames,table,xcdraw]{xcolor} % Permite adicionar cores nas linhas de tabelas
+\usepackage{fancyvrb}			             % Permite adicionar arquivos de texto
+\usepackage[
+	portuguese, ruled, linesnumbered
+]{algorithm2e}                               % Uso de algoritmos
+\usepackage{amsfonts}			             % Permite usar notação de conjuntos
+\usepackage{amsmath}			             % Permite citar equações
+\usepackage{amsthm}				             % Permite criar teoremas e experimentos
+\usepackage[
+	font={bf, small}, labelsep=endash, 
+	labelfont=bf
+]{caption}	                                 % Faz legenda de figuras ficarem em negrito
+\usepackage{cancel}				             % Permite fazer expressão tendendo a zero
+\usepackage{epstopdf}			             % Converte eps para pdf
+\usepackage[
+	inner=3cm, outer=2cm, top=3cm, 
+	bottom=2cm
+]{geometry}
 \usepackage[final]{pdfpages}
-\usepackage{geometry}
 \usepackage{longtable}
 \usepackage{booktabs}
 \usepackage{xltabular}
+\usepackage{placeins}
 
 \newcolumntype{L}{>{\RaggedRight\arraybackslash}X}
 \pdfstringdefDisableCommands{%
@@ -148,7 +151,7 @@
 \setlength{\parindent}{1.3cm}
 
 % Controle do espaçamento entre um parágrafo e outro:
-\setlength{\parskip}{0.2cm}  % tente também \onelineskip
+\setlength{\parskip}{0pt}  
 
 % --------------------------------------------------------------------------
 % Compila o indice
@@ -165,6 +168,9 @@
 % Seleciona o idioma do documento (conforme pacotes do babel)
 %\selectlanguage{english}
 \selectlanguage{brazil}
+
+% Espaçamento entre linhas 1.5
+\OnehalfSpacing
 
 % Retira espaço extra obsoleto entre as frases.
 \frenchspacing 
@@ -194,7 +200,7 @@
 % Revisão da Literatura
 % ----------------------------------------------------------
 
-\input{elementos-textuais/fundamentacao.tex}
+\input{elementos-textuais/revisao_bibliografica.tex}
 
 % ----------------------------------------------------------
 % Implementação

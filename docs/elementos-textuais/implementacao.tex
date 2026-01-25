@@ -1,39 +1,7 @@
 \chapter{Microarquitetura}
 \label{cap:microarquitetura}
 
-A microarquitetura define a organização lógica e física dos componentes 
-internos do processador para implementar o conjunto de instruções (ISA) alvo. 
-Neste capítulo, detalha-se a construção do núcleo RISC-V, focando na 
-separação clássica entre o \textbf{Caminho de Dados} (\textit{Datapath}) — 
-responsável pelo armazenamento e manipulação das informações — e a 
-\textbf{Unidade de Controle} (\textit{Control}) — responsável por orquestrar o fluxo de dados 
-através de sinais de controle.
 
-\section{Visão Geral do Caminho de Dados}
-
-O Caminho de Dados (\textit{Datapath}) é o 'músculo' do processador. Ele é composto por 
-elementos de estado (memórias e registradores) e elementos combinacionais (ALU, somadores, 
-multiplexadores). 
-
-O fluxo principal de execução segue a seguinte sequência lógica dentro do hardware:
-\begin{enumerate}
-    \item \textbf{Busca (Fetch):} O Contador de Programa (PC) endereça a memória de 
-    instruções.
-    \item \textbf{Decodificação (Decode):} A instrução é quebrada em campos; os 
-    registradores fonte são lidos e valores imediatos são estendidos.
-    \item \textbf{Execução (Execute):} A ALU realiza operações aritméticas/lógicas ou calcula 
-    endereços de memória.
-    \item \textbf{Memória (Memory):} Dados são lidos ou escritos na Memória de Dados (se 
-    aplicável).
-    \item \textbf{Escrita (Write-Back):} O resultado é escrito de volta no banco de 
-    registradores.
-\end{enumerate}
-
-\subsection{Unidade Lógica e Aritmética}
-
-A Unidade Lógica e Aritmética (ALU) é um circuito puramente combinacional responsável por todas as operações matemáticas e lógicas do processador. A implementação descrita no arquivo \texttt{alu.vhd} opera com duas entradas de 32 bits e gera um resultado de 32 bits, além de \textit{flags} de estado (Zero e Negativo).
-
-As operações suportadas foram mapeadas através de um sinal de controle de 4 bits (\texttt{ALUControl}), permitindo:
 
 \subsection{Banco de Registradores}
 
