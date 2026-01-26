@@ -37,7 +37,7 @@ def log_warn(msg):    print(f"{Colors.DIM}[{get_time()}]{Colors.RESET} {Colors.Y
 def log_error(msg):   print(f"{Colors.DIM}[{get_time()}]{Colors.RESET} {Colors.RED}[FAIL]{Colors.RESET}    {msg}")
 
 # ==============================================================================
-# DRIVER NPU
+# DRIVER NPU 
 # ==============================================================================
 class NPUDriver:
     def __init__(self, port, baud):
@@ -67,40 +67,49 @@ class NPUDriver:
 
     def configure(self, mult=1, shift=8, relu=0):
         self.ser.write(b'C')
-        self.ser.write(struct.pack('<I', mult))
-        self.ser.write(struct.pack('<I', shift))
-        self.ser.write(struct.pack('<I', relu))
+        self.ser.write(struct.pack('<III', mult, shift, relu))
         if self.ser.read(1) != b'K': raise Exception("Erro Config")
 
-    def run_inference_standard(self, inputs, weights):
-        weights_t = weights.T 
-        flat_w = weights_t.flatten().astype(np.uint8)
-        packed_w = flat_w.view(np.uint32)
-        self.ser.write(b'W')
-        self.ser.write(struct.pack('<I', len(packed_w)))
-        self.ser.write(packed_w.tobytes())
-        if self.ser.read(1) != b'K': raise Exception("Erro W")
+    def upload_weights_ram(self, weights_blob):
+        flat_w = weights_blob.flatten().astype(np.uint8).view(np.uint32)
+        self.ser.write(b'L')
+        self.ser.write(struct.pack('<I', len(flat_w) * 4)) # Bytes
+        self.ser.write(flat_w.tobytes())
+        if self.ser.read(1) != b'K': raise Exception("Erro Upload RAM")
 
+    def configure_tiling(self, num_tiles, k_dim, stride_bytes):
+        self.ser.write(b'T')
+        self.ser.write(struct.pack('<III', num_tiles, k_dim, stride_bytes))
+        if self.ser.read(1) != b'K': raise Exception("Erro Config Tiling")
+
+    def run_inference_atomic(self, inputs, num_tiles=1, enable_cpu=False):
+        # 1. Input
         inputs_broadcast = np.repeat(inputs[:, np.newaxis], 4, axis=1)
         flat_in = inputs_broadcast.flatten().astype(np.uint8)
         packed_in = flat_in.view(np.uint32)
+        
         self.ser.write(b'I')
         self.ser.write(struct.pack('<I', len(packed_in)))
         self.ser.write(packed_in.tobytes())
         if self.ser.read(1) != b'K': raise Exception("Erro I")
 
+        # 2. Executa
+        flag = 2 if enable_cpu else 0
         self.ser.write(b'B')
-        self.ser.write(struct.pack('<I', 0)) 
+        self.ser.write(struct.pack('<I', flag)) 
         
-        data = self.ser.read(28)
-        if len(data) != 28: raise Exception("Timeout")
+        # 3. Recebe
+        payload_size = (4 * num_tiles) + 24
+        data = self.ser.read(payload_size)
+        if len(data) != payload_size: raise Exception("Timeout")
         
-        res_raw = data[0:4]
-        cyc_cpu = struct.unpack('<Q', data[4:12])[0]
-        cyc_dma = struct.unpack('<Q', data[20:28])[0]
-        
-        return struct.unpack('<bbbb', res_raw), cyc_cpu, cyc_dma
+        fmt = '<' + ('I' * num_tiles) + 'QQQ'
+        unpacked = struct.unpack(fmt, data)
+        return unpacked[:num_tiles], unpacked[num_tiles:]
 
+# ==============================================================================
+# SIMULAÇÃO SW
+# ==============================================================================
 def sw_simulate_npu(input_vec, weights, mult, shift):
     sw_scores = []
     rounding = (1 << (shift - 1)) if shift > 0 else 0
@@ -148,10 +157,16 @@ if __name__ == "__main__":
     WEIGHT_SCALE = 127.0 / global_max
     log_info(f"Escalas: Input={INPUT_SCALE:.1f}, Weight={WEIGHT_SCALE:.2f}")
 
-    q_weights = np.zeros((4, 8), dtype=np.int8) 
+    K_DIM_BYTES = 16 
+    
+    q_weights = np.zeros((4, K_DIM_BYTES), dtype=np.int8) 
     for c in range(3):
         q_weights[c, :4] = np.round(clf.coef_[c] * WEIGHT_SCALE).astype(np.int8)
         q_weights[c, 4]  = np.round(clf.intercept_[c] * WEIGHT_SCALE).astype(np.int8)
+    
+    blob_list = []
+    blob_list.append(q_weights.T.flatten()) 
+    full_blob = np.concatenate(blob_list).astype(np.int8)
 
     fpga = NPUDriver(SERIAL_PORT, BAUD_RATE)
     while not fpga.sync():
@@ -161,40 +176,70 @@ if __name__ == "__main__":
 
     fpga.configure(mult=1, shift=HW_SHIFT, relu=0)
     log_info(f"NPU Configurada: Shift={HW_SHIFT}, Mult=1")
-
-    col_id = 4; col_name = 12; col_hw = 14; col_sw = 14; col_exact = 10; col_pred = 7; col_cpu = 10; col_npu = 10; col_speed = 10
-
-    header = (f" {'ID':<{col_id}}| {'FLOR REAL':<{col_name}}| {'HW':<{col_hw}}| {'SW':<{col_sw}}| "
-              f"{'BIT-EXACT':^{col_exact}} | {'PRED?':^{col_pred}} | {'CPU(cyc)':>{col_cpu}} | {'NPU(cyc)':>{col_npu}} | {'SPEEDUP':>{col_speed}}")
     
-    width = len(header)
-    print(f"\n{Colors.WHITE}{'='*width}")
-    print(header)
-    print(f"{'='*width}{Colors.RESET}")
-
-    stats = {'bit_exact': 0, 'correct': 0}
-    total_dma_cyc = 0; total_cpu_cyc = 0
-
+    fpga.upload_weights_ram(full_blob)
+    
+    # K_DIM deve ser 16 (Bytes), não 4 (Words). 
+    # O firmware espera o tamanho do vetor em elementos.
+    fpga.configure_tiling(1, K_DIM_BYTES, K_DIM_BYTES * 4) 
+    
     try:
-        for i in range(len(X_test)):
-            q_in = np.zeros(8, dtype=np.int8)
-            q_in[:4] = np.round(X_test[i] * INPUT_SCALE).astype(np.int8)
+        print(f"\n{Colors.WHITE}Configurações de Execução:{Colors.RESET}")
+        run_cpu = input(f"{Colors.YELLOW}  Benchmark CPU (Lento)? [Y/n] {Colors.RESET}").lower() != 'n'
+        val = input(f"{Colors.YELLOW}  Quantas amostras processar? [Default=15]: {Colors.RESET}")
+        num_samples = int(val) if val else 15
+        
+        print(f"\n{Colors.YELLOW}  Iniciando Loop de Inferência...{Colors.RESET}")
+
+        col_id = 4; col_name = 12; col_hw = 14; col_sw = 14; col_exact = 10; col_pred = 7; col_cpu = 10; col_npu = 10; col_speed = 10
+
+        header = (f" {'ID':<{col_id}}| {'FLOR REAL':<{col_name}}| {'HW':<{col_hw}}| {'SW':<{col_sw}}| "
+                  f"{'BIT-EXACT':^{col_exact}} | {'PRED?':^{col_pred}} | {'CPU(cyc)':>{col_cpu}} | {'NPU(cyc)':>{col_npu}} | {'SPEEDUP':>{col_speed}}")
+        
+        width = len(header)
+        print(f"\n{Colors.WHITE}{'='*width}")
+        print(header)
+        print(f"{'='*width}{Colors.RESET}")
+
+        stats = {'bit_exact': 0, 'correct': 0}
+        total_dma_cyc = 0; total_cpu_cyc = 0
+        valid_speedups = 0
+
+        for i in range(num_samples):
+            idx = i % len(X_test)
+            
+            q_in = np.zeros(K_DIM_BYTES, dtype=np.int8)
+            q_in[:4] = np.round(X_test[idx] * INPUT_SCALE).astype(np.int8)
             q_in[4]  = BIAS_CONST 
 
-            res_hw_raw, c_cpu, c_dma = fpga.run_inference_standard(q_in, q_weights)
-            scores_hw = list(res_hw_raw[:3]) 
-            pred_hw   = np.argmax(scores_hw)
+            res_packed, timings = fpga.run_inference_atomic(q_in, num_tiles=1, enable_cpu=run_cpu)
+            
+            c_cpu, _, c_dma = timings
+
+            pack = res_packed[0]
+            scores_hw = []
+            for b in range(3): 
+                val = (pack >> (b*8)) & 0xFF
+                if val > 127: val -= 256
+                scores_hw.append(val)
+            
+            pred_hw = np.argmax(scores_hw)
             scores_sw = sw_simulate_npu(q_in, q_weights[:3], 1, HW_SHIFT)
             
             is_exact = (scores_hw == scores_sw)
-            is_ok    = (pred_hw == y_test[i])
+            is_ok    = (pred_hw == y_test[idx])
             
             if is_exact: stats['bit_exact'] += 1
             if is_ok:    stats['correct'] += 1
             
             total_cpu_cyc += c_cpu
             total_dma_cyc += c_dma
-            speedup_val = c_cpu / c_dma if c_dma > 0 else 0
+            
+            speedup_str = "-"
+            if run_cpu and c_dma > 0:
+                speedup_val = c_cpu / c_dma
+                speedup_str = f"{speedup_val:.1f}x"
+                valid_speedups += 1
 
             exact_txt = "YES" if is_exact else "NO"
             exact_clr = Colors.GREEN if is_exact else Colors.RED
@@ -203,28 +248,35 @@ if __name__ == "__main__":
             
             s_hw = str(scores_hw).replace(" ", "")
             s_sw = str(scores_sw).replace(" ", "")
+            c_cpu_str = str(c_cpu) if c_cpu > 0 else "-"
 
-            row = (f" {i:<{col_id}}| {iris.target_names[y_test[i]]:<{col_name}}| {s_hw:<{col_hw}}| {s_sw:<{col_sw}}| "
+            row = (f" {i:<{col_id}}| {iris.target_names[y_test[idx]]:<{col_name}}| {s_hw:<{col_hw}}| {s_sw:<{col_sw}}| "
                    f"{exact_clr}{exact_txt:^{col_exact}}{Colors.RESET} | "
                    f"{match_clr}{match_txt:^{col_pred}}{Colors.RESET} | "
-                   f"{c_cpu:>{col_cpu}} | {c_dma:>{col_npu}} | "
-                   f"{Colors.CYAN}{speedup_val:>{col_speed-1}.1f}x{Colors.RESET}")
+                   f"{c_cpu_str:>{col_cpu}} | {c_dma:>{col_npu}} | "
+                   f"{Colors.CYAN}{speedup_str:>{col_speed}}{Colors.RESET}")
             
             print(row)
             time.sleep(0.05)
 
-        acc_pct = (stats['correct'] / len(X_test)) * 100
-        hw_pct  = (stats['bit_exact'] / len(X_test)) * 100
-        avg_speedup = total_cpu_cyc / total_dma_cyc if total_dma_cyc > 0 else 0
+        acc_pct = (stats['correct'] / num_samples) * 100
+        hw_pct  = (stats['bit_exact'] / num_samples) * 100
+        
+        avg_speedup = 0
+        if valid_speedups > 0:
+            avg_speedup = total_cpu_cyc / total_dma_cyc
 
         print(f"{Colors.WHITE}{'='*width}{Colors.RESET}")
         print(f" {Colors.BOLD}RELATÓRIO IRIS:{Colors.RESET}")
         print(f"  • Acurácia HW           : {Colors.BOLD}{acc_pct:.1f}%{Colors.RESET}")
         print(f"  • Consistência SW/HW    : {Colors.BOLD}{hw_pct:.1f}%{Colors.RESET}")
-        print(f"  • Speedup (Small Data)  : {Colors.CYAN}{avg_speedup:.1f}x{Colors.RESET}")
+        if run_cpu:
+            print(f"  • Speedup (Small Data)  : {Colors.CYAN}{avg_speedup:.1f}x{Colors.RESET}")
         print(f"{Colors.WHITE}{'='*width}{Colors.RESET}")
 
     except KeyboardInterrupt:
         print("\nCancelado.")
+    except Exception as e:
+        log_error(f"{e}")
     finally:
         fpga.close()
