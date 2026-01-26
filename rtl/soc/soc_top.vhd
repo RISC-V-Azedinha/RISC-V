@@ -374,18 +374,18 @@ begin
         );
 
     U_RAM: entity work.dual_port_ram
-        generic map (ADDR_WIDTH => 15)  -- 128 KB de RAM
+        generic map (ADDR_WIDTH => 16)  -- 256 KB de RAM
         port map (
             clk          => CLK_i,
             vld_a_i      => s_ram_vld_a, 
             rdy_a_o      => s_ram_rdy_a,
             we_a         => (others => '0'),
-            addr_a       => s_ram_addr_a(16 downto 2),
+            addr_a       => s_ram_addr_a(17 downto 2),
             data_a_i     => (others => '0'),
             data_a_o     => s_ram_data_a,
             vld_b_i      => s_ram_vld_b,
             we_b         => s_ram_we_b,
-            addr_b       => s_ram_addr_b(16 downto 2),
+            addr_b       => s_ram_addr_b(17 downto 2),
             data_b_i     => s_ram_data_w,
             data_b_o     => s_ram_data_b,
             rdy_b_o      => s_ram_rdy_b
