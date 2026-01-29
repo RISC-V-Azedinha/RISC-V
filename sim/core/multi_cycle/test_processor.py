@@ -108,7 +108,7 @@ def flush_buffer_to_mem(mem, addr, bytes_list):
 
 async def pulse_timer_irq(dut):
     """Gera um pulso na linha de interrupção de Timer."""
-    log_info("⚡ [TB] Trigger recebido! Disparando Timer IRQ (Pulso Longo)...")
+    log_info("Trigger recebido! Disparando Timer IRQ (Pulso Longo)...")
     
     dut.Irq_Timer_i.value = 1
     
@@ -116,7 +116,7 @@ async def pulse_timer_irq(dut):
         await RisingEdge(dut.CLK_i)
         
     dut.Irq_Timer_i.value = 0
-    log_info("⚡ [TB] Timer IRQ liberado.")
+    log_info("Timer IRQ liberado.")
 
 # ================================================================================================================
 # 2. CONTROLADOR DE MEMÓRIA E PERIFÉRICOS (Modelo BRAM Síncrono)

@@ -51,14 +51,6 @@ void __attribute__((naked, aligned(4))) irq_handler(void) {
         "sw t0, 0(sp) \n\t"
         "sw t1, 4(sp) \n\t"
         "sw t2, 8(sp) \n\t"
-        
-        // --- DEBUG VISUAL ---
-        // Escreve '!' (ASCII 33) no console direto do Assembly
-        // Assim saberemos INSTANTANEAMENTE se o processador pulou pra cá.
-        "li t0, 0x10000000 \n\t"
-        "li t1, 33 \n\t"
-        "sw t1, 0(t0) \n\t"
-        // --------------------
 
         // Incrementa Contador
         "la t1, g_irq_counter \n\t"
@@ -85,7 +77,7 @@ void __attribute__((naked, aligned(4))) irq_handler(void) {
 // Main
 // -------------------------------------------------------------------------
 int main() {
-    print_str("\n>>> [IRQ TEST] Iniciando Configuração...\n");
+    print_str("\n>>> [IRQ TEST] Iniciando Configuracao...\n");
 
     // 1. Configurar Vetor (MTVEC)
     uint32_t handler_addr = (uint32_t)&irq_handler;
