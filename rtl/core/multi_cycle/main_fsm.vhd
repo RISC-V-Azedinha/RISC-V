@@ -359,24 +359,30 @@ begin
                 null;
 
             when S_EX_SYSTEM => 
+
                 if Funct3_i = "000" then -- Privileged
+
                     PCWrite_o <= '1'; -- Vamos atualizar o PC imediatamente
                     
-                    if Funct12_i = x"000" then -- ECALL (Imm=0)
-                        TrapEnter_o <= '1';           -- Datapath pula para MTVEC
-                        TrapCause_o <= x"0000000B";   -- Causa 11 (M-Mode Ecall)
+                    if Funct12_i = x"000" then        -- ECALL (Imm=0)
+                        TrapEnter_o <= '1';
+                        TrapCause_o <= x"0000000B";   -- 11: Machine ECALL
                     
-                    elsif Funct12_i = x"302" then -- MRET (Imm=0x302)
-                        TrapReturn_o <= '1';          -- Datapath pula para MEPC
+                    elsif Funct12_i = x"001" then     -- EBREAK (Imm=1) 
+                        TrapEnter_o <= '1';
+                        TrapCause_o <= x"00000003";   -- 3: Breakpoint
                         
-                    else
-                        -- EBREAK ou instrução ilegal (ignorar ou tratar como trap)
-                        null;
+                    elsif Funct12_i = x"302" then     -- MRET (Imm=0x302)
+                        TrapReturn_o <= '1';
+
                     end if;
+
                 else
+
                     -- CSR Instructions (CSRRW, etc)
                     -- Apenas passamos para WB, onde a escrita real ocorre.
                     null;
+
                 end if;
 
             -- Estados de MEMÓRIA (HANDSHAKE)
