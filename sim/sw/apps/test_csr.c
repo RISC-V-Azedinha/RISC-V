@@ -86,7 +86,7 @@ void __attribute__((naked, aligned(4))) trap_handler(void) {
 // Main
 // -------------------------------------------------------------------------
 int main() {
-    print_str("\n>>> [STRESS] Iniciando Teste Extremo Zicsr (Hex Mode)...\n");
+    print_str("\n>>> [STRESS] Iniciando Teste Zicsr (Hex Mode)...\n");
 
     // -------------------------------------------------------
     // TESTE 1: Atomicidade do CSRRW
@@ -184,5 +184,5 @@ int main() {
     volatile int *halt = (int *)HALT_ADDR;
     *halt = 1;
     return 0;
-    
+
 }

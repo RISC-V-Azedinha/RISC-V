@@ -30,9 +30,10 @@ from test_utils import (
 # Define os endereços reservados para interação com o ambiente de simulação.
 # O processador escreve nestes endereços usando instruções SW (Store Word).
 
-MMIO_CONSOLE_ADDR = 0x10000000  # Escrita de char: Imprime caractere no terminal
-MMIO_INT_ADDR     = 0x10000004  # Escrita de int:  Imprime valor numérico (debug)
-MMIO_HALT_ADDR    = 0x10000008  # Escrita de flag: Encerra a simulação com sucesso (HALT)
+MMIO_CONSOLE_ADDR     = 0x10000000  # Escrita de char: Imprime caractere no terminal
+MMIO_INT_ADDR         = 0x10000004  # Escrita de int:  Imprime valor numérico (debug)
+MMIO_HALT_ADDR        = 0x10000008  # Escrita de flag: Encerra a simulação com sucesso (HALT)
+MMIO_IRQ_TRIGGER_ADDR = 0x20000000  # Endereço para solicitar disparo de Interrupção
 
 # ================================================================================================================
 # 1. CARREGADOR DE PROGRAMA (HEX LOADER)
@@ -105,6 +106,18 @@ def flush_buffer_to_mem(mem, addr, bytes_list):
     # Armazena no dicionário de memória (alinhado por endereço de byte)
     mem[addr] = val
 
+async def pulse_timer_irq(dut):
+    """Gera um pulso na linha de interrupção de Timer."""
+    log_info("⚡ [TB] Trigger recebido! Disparando Timer IRQ (Pulso Longo)...")
+    
+    dut.Irq_Timer_i.value = 1
+    
+    for _ in range(100): 
+        await RisingEdge(dut.CLK_i)
+        
+    dut.Irq_Timer_i.value = 0
+    log_info("⚡ [TB] Timer IRQ liberado.")
+
 # ================================================================================================================
 # 2. CONTROLADOR DE MEMÓRIA E PERIFÉRICOS (Modelo BRAM Síncrono)
 # ================================================================================================================
@@ -176,6 +189,10 @@ async def memory_and_mmio_controller(dut, mem_data, halt_event):
                     elif addr_d == MMIO_INT_ADDR:
                         val = data_w if data_w < 0x80000000 else data_w - 0x100000000
                         log_int(f"{val}")
+                    # Gatilho de Interrupção
+                    elif addr_d == MMIO_IRQ_TRIGGER_ADDR:
+                        # Dispara em background para não travar o handshake da memória
+                        cocotb.start_soon(pulse_timer_irq(dut))
                     else:
                         # Escrita normal na RAM
                         aligned_addr = addr_d & 0xFFFFFFFC
@@ -234,7 +251,7 @@ async def test_processor_execution(dut):
     cocotb.start_soon(memory_and_mmio_controller(dut, ram_image, halt_event))
 
     # ----------------------------------------------------------------------
-    # [FASE 3] Sequência de Reset
+    # [FASE 3] Sequência de Reset e Inicialização de Sinais
     # ----------------------------------------------------------------------
 
     # Aplica reset inicial
@@ -246,6 +263,11 @@ async def test_processor_execution(dut):
     dut.DMem_data_i.value = 0
     dut.IMem_rdy_i.value = 0
     dut.DMem_rdy_i.value = 0
+
+    # Inicializa linhas de interrupção em 0
+    dut.Irq_External_i.value = 0
+    dut.Irq_Timer_i.value    = 0
+    dut.Irq_Software_i.value = 0
     
     # Segura o Reset por 2 ciclos de clock
     await RisingEdge(dut.CLK_i)
