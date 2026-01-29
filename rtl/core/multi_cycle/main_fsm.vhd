@@ -97,6 +97,7 @@ architecture rtl of main_fsm is
         S_IF,                                                                        -- IF  (Instruction Fetch)
         S_ID,                                                                        -- ID  (Instruction Decode)
         S_EX_ALU, S_EX_ADDR, S_EX_BR, S_EX_JAL, S_EX_JALR, S_EX_LUI, S_EX_AUIPC,     -- EX  (Execution)
+        S_EX_FENCE, S_EX_SYSTEM,
         S_MEM_RD, S_MEM_WR,                                                          -- MEM (Memory Access)
         S_WB_REG, S_WB_JAL, S_WB_JALR                                                -- WB  (Write-Back)
     );
@@ -164,14 +165,16 @@ begin
             -- DECODE: Decodifica e lê registradores
             when S_ID =>
                 case Opcode_i is
-                    when c_OPCODE_R_TYPE | c_OPCODE_I_TYPE => next_state <= S_EX_ALU  ;
-                    when c_OPCODE_LOAD   | c_OPCODE_STORE  => next_state <= S_EX_ADDR ;
-                    when c_OPCODE_BRANCH                   => next_state <= S_EX_BR   ;
-                    when c_OPCODE_JAL                      => next_state <= S_EX_JAL  ;
-                    when c_OPCODE_JALR                     => next_state <= S_EX_JALR ;
-                    when c_OPCODE_LUI                      => next_state <= S_EX_LUI  ;
-                    when c_OPCODE_AUIPC                    => next_state <= S_EX_AUIPC;
-                    when others                            => next_state <= S_IF      ; -- Instrução inválida volta pro IF 
+                    when c_OPCODE_R_TYPE | c_OPCODE_I_TYPE => next_state <= S_EX_ALU    ;
+                    when c_OPCODE_LOAD   | c_OPCODE_STORE  => next_state <= S_EX_ADDR   ;
+                    when c_OPCODE_BRANCH                   => next_state <= S_EX_BR     ;
+                    when c_OPCODE_JAL                      => next_state <= S_EX_JAL    ;
+                    when c_OPCODE_JALR                     => next_state <= S_EX_JALR   ;
+                    when c_OPCODE_LUI                      => next_state <= S_EX_LUI    ;
+                    when c_OPCODE_AUIPC                    => next_state <= S_EX_AUIPC  ;
+                    when c_OPCODE_FENCE                    => next_state <= S_EX_FENCE  ;
+                    when c_OPCODE_SYSTEM                   => next_state <= S_EX_SYSTEM ;
+                    when others                            => next_state <= S_IF        ; -- Instrução inválida volta pro IF 
                 end case;
 
             -- EXECUTE: Várias possibilidades
@@ -191,10 +194,13 @@ begin
                     next_state <= S_IF;    -- DECISÃO TOMADA: Segue fluxo
                 end if;
 
-            when S_EX_JAL   => next_state <= S_WB_JAL;
-            when S_EX_JALR  => next_state <= S_WB_JALR;
-            when S_EX_LUI   => next_state <= S_WB_REG;
-            when S_EX_AUIPC => next_state <= S_WB_REG;
+            when S_EX_JAL    => next_state <= S_WB_JAL;
+            when S_EX_JALR   => next_state <= S_WB_JALR;
+            when S_EX_LUI    => next_state <= S_WB_REG;
+            when S_EX_AUIPC  => next_state <= S_WB_REG;
+
+            when S_EX_FENCE  => next_state <= S_IF; 
+            when S_EX_SYSTEM => next_state <= S_IF;
 
             -- MEMORY READ (HANDSHAKE)
             when S_MEM_RD   => 
@@ -320,6 +326,14 @@ begin
                 ALUOp_o     <= "00"; -- ADD
                 ALUSrcA_o   <= "01"; -- OldPC
                 ALUSrcB_o   <= '1';  -- Imediato
+
+            when S_EX_FENCE  => 
+                -- NOP: nenhuma escrita.
+                null;
+
+            when S_EX_SYSTEM => 
+                -- Aqui haverá a ativação dos sinais de exceção.
+                null;
 
             -- Estados de MEMÓRIA (HANDSHAKE)
             when S_MEM_RD =>

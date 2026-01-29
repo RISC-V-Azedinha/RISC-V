@@ -31,8 +31,8 @@ package riscv_isa_pkg is
     -- === Opcodes (RV32I) ===
     -- Constantes para os opcodes das instruções RISC-V
 
-    constant c_OPCODE_R_TYPE : std_logic_vector(6 downto 0) := "0110011"; -- Operações entre registradores
-    constant c_OPCODE_I_TYPE : std_logic_vector(6 downto 0) := "0010011"; -- Operações imediato
+    constant c_OPCODE_R_TYPE : std_logic_vector(6 downto 0) := "0110011";        -- Operações entre registradores
+    constant c_OPCODE_I_TYPE : std_logic_vector(6 downto 0) := "0010011";        -- Operações imediato
     constant c_OPCODE_LOAD   : std_logic_vector(6 downto 0) := "0000011";
     constant c_OPCODE_STORE  : std_logic_vector(6 downto 0) := "0100011";
     constant c_OPCODE_BRANCH : std_logic_vector(6 downto 0) := "1100011";
@@ -55,17 +55,28 @@ package riscv_isa_pkg is
     -- === Funct3 (Load/Store Unit) ===
     -- Constantes para os valores de funct3 para as instruções de Load
 
-    constant c_LB  : std_logic_vector(2 downto 0) := "000";               -- Load Byte (com sinal)
-    constant c_LH  : std_logic_vector(2 downto 0) := "001";               -- Load Half-word (com sinal)
-    constant c_LW  : std_logic_vector(2 downto 0) := "010";               -- Load Word
-    constant c_LBU : std_logic_vector(2 downto 0) := "100";               -- Load Byte Unsigned (sem sinal)
-    constant c_LHU : std_logic_vector(2 downto 0) := "101";               -- Load Half-word Unsigned (sem sinal)
+    constant c_LB  : std_logic_vector(2 downto 0) := "000";                      -- Load Byte (com sinal)
+    constant c_LH  : std_logic_vector(2 downto 0) := "001";                      -- Load Half-word (com sinal)
+    constant c_LW  : std_logic_vector(2 downto 0) := "010";                      -- Load Word
+    constant c_LBU : std_logic_vector(2 downto 0) := "100";                      -- Load Byte Unsigned (sem sinal)
+    constant c_LHU : std_logic_vector(2 downto 0) := "101";                      -- Load Half-word Unsigned (sem sinal)
 
     -- Constantes para os valores de funct3 para as intruções de store
 
-    constant c_SB : std_logic_vector(2 downto 0) := "000";                -- Store Byte
-    constant c_SH : std_logic_vector(2 downto 0) := "001";                -- Store Half-word
-    constant c_SW : std_logic_vector(2 downto 0) := "010";                -- Store Word
+    constant c_SB : std_logic_vector(2 downto 0) := "000";                       -- Store Byte
+    constant c_SH : std_logic_vector(2 downto 0) := "001";                       -- Store Half-word
+    constant c_SW : std_logic_vector(2 downto 0) := "010";                       -- Store Word
+
+    -- === Funct3 (System) ===
+
+    constant c_FUNCT3_PRIV  : std_logic_vector(2 downto 0) := "000";             -- Traps (ECALL, EBREAK...)
+    constant c_FUNCT3_CSRRW : std_logic_vector(2 downto 0) := "001";             -- CSR Read/Write
+
+    -- === Funct12 (ECALL/EBRAK) ===
+    -- O campo 'Immediate' (bits 31-20) usado como código. Funct7 é utilizado em R-Type
+
+    constant c_FUNCT12_ECALL  : std_logic_vector(11 downto 0) := "000000000000"; -- 0x000
+    constant c_FUNCT12_EBREAK : std_logic_vector(11 downto 0) := "000000000001"; -- 0x001
 
     -- === ALU Operations (Interno) ===
     -- Constantes para os códigos de operação da ALU (4 bits)
