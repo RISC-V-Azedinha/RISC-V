@@ -57,6 +57,16 @@ entity main_fsm is
             dmem_vld_o   : out std_logic;  
 
         ----------------------------------------------------------------------------------------------------------
+        -- Status de Interrupção
+        ----------------------------------------------------------------------------------------------------------
+
+        -- Vindos do CSR File via Control
+
+            Irq_MIE_i      : in  std_logic;                          -- Global Enable (mstatus.MIE)
+            Irq_Mie_Reg_i  : in  std_logic_vector(31 downto 0);      -- Individual Enable (mie)
+            Irq_Mip_Reg_i  : in  std_logic_vector(31 downto 0);      -- Pending (mip)
+
+        ----------------------------------------------------------------------------------------------------------
         -- Interface de sinais de controle
         ----------------------------------------------------------------------------------------------------------
 
@@ -125,11 +135,35 @@ architecture rtl of main_fsm is
 
     signal s_br_wait_q : std_logic;  -- 0: Comp, 1: Decide
 
+    -- Sinais auxiliares para decisão de interrupção --------------------------------------------------------------
+
+    signal s_irq_timer_pending : std_logic;
+    signal s_irq_ext_pending   : std_logic;
+    signal s_irq_soft_pending  : std_logic;
+    signal s_take_irq          : std_logic;
+
     ---------------------------------------------------------------------------------------------------------------
 
 begin
 
-    -- 1. Registrador de Estado (Processo Síncrono) ---------------------------------------------------------------
+    -- ------------------------------------------------------------------------------------------------------------
+    -- Lógica Combinacional de Detecção de Interrupção
+    -- ------------------------------------------------------------------------------------------------------------
+    -- Uma interrupção ocorre se:
+    -- 1. Global Enable (MIE) está ligado
+    -- 2. O bit específico em MIE está ligado
+    -- 3. O bit específico em MIP está ligado
+    
+    s_irq_timer_pending <= Irq_Mip_Reg_i(7)  AND Irq_Mie_Reg_i(7);
+    s_irq_ext_pending   <= Irq_Mip_Reg_i(11) AND Irq_Mie_Reg_i(11);
+    s_irq_soft_pending  <= Irq_Mip_Reg_i(3)  AND Irq_Mie_Reg_i(3);
+
+    -- Sinal mestre de "Devemos interromper agora?"
+    s_take_irq <= Irq_MIE_i AND (s_irq_timer_pending OR s_irq_ext_pending OR s_irq_soft_pending);
+
+    ---------------------------------------------------------------------------------------------------------------
+    -- Registrador de Estado (Processo Síncrono) 
+    ---------------------------------------------------------------------------------------------------------------
 
     process(Clk_i)
     begin
@@ -158,10 +192,13 @@ begin
 
     end process;
 
-    -- 2. Lógica de Próximo Estado (Combinacional) ----------------------------------------------------------------
+    ---------------------------------------------------------------------------------------------------------------
+    -- Lógica de Próximo Estado (Combinacional) 
+    ---------------------------------------------------------------------------------------------------------------
 
-    process(current_state, Opcode_i, Funct3_i, Funct12_i, dmem_rdy_i, imem_rdy_i, s_br_wait_q)
+    process(current_state, Opcode_i, Funct3_i, Funct12_i, dmem_rdy_i, imem_rdy_i, s_br_wait_q, s_take_irq)
     begin
+
         -- Default: manter estado 
         next_state <= current_state;
 
@@ -177,18 +214,30 @@ begin
 
             -- DECODE: Decodifica e lê registradores
             when S_ID =>
-                case Opcode_i is
-                    when c_OPCODE_R_TYPE | c_OPCODE_I_TYPE => next_state <= S_EX_ALU    ;
-                    when c_OPCODE_LOAD   | c_OPCODE_STORE  => next_state <= S_EX_ADDR   ;
-                    when c_OPCODE_BRANCH                   => next_state <= S_EX_BR     ;
-                    when c_OPCODE_JAL                      => next_state <= S_EX_JAL    ;
-                    when c_OPCODE_JALR                     => next_state <= S_EX_JALR   ;
-                    when c_OPCODE_LUI                      => next_state <= S_EX_LUI    ;
-                    when c_OPCODE_AUIPC                    => next_state <= S_EX_AUIPC  ;
-                    when c_OPCODE_FENCE                    => next_state <= S_EX_FENCE  ;
-                    when c_OPCODE_SYSTEM                   => next_state <= S_EX_SYSTEM ;
-                    when others                            => next_state <= S_IF        ; -- Instrução inválida volta pro IF 
-                end case;
+
+                -- -----------------------------------------------------------
+                -- CHECAGEM DE INTERRUPÇÃO (Ponto de Preempção)
+                -- -----------------------------------------------------------
+                if s_take_irq = '1' then
+                    -- Se houver interrupção, ignoramos a instrução atual
+                    -- e pulamos direto para o próximo Fetch (que será no endereço do Handler)
+                    next_state <= S_IF;
+                else
+
+                    case Opcode_i is
+                        when c_OPCODE_R_TYPE | c_OPCODE_I_TYPE => next_state <= S_EX_ALU    ;
+                        when c_OPCODE_LOAD   | c_OPCODE_STORE  => next_state <= S_EX_ADDR   ;
+                        when c_OPCODE_BRANCH                   => next_state <= S_EX_BR     ;
+                        when c_OPCODE_JAL                      => next_state <= S_EX_JAL    ;
+                        when c_OPCODE_JALR                     => next_state <= S_EX_JALR   ;
+                        when c_OPCODE_LUI                      => next_state <= S_EX_LUI    ;
+                        when c_OPCODE_AUIPC                    => next_state <= S_EX_AUIPC  ;
+                        when c_OPCODE_FENCE                    => next_state <= S_EX_FENCE  ;
+                        when c_OPCODE_SYSTEM                   => next_state <= S_EX_SYSTEM ;
+                        when others                            => next_state <= S_IF        ; -- Instrução inválida volta pro IF 
+                    end case;
+
+                end if;
 
             -- EXECUTE: Várias possibilidades
             when S_EX_ALU   => next_state <= S_WB_REG;
@@ -250,10 +299,12 @@ begin
 
     -- 3. Lógica de Saída (Combinacional - Moore) -----------------------------------------------------------------
 
-    process(current_state, Opcode_i, Funct3_i, Funct12_i, dmem_rdy_i, imem_rdy_i, s_br_wait_q)
+    process(current_state, Opcode_i, Funct3_i, Funct12_i, dmem_rdy_i, imem_rdy_i, s_br_wait_q, 
+            s_take_irq, s_irq_timer_pending, s_irq_ext_pending, s_irq_soft_pending)
     begin
         
         -- Default Outputs (por segurança)
+
         PCWrite_o     <= '0';
         OPCWrite_o    <= '0';
         PCWriteCond_o <= '0';
@@ -266,6 +317,7 @@ begin
         imem_vld_o    <= '0';
         
         -- Default Muxes (por segurança)
+
         PCSrc_o       <= "00"; -- PC+4
         ALUSrcA_o     <= "00"; -- rs1
         ALUSrcB_o     <= '0';  -- rs2
@@ -295,7 +347,32 @@ begin
             when S_ID =>
                 RS1Write_o <= '1';
                 RS2Write_o <= '1';
-                null;
+
+                -- -----------------------------------------------------------
+                -- ATIVAÇÃO DA INTERRUPÇÃO
+                -- -----------------------------------------------------------
+
+                if s_take_irq = '1' then
+                    TrapEnter_o <= '1'; -- Salva PC no MEPC e pula para MTVEC
+                    PCWrite_o   <= '1'; -- Força atualização do PC
+                    
+                    -- Prioridade de Causa (Standard RISC-V)
+                    -- Bit 31 (MSB) = 1 para indicar Interrupção assíncrona
+                    -- External (11) > Software (3) > Timer (7) (Exemplo simples)
+                    -- Nota: A spec oficial tem prioridade Ext > Soft > Timer, mas varia.
+                    
+                    if s_irq_ext_pending = '1' then
+                        TrapCause_o <= x"8000000B"; -- Machine External Interrupt
+
+                    elsif s_irq_soft_pending = '1' then
+                        TrapCause_o <= x"80000003"; -- Machine Software Interrupt
+
+                    elsif s_irq_timer_pending = '1' then
+                        TrapCause_o <= x"80000007"; -- Machine Timer Interrupt
+
+                    end if;
+
+                end if;
 
             -- Estados de EXECUÇÃO
             when S_EX_ALU =>

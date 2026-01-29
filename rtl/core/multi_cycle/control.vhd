@@ -65,8 +65,16 @@ entity control is
         
         -- Saídas (Sinais de Controle para o Datapath)
 
-            Control_o      : out t_control                           -- Barramento com todos os sinais de controle 
+            Control_o      : out t_control;                          -- Barramento com todos os sinais de controle 
                                                                      -- (decoder, pcsrc, alucontrol)
+
+        ----------------------------------------------------------------------------------------------------------
+        -- CSR Interface 
+        ----------------------------------------------------------------------------------------------------------
+
+            CSR_Mstatus_MIE_i : in std_logic;
+            CSR_Mie_i         : in std_logic_vector(31 downto 0);
+            CSR_Mip_i         : in std_logic_vector(31 downto 0)
 
     );
 
@@ -142,6 +150,11 @@ begin
         Opcode_i       => s_opcode,
         Funct3_i       => s_funct3,  
         Funct12_i      => s_funct12, 
+
+        -- Sinais de Interrupção
+        Irq_MIE_i      => CSR_Mstatus_MIE_i,
+        Irq_Mie_Reg_i  => CSR_Mie_i,
+        Irq_Mip_Reg_i  => CSR_Mip_i,
 
         -- Conexão do Handshake
         imem_rdy_i     => imem_rdy_i,

@@ -62,6 +62,22 @@ entity datapath is
         DMem_writeEnable_o : out std_logic_vector( 3 downto 0);       -- Habilita escrita na DMEM
 
         ----------------------------------------------------------------------------------------------------------
+        -- Interface de Interrupções 
+        ----------------------------------------------------------------------------------------------------------
+
+        Irq_External_i     : in std_logic;
+        Irq_Timer_i        : in std_logic;
+        Irq_Software_i     : in std_logic;
+
+        ----------------------------------------------------------------------------------------------------------
+        -- Status CSR para o Controle 
+        ----------------------------------------------------------------------------------------------------------
+
+        CSR_Mstatus_MIE_o  : out std_logic;                           -- Bit Global Interrupt Enable
+        CSR_Mie_o          : out std_logic_vector(31 downto 0);       -- Máscara de Enables
+        CSR_Mip_o          : out std_logic_vector(31 downto 0);       -- Interrupções Pendentes
+
+        ----------------------------------------------------------------------------------------------------------
         -- Interface com a Unidade de Controle
         ----------------------------------------------------------------------------------------------------------
 
@@ -158,31 +174,31 @@ begin
             Clk_i           => CLK_i,
             Reset_i         => Reset_i,
             
-            -- Interface de Leitura/Escrita
-            Csr_Addr_i      => r_IR(31 downto 20),      -- 12 bits do imediato (I-Type)
-            Csr_Write_i     => Control_i.csr_write,     -- Sinal de escrita
-            Csr_WData_i     => r_RS1,                   -- Dado a escrever (de rs1)
-            Csr_RData_o     => s_csr_rdata,             -- Dado lido
+            -- Leitura/Escrita
+            Csr_Addr_i      => r_IR(31 downto 20),      
+            Csr_Write_i     => Control_i.csr_write,     
+            Csr_WData_i     => r_RS1,                   
+            Csr_RData_o     => s_csr_rdata,             
             
-            -- Interface de Trap (Hardware)
+            -- Hardware Trap
             Trap_Enter_i    => Control_i.trap_enter,
             Trap_Return_i   => Control_i.trap_return,
-            Trap_PC_i       => r_OldPC,
-            Trap_Cause_i    => Control_i.trap_cause,
+            Trap_PC_i       => r_OldPC,                 
+            Trap_Cause_i    => Control_i.trap_cause,    
             
-            -- Interface de Interrupções (Aterradas para modo seguro)
-            Irq_Ext_i       => '0',
-            Irq_Timer_i     => '0',
-            Irq_Soft_i      => '0',
+            -- Entradas de Interrupção (Do Top Level)
+            Irq_Ext_i       => Irq_External_i,
+            Irq_Timer_i     => Irq_Timer_i,
+            Irq_Soft_i      => Irq_Software_i,
             
-            -- Saídas de vetores
-            Mtvec_o         => s_csr_mtvec,
-            Mepc_o          => s_csr_mepc,
+            -- Vetores
+            Mtvec_o         => s_csr_mtvec,             
+            Mepc_o          => s_csr_mepc,              
             
-            -- Saídas de Status (Abertas/Ignoradas por enquanto)
-            Global_Irq_En_o => open,
-            Mie_o           => open,
-            Mip_o           => open
+            -- Status para a FSM (Saídas do Datapath)
+            Global_Irq_En_o => CSR_Mstatus_MIE_o,
+            Mie_o           => CSR_Mie_o,
+            Mip_o           => CSR_Mip_o
         );
 
     -- Gerenciamento dos registradores intermediários do MULTI-CYCLE 

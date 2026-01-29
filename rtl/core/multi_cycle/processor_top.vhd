@@ -73,9 +73,15 @@ entity processor_top is
     IMem_rdy_i          : in  std_logic;
     IMem_vld_o          : out std_logic;
     DMem_rdy_i          : in  std_logic;                          -- Barramento indica que dado está pronto/escrito
-    DMem_vld_o          : out std_logic                           -- Processador indica intenção de transação
+    DMem_vld_o          : out std_logic;                          -- Processador indica intenção de transação
 
-  ) ;
+    -- Interface de Interrupções
+
+    Irq_External_i      : in  std_logic;                          -- Interrupção Externa (ex: Botão)
+    Irq_Timer_i         : in  std_logic;                          -- Interrupção de Timer
+    Irq_Software_i      : in  std_logic                           -- Interrupção de Software (ex: IPI)
+
+  );
 
 end processor_top ;
 
@@ -101,6 +107,12 @@ architecture rtl of processor_top is
             signal s_alu_zero     : std_logic := '0';
             signal s_instruction  : std_logic_vector(31 downto 0) := (others => '0');
 
+        -- 3. Sinais de Status de Interrupção (Datapath -> Control)
+
+            signal s_csr_mstatus_mie : std_logic := '0';
+            signal s_csr_mie         : std_logic_vector(31 downto 0) := (others => '0');
+            signal s_csr_mip         : std_logic_vector(31 downto 0) := (others => '0');
+
 begin
 
     -- ============== CONTROL PATH ======================== 
@@ -119,6 +131,11 @@ begin
                     imem_vld_o         => IMem_vld_o,
                     dmem_rdy_i         => DMem_rdy_i,
                     dmem_vld_o         => DMem_vld_o,
+
+                    -- Interface de CSR / Interrupção
+                    CSR_Mstatus_MIE_i  => s_csr_mstatus_mie,
+                    CSR_Mie_i          => s_csr_mie,
+                    CSR_Mip_i          => s_csr_mip,
 
                     -- Interface de dados
                     Instruction_i      => s_instruction,  -- Instrução buscada na memória
@@ -141,9 +158,15 @@ begin
                     DMem_data_o        => DMem_data_o,
                     DMem_data_i        => DMem_data_i,
                     DMem_writeEnable_o => DMem_we_o,
+                    Irq_External_i     => Irq_External_i,
+                    Irq_Timer_i        => Irq_Timer_i,
+                    Irq_Software_i     => Irq_Software_i,
                     Control_i          => s_ctrl,
                     Instruction_o      => s_instruction,
-                    ALU_Zero_o         => s_alu_zero
+                    ALU_Zero_o         => s_alu_zero,
+                    CSR_Mstatus_MIE_o  => s_csr_mstatus_mie,
+                    CSR_Mie_o          => s_csr_mie,
+                    CSR_Mip_o          => s_csr_mip
                 );
 
 end architecture rtl; -- rtl
