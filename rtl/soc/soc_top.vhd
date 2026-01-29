@@ -194,9 +194,19 @@ architecture rtl of soc_top is
         signal s_dma_we_expanded : std_logic_vector(3 downto 0);
         signal s_arb_we_vector   : std_logic_vector(3 downto 0);
 
+    -- Sinal interno para conectar a interrupção externa
+        
+        signal s_irq_external    : std_logic;
+
     -- ============================================================================================================
 
 begin
+
+    -- ============================================================================================================
+    -- Lógica de Interrupção Externa
+    -- ============================================================================================================
+    
+    s_irq_external <= '0';
 
     -- ============================================================================================================
     -- Expansão do WE do DMA (1 bit -> 4 bits) ANTES do Arbiter
@@ -221,12 +231,15 @@ begin
             DMem_data_i         => s_cpu_dmem_rdata,
             DMem_we_o           => s_cpu_dmem_we,
             DMem_rdy_i          => s_cpu_dmem_rdy,
-            DMem_vld_o          => s_cpu_dmem_vld
+            DMem_vld_o          => s_cpu_dmem_vld,
+            Irq_External_i      => s_irq_external,   -- Conectado ao sinal interno
+            Irq_Timer_i         => '0',              -- Aterrado (o Timer periférico ainda não gera IRQ direta aqui)
+            Irq_Software_i      => '0'               -- Aterrado
         );
 
-    -- =========================================================================
+    -- ============================================================================================================
     -- DMA CONTROLLER
-    -- =========================================================================
+    -- ============================================================================================================
     
     U_DMA: entity work.dma_controller
         port map (
@@ -247,9 +260,9 @@ begin
             irq_done_o  => open
         );
 
-    -- =========================================================================
+    -- ============================================================================================================
     -- BUS ARBITER (Gerencia CPU vs DMA no Canal de Dados)
-    -- =========================================================================
+    -- ============================================================================================================
     
     U_ARBITER: entity work.bus_arbiter
         port map (
