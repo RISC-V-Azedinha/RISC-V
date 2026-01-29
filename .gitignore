@@ -23,6 +23,7 @@ __pycache__/
 
 # MNIST image processing
 mnist.npz
+data
 
 # Documentacao
 docs/build

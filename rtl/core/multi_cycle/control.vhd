@@ -83,6 +83,7 @@ architecture rtl of control is
     signal s_opcode : std_logic_vector(6 downto 0);                  -- Código de operação da instrução 
     signal s_funct3 : std_logic_vector(2 downto 0);                  -- Campo Funct3 da instrução
     signal s_funct7 : std_logic_vector(6 downto 0);                  -- Campo Funct7 da instrução
+    signal s_funct12 : std_logic_vector(11 downto 0);                -- Campo Funct12 da instrução
 
     -- Sinais vindos da FSM (Main Finite State Machine)
 
@@ -123,9 +124,10 @@ begin
     -- Extração dos Campos da Instrução
     --------------------------------------------------------------------------------------------------------------
 
-    s_opcode <= Instruction_i(6 downto 0);
-    s_funct3 <= Instruction_i(14 downto 12);
-    s_funct7 <= Instruction_i(31 downto 25);
+    s_opcode  <= Instruction_i(6 downto 0);
+    s_funct3  <= Instruction_i(14 downto 12);
+    s_funct7  <= Instruction_i(31 downto 25);
+    s_funct12 <= Instruction_i(31 downto 20);
 
     --------------------------------------------------------------------------------------------------------------
     -- Instância da FSM Principal (Sequenciador)
@@ -138,6 +140,8 @@ begin
         Clk_i          => Clk_i,
         Reset_i        => Reset_i,
         Opcode_i       => s_opcode,
+        Funct3_i       => s_funct3,  
+        Funct12_i      => s_funct12, 
 
         -- Conexão do Handshake
         imem_rdy_i     => imem_rdy_i,
@@ -156,6 +160,12 @@ begin
         RS2Write_o     => Control_o.rs2_write,
         ALUrWrite_o    => Control_o.alur_write,
         MDRWrite_o     => Control_o.mdr_write,
+
+        -- Sinais ZICSR / Trap
+        CSRWrite_o     => Control_o.csr_write,
+        TrapEnter_o    => Control_o.trap_enter,
+        TrapReturn_o   => Control_o.trap_return,
+        TrapCause_o    => Control_o.trap_cause,
 
         -- Saídas de Seleção (Muxes)
         PCSrc_o        => Control_o.pc_src,

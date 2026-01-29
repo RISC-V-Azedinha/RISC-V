@@ -138,12 +138,52 @@ architecture rtl of datapath is
     signal r_RS2            : std_logic_vector(31 downto 0) := (others => '0');           -- Lê rs2
     signal r_ALUResult      : std_logic_vector(31 downto 0) := (others => '0');           -- Salva resultado da ALU
 
+    -- Sinais para conexão com o CSR File
+
+    signal s_csr_rdata : std_logic_vector(31 downto 0);
+    signal s_csr_mtvec : std_logic_vector(31 downto 0);                                   -- Endereço do tratador de trap
+    signal s_csr_mepc  : std_logic_vector(31 downto 0);                                   -- Endereço de retorno
+
 begin
 
     -- Saídas para o control path
 
         Instruction_o    <= r_IR;
         ALU_Zero_o       <= s_alu_zero;
+
+    -- Control and Status Registers
+
+    U_CSR_FILE : entity work.csr_file
+        port map (
+            Clk_i           => CLK_i,
+            Reset_i         => Reset_i,
+            
+            -- Interface de Leitura/Escrita
+            Csr_Addr_i      => r_IR(31 downto 20),      -- 12 bits do imediato (I-Type)
+            Csr_Write_i     => Control_i.csr_write,     -- Sinal de escrita
+            Csr_WData_i     => r_RS1,                   -- Dado a escrever (de rs1)
+            Csr_RData_o     => s_csr_rdata,             -- Dado lido
+            
+            -- Interface de Trap (Hardware)
+            Trap_Enter_i    => Control_i.trap_enter,
+            Trap_Return_i   => Control_i.trap_return,
+            Trap_PC_i       => r_OldPC,
+            Trap_Cause_i    => Control_i.trap_cause,
+            
+            -- Interface de Interrupções (Aterradas para modo seguro)
+            Irq_Ext_i       => '0',
+            Irq_Timer_i     => '0',
+            Irq_Soft_i      => '0',
+            
+            -- Saídas de vetores
+            Mtvec_o         => s_csr_mtvec,
+            Mepc_o          => s_csr_mepc,
+            
+            -- Saídas de Status (Abertas/Ignoradas por enquanto)
+            Global_Irq_En_o => open,
+            Mie_o           => open,
+            Mip_o           => open
+        );
 
     -- Gerenciamento dos registradores intermediários do MULTI-CYCLE 
 
@@ -303,6 +343,7 @@ begin
                 s_write_back_data <= r_ALUResult       when "00",     -- Tipo-R, Tipo-I (Aritmética)
                                      r_MDR             when "01",     -- Loads
                                      r_PC              when "10",     -- JAL / JALR
+                                     s_csr_rdata       when "11",     -- Dado do CSR
                                      (others => '0')   when others;
 
     -- ============== Lógica de Cálculo do Próximo PC ======================================
@@ -318,11 +359,22 @@ begin
         -- Mux final que alimenta o registrador do PC no próximo ciclo de clock
         -- - A prioridade é: Jumps têm precedência sobre Branches, que têm precedência sobre PC+4.
 
-            with Control_i.pc_src select
-                s_pc_next <= s_pc_plus_4                     when "00", -- PC <- PC + 4
-                             s_branch_or_jal_addr            when "01", -- PC <- Endereço de Branch ou JAL
-                             r_ALUResult(31 downto 1) & '0'  when "10", -- PC <- Endereço do JALR (rs1 + imm)
-                             (others => 'X')                 when others;
+            process(Control_i, s_pc_plus_4, s_branch_or_jal_addr, r_ALUResult, s_csr_mtvec, s_csr_mepc)
+            begin
+                if Control_i.trap_enter = '1' then
+                    s_pc_next <= s_csr_mtvec;       -- Pula para o vetor de interrupção
+                elsif Control_i.trap_return = '1' then
+                    s_pc_next <= s_csr_mepc;        -- Retorna para o endereço salvo
+                else
+                    -- Lógica normal existente
+                    case Control_i.pc_src is
+                        when "00"   => s_pc_next <= s_pc_plus_4;                     -- PC <- PC + 4
+                        when "01"   => s_pc_next <= s_branch_or_jal_addr;            -- PC <- Endereço de Branch ou JAL
+                        when "10"   => s_pc_next <= r_ALUResult(31 downto 1) & '0';  -- PC <- Endereço do JALR (rs1 + imm)
+                        when others => s_pc_next <= (others => 'X');
+                    end case;
+                end if;
+            end process;
 
     -- ============== Sinais de DEBUG (MONITORAMENTO) ======================================
 

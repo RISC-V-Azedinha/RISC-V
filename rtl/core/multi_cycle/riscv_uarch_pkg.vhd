@@ -52,13 +52,22 @@ package riscv_uarch_pkg is
         ----------------------------------------------------------------------
         alu_src_a   : std_logic_vector(1 downto 0); -- 00:rs1, 01:OldPC, 10:Zero
         alu_src_b   : std_logic;                    -- 0:rs2, 1:Imediato
-        wb_sel      : std_logic_vector(1 downto 0); -- 00:ALUOut, 01:MDR, 10:PC+4 (Era wb_src)
+        wb_sel      : std_logic_vector(1 downto 0); -- 00:ALUOut, 01:MDR, 10:PC+4, 11:CSR
         pc_src      : std_logic_vector(1 downto 0); -- 00:PC+4, 01:Jump/Branch, 10:JALR
 
         ----------------------------------------------------------------------
         -- 3. Sinais Funcionais
         ----------------------------------------------------------------------
         alu_control : std_logic_vector(3 downto 0); -- Operação da ALU (ADD, SUB, XOR...)
+
+        ----------------------------------------------------------------------
+        -- 4. Controle de CSRs e Traps
+        ----------------------------------------------------------------------
+
+        csr_write   : std_logic;                     -- Escreve no banco de CSRs
+        trap_enter  : std_logic;                     -- 1 = Entra em Trap (Salva PC, Pula p/ MTVEC)
+        trap_return : std_logic;                     -- 1 = Retorna de Trap (Pula p/ MEPC)
+        trap_cause  : std_logic_vector(31 downto 0); -- Código da causa (ex: 11 p/ ECALL)
         
     end record;
 
@@ -75,13 +84,15 @@ package riscv_uarch_pkg is
         rs2_write   => '0',
         alur_write  => '0',
         mdr_write   => '0',
-        
         alu_src_a   => "00",
         alu_src_b   => '0',
         wb_sel      => "00",
         pc_src      => "00",
-        
-        alu_control => "0000"
+        alu_control => "0000",
+        csr_write   => '0',
+        trap_enter  => '0',
+        trap_return => '0',
+        trap_cause  => (others => '0')
     );
 
 end package riscv_uarch_pkg;

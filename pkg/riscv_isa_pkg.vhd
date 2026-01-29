@@ -77,6 +77,7 @@ package riscv_isa_pkg is
 
     constant c_FUNCT12_ECALL  : std_logic_vector(11 downto 0) := "000000000000"; -- 0x000
     constant c_FUNCT12_EBREAK : std_logic_vector(11 downto 0) := "000000000001"; -- 0x001
+    constant c_FUNCT12_MRET   : std_logic_vector(11 downto 0) := "001100000010"; -- 0x302
 
     -- === ALU Operations (Interno) ===
     -- Constantes para os códigos de operação da ALU (4 bits)

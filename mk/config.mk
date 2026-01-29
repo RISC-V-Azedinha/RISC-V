@@ -50,7 +50,7 @@ SIM_COMMON_DIR     = $(SIM_DIR)/common
 
 CC                 = riscv32-unknown-elf-gcc
 OBJCOPY            = riscv32-unknown-elf-objcopy
-BASE_CFLAGS        = -march=rv32i -mabi=ilp32 -nostdlib -nostartfiles -g
+BASE_CFLAGS        = -march=rv32i_zicsr -mabi=ilp32 -nostdlib -nostartfiles -g
 GTKWAVE            = gtkwave
 PYTHON             = python3
 

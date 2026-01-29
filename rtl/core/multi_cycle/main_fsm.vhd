@@ -39,6 +39,8 @@ entity main_fsm is
             Clk_i          : in  std_logic;
             Reset_i        : in  std_logic;
             Opcode_i       : in  std_logic_vector(6 downto 0);
+            Funct3_i       : in  std_logic_vector(2 downto 0);
+            Funct12_i      : in  std_logic_vector(11 downto 0);
 
         ----------------------------------------------------------------------------------------------------------
         -- Interface de Handshake 
@@ -80,7 +82,18 @@ entity main_fsm is
         
         -- Controle Auxiliar para o controlador da ALU (alu_control.vhd)
         
-            ALUOp_o        : out std_logic_vector(1 downto 0)        -- 00: Add, 01: Branch, 10: Funct
+            ALUOp_o        : out std_logic_vector(1 downto 0);       -- 00: Add, 01: Branch, 10: Funct
+
+        ----------------------------------------------------------------------------------------------------------
+        -- Sinais ZICSR / Trap
+        ----------------------------------------------------------------------------------------------------------
+
+            CSRWrite_o     : out std_logic;                          -- Escreve no CSR File
+            TrapEnter_o    : out std_logic;                          -- Pula para MTVEC e salva MEPC
+            TrapReturn_o   : out std_logic;                          -- Pula para MEPC (MRET)
+            TrapCause_o    : out std_logic_vector(31 downto 0)       -- Código da exceção
+        
+        ----------------------------------------------------------------------------------------------------------
 
     );
 end entity main_fsm;
@@ -147,7 +160,7 @@ begin
 
     -- 2. Lógica de Próximo Estado (Combinacional) ----------------------------------------------------------------
 
-    process(current_state, Opcode_i, dmem_rdy_i, imem_rdy_i, s_br_wait_q)
+    process(current_state, Opcode_i, Funct3_i, Funct12_i, dmem_rdy_i, imem_rdy_i, s_br_wait_q)
     begin
         -- Default: manter estado 
         next_state <= current_state;
@@ -198,9 +211,16 @@ begin
             when S_EX_JALR   => next_state <= S_WB_JALR;
             when S_EX_LUI    => next_state <= S_WB_REG;
             when S_EX_AUIPC  => next_state <= S_WB_REG;
-
             when S_EX_FENCE  => next_state <= S_IF; 
-            when S_EX_SYSTEM => next_state <= S_IF;
+            
+            when S_EX_SYSTEM => 
+                if Funct3_i = "000" then -- Privileged (ECALL / MRET)
+                    -- Traps pulam o Write-Back e voltam direto para Fetch (no novo endereço)
+                    next_state <= S_IF; 
+                else
+                    -- CSRRW/CSRRS: Precisam ir ao Write-Back para escrever no rd
+                    next_state <= S_WB_REG;
+                end if;
 
             -- MEMORY READ (HANDSHAKE)
             when S_MEM_RD   => 
@@ -230,7 +250,7 @@ begin
 
     -- 3. Lógica de Saída (Combinacional - Moore) -----------------------------------------------------------------
 
-    process(current_state, Opcode_i, dmem_rdy_i, imem_rdy_i, s_br_wait_q)
+    process(current_state, Opcode_i, Funct3_i, Funct12_i, dmem_rdy_i, imem_rdy_i, s_br_wait_q)
     begin
         
         -- Default Outputs (por segurança)
@@ -251,6 +271,13 @@ begin
         ALUSrcB_o     <= '0';  -- rs2
         WBSel_o       <= "00"; -- ALUResult
         ALUOp_o       <= "00"; -- ADD
+
+        -- Default ZICSR
+
+        CSRWrite_o    <= '0'; 
+        TrapEnter_o   <= '0'; 
+        TrapReturn_o  <= '0';
+        TrapCause_o   <= (others => '0');
 
         case current_state is
             
@@ -332,8 +359,25 @@ begin
                 null;
 
             when S_EX_SYSTEM => 
-                -- Aqui haverá a ativação dos sinais de exceção.
-                null;
+                if Funct3_i = "000" then -- Privileged
+                    PCWrite_o <= '1'; -- Vamos atualizar o PC imediatamente
+                    
+                    if Funct12_i = x"000" then -- ECALL (Imm=0)
+                        TrapEnter_o <= '1';           -- Datapath pula para MTVEC
+                        TrapCause_o <= x"0000000B";   -- Causa 11 (M-Mode Ecall)
+                    
+                    elsif Funct12_i = x"302" then -- MRET (Imm=0x302)
+                        TrapReturn_o <= '1';          -- Datapath pula para MEPC
+                        
+                    else
+                        -- EBREAK ou instrução ilegal (ignorar ou tratar como trap)
+                        null;
+                    end if;
+                else
+                    -- CSR Instructions (CSRRW, etc)
+                    -- Apenas passamos para WB, onde a escrita real ocorre.
+                    null;
+                end if;
 
             -- Estados de MEMÓRIA (HANDSHAKE)
             when S_MEM_RD =>
@@ -353,8 +397,12 @@ begin
             -- Estados de WRITE-BACK
             when S_WB_REG =>
                 RegWrite_o  <= '1';
+                
                 if Opcode_i = c_OPCODE_LOAD then
                     WBSel_o <= "01"; -- MDR
+                elsif Opcode_i = c_OPCODE_SYSTEM then
+                    WBSel_o    <= "11"; -- CSR Data
+                    CSRWrite_o <= '1';  -- Efetiva a escrita no CSR (Atomic Swap)
                 else
                     WBSel_o <= "00"; -- ALUResult
                 end if;
