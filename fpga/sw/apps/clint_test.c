@@ -67,13 +67,10 @@ void __attribute__((interrupt("machine"))) trap_handler(void) {
 // ============================================================================
 
 int main() {
-    // [WORKAROUND HARDWARE]
-    // Garante que TP (x4) seja zero para evitar conflito na ALU durante CSRRW
-    asm volatile ("mv tp, x0");
 
     hal_uart_init();
     
-    // Cabeçalho Bonito
+    // Cabeçalho Bonito rs
     hal_uart_puts("\n\r");
     hal_uart_puts("==========================================================\n\r");
     hal_uart_puts("          DIAGNOSTICO DE INTERRUPCOES (CLINT)             \n\r");
@@ -104,25 +101,22 @@ int main() {
 
     // A. Habilita a máscara específica para Software Interrupt
     hal_irq_mask_enable(IRQ_M_SOFT);
-    hal_uart_puts("       -> Mascara (MSIE) habilitada.\n\r");
+    hal_uart_puts("\t-> Mascara (MSIE) habilitada.\n\r");
 
     // B. Dispara a interrupção via Hardware (Escreve 1 no registrador MSIP)
-    hal_uart_puts("       -> Disparando sinal no CLINT (MSIP=1)...\n\r");
+    hal_uart_puts("\t-> Disparando sinal no CLINT (MSIP=1)...\n\r");
     CLINT_MSIP = 1;
 
     // C. Aguarda a mágica acontecer (Busy Wait com Timeout de segurança)
-    hal_uart_puts("       -> Aguardando Handler...\n\r");
+    hal_uart_puts("\t-> Aguardando Handler...\n\r");
     
     int timeout = 10000;
-    while (!g_software_irq_fired && timeout > 0) {
-        timeout--;
-    }
+    while (!g_software_irq_fired && timeout > 0) timeout--;
 
     // D. Verifica o resultado
-    if (g_software_irq_fired) {
-        hal_uart_puts("       -> [SUCESSO] Software IRQ capturada e tratada!\n\r");
-    } else {
-        hal_uart_puts("       -> [FALHA] O processador nao desviou para o Handler.\n\r");
+    if (g_software_irq_fired) hal_uart_puts("\t-> [SUCESSO] Software IRQ capturada e tratada!\n\r");
+    else {
+        hal_uart_puts("\t-> [FALHA] O processador nao desviou para o Handler.\n\r");
         // Trava para debug se falhar
         while(1); 
     }
@@ -140,23 +134,22 @@ int main() {
 
     // A. Habilita a máscara específica para Timer Interrupt
     hal_irq_mask_enable(IRQ_M_TIMER);
-    hal_uart_puts("       -> Mascara (MTIE) habilitada.\n\r");
+    hal_uart_puts("\t-> Mascara (MTIE) habilitada.\n\r");
 
     // B. Configura o alarme
     // Vamos configurar para disparar daqui a ~10ms (1.000.000 ciclos @ 100MHz)
-    // Se for simulação (ModelSim/GHDL), use um valor menor, ex: 5000.
     uint64_t delta = 50000; 
-    hal_uart_puts("       -> Configurando alarme (Delta = 50k ciclos)...\n\r");
+    hal_uart_puts("\t-> Configurando alarme (Delta = 50k ciclos)...\n\r");
     hal_timer_set_irq_delta(delta);
 
     // C. Aguarda
-    hal_uart_puts("       -> Aguardando Timer estourar...\n\r");
+    hal_uart_puts("\t-> Aguardando Timer estourar...\n\r");
     
     // Aqui não usamos timeout curto, pois depende do timer real
     while (!g_timer_irq_fired);
 
     // D. Verifica
-    hal_uart_puts("       -> [SUCESSO] Timer IRQ capturada e tratada!\n\r");
+    hal_uart_puts("\t-> [SUCESSO] Timer IRQ capturada e tratada!\n\r");
 
     // Limpeza
     hal_irq_mask_disable(IRQ_M_TIMER);
