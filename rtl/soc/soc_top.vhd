@@ -178,14 +178,14 @@ architecture rtl of soc_top is
         signal s_npu_rst_n    : std_logic;
         signal s_npu_rdy      : std_logic;
 
-    -- TIMER
+    -- CLINT (Core Local Interrupt)
 
-        signal s_timer_addr    : std_logic_vector(3 downto 0);
-        signal s_timer_data_rx : std_logic_vector(31 downto 0);
-        signal s_timer_data_tx : std_logic_vector(31 downto 0);
-        signal s_timer_we      : std_logic;
-        signal s_timer_vld     : std_logic;
-        signal s_timer_rdy     : std_logic;
+        signal s_clint_addr    : std_logic_vector(4 downto 0);
+        signal s_clint_data_rx : std_logic_vector(31 downto 0);
+        signal s_clint_data_tx : std_logic_vector(31 downto 0);
+        signal s_clint_we      : std_logic;
+        signal s_clint_vld     : std_logic;
+        signal s_clint_rdy     : std_logic;
 
     -- === Auxiliares =============================================================================================
 
@@ -194,9 +194,11 @@ architecture rtl of soc_top is
         signal s_dma_we_expanded : std_logic_vector(3 downto 0);
         signal s_arb_we_vector   : std_logic_vector(3 downto 0);
 
-    -- Sinal interno para conectar a interrupção externa
-        
+    -- Sinais de Interrupção
+
         signal s_irq_external    : std_logic;
+        signal s_irq_timer       : std_logic;
+        signal s_irq_soft        : std_logic;
 
     -- ============================================================================================================
 
@@ -233,8 +235,8 @@ begin
             DMem_rdy_i          => s_cpu_dmem_rdy,
             DMem_vld_o          => s_cpu_dmem_vld,
             Irq_External_i      => s_irq_external,   -- Conectado ao sinal interno
-            Irq_Timer_i         => '0',              -- Aterrado (o Timer periférico ainda não gera IRQ direta aqui)
-            Irq_Software_i      => '0'               -- Aterrado
+            Irq_Timer_i         => s_irq_timer,      -- Conectado ao CLINT
+            Irq_Software_i      => s_irq_soft        -- Conectado ao CLINT
         );
 
     -- ============================================================================================================
@@ -357,12 +359,12 @@ begin
             dma_rdy_i    => s_dma_s_rdy,
 
             -- Interface TIMER
-            timer_addr_o  => s_timer_addr,
-            timer_data_i  => s_timer_data_rx,
-            timer_data_o  => s_timer_data_tx,
-            timer_we_o    => s_timer_we,
-            timer_vld_o   => s_timer_vld,
-            timer_rdy_i   => s_timer_rdy
+            clint_addr_o  => s_clint_addr,
+            clint_data_i  => s_clint_data_rx,
+            clint_data_o  => s_clint_data_tx,
+            clint_we_o    => s_clint_we,
+            clint_vld_o   => s_clint_vld,
+            clint_rdy_i   => s_clint_rdy
             
         );
 
@@ -459,16 +461,18 @@ begin
             vga_b_o     => VGA_B_o
         );
 
-    U_TIMER: entity work.timer_controller
+    U_CLINT: entity work.clint
         port map (
-            clk_i   => CLK_i,
-            rst_i   => Reset_i,
-            addr_i  => s_timer_addr,
-            data_i  => s_timer_data_tx,
-            data_o  => s_timer_data_rx,
-            we_i    => s_timer_we,
-            vld_i   => s_timer_vld,
-            rdy_o   => s_timer_rdy
+            clk_i       => CLK_i,
+            rst_i       => Reset_i,
+            addr_i      => s_clint_addr,
+            data_i      => s_clint_data_tx, 
+            data_o      => s_clint_data_rx, 
+            we_i        => s_clint_we,
+            vld_i       => s_clint_vld,
+            rdy_o       => s_clint_rdy,
+            irq_timer_o => s_irq_timer,
+            irq_soft_o  => s_irq_soft
         );
 
     -- Inverte o Reset 
