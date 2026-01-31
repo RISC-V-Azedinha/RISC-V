@@ -176,7 +176,13 @@ begin
                 -- -----------------------------------------------------------
                 elsif Csr_Write_i = '1' then
                     case Csr_Addr_i is
-                        when c_ADDR_MTVEC   => r_mtvec   <= Csr_WData_i;
+                        when c_ADDR_MTVEC   => 
+
+                            -- Força os bits de modo [1:0] para "00" (Direct Mode Only)
+                            -- E garante alinhamento de 4 bytes na base.
+                            r_mtvec(31 downto 2) <= Csr_WData_i(31 downto 2);
+                            r_mtvec(1 downto 0)  <= "00"; -- Hardwired to Direct
+
                         when c_ADDR_MEPC    => r_mepc    <= Csr_WData_i;
                         when c_ADDR_MCAUSE  => r_mcause  <= Csr_WData_i;
                         when c_ADDR_MIE     => r_mie     <= Csr_WData_i;
@@ -209,7 +215,7 @@ begin
         Csr_Valid_o <= '1';
 
         case Csr_Addr_i is
-            
+
             when c_ADDR_MTVEC   => Csr_RData_o <= r_mtvec;
             when c_ADDR_MEPC    => Csr_RData_o <= r_mepc;
             when c_ADDR_MCAUSE  => Csr_RData_o <= r_mcause;
