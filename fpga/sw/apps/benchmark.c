@@ -214,7 +214,7 @@ int main() {
     } else {
 
         // Benchmark
-        hal_timer_reset(); hal_timer_start();
+
         start = hal_timer_get_cycles();
         for(int i=0; i<ITERATIONS; i++) workload_cpu_gold();
         end = hal_timer_get_cycles();
@@ -243,7 +243,7 @@ int main() {
     } else {
 
         // Benchmark
-        hal_timer_reset(); hal_timer_start();
+
         start = hal_timer_get_cycles();
         for(int i=0; i<ITERATIONS; i++) npu_inference();
         end = hal_timer_get_cycles();
@@ -272,7 +272,7 @@ int main() {
     } else {
 
         // Benchmark
-        hal_timer_reset(); hal_timer_start();
+
         start = hal_timer_get_cycles();
         for(int i=0; i<ITERATIONS; i++) npu_inference();
         end = hal_timer_get_cycles();
@@ -337,7 +337,6 @@ int main() {
     hal_npu_set_dma_enabled(true);
     npu_setup();
     
-    hal_timer_reset(); hal_timer_start();
     start = hal_timer_get_cycles();
     workload_locality_bad();
     end = hal_timer_get_cycles();
@@ -350,7 +349,6 @@ int main() {
     hal_uart_puts("[B] Input Reuse (Static Input)... ");
     npu_setup(); 
     
-    hal_timer_reset(); hal_timer_start();
     start = hal_timer_get_cycles();
     workload_locality_good();
     end = hal_timer_get_cycles();

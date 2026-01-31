@@ -88,7 +88,6 @@ int main(void) {
                 uint32_t *p_out = buffer_B;
                 uint32_t final_len = 0;
 
-                hal_timer_reset(); hal_timer_start();
                 uint64_t t_start = hal_timer_get_cycles();
 
                 for (uint32_t l = 0; l < num_layers; l++) {

@@ -116,7 +116,6 @@ int main(void) {
                     uint32_t src_addr = (uint32_t)g_weight_store + offset;
 
                     // --- NPU ---
-                    hal_timer_reset(); hal_timer_start();
                     uint64_t t_npu_start = hal_timer_get_cycles();
 
                     hal_dma_memcpy(src_addr, (uint32_t)buffer_weights, g_tiling.k_dim, 0);
@@ -133,7 +132,7 @@ int main(void) {
                     // --- CPU (OPCIONAL) ---
                     if (do_cpu_bench) {
                         uint32_t dummy_res;
-                        hal_timer_reset(); hal_timer_start();
+
                         uint64_t t_cpu_start = hal_timer_get_cycles();
                         
                         cpu_inference(&dummy_res); 
