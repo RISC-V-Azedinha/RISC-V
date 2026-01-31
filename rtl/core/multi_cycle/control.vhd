@@ -74,7 +74,8 @@ entity control is
 
             CSR_Mstatus_MIE_i : in std_logic;
             CSR_Mie_i         : in std_logic_vector(31 downto 0);
-            CSR_Mip_i         : in std_logic_vector(31 downto 0)
+            CSR_Mip_i         : in std_logic_vector(31 downto 0);
+            Csr_Valid_i       : in  std_logic
 
     );
 
@@ -176,6 +177,7 @@ begin
 
         -- Sinais ZICSR / Trap
         CSRWrite_o     => Control_o.csr_write,
+        Csr_Valid_i    => Csr_Valid_i,
         TrapEnter_o    => Control_o.trap_enter,
         TrapReturn_o   => Control_o.trap_return,
         TrapCause_o    => Control_o.trap_cause,

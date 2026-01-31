@@ -52,6 +52,7 @@ entity csr_file is
         Csr_Write_i     : in  std_logic;                     -- Enable de Escrita
         Csr_WData_i     : in  std_logic_vector(31 downto 0); -- Dado Escrita
         Csr_RData_o     : out std_logic_vector(31 downto 0); -- Dado Leitura
+        Csr_Valid_o     : out std_logic;                     -- Endereçamento Válido
 
         -- Interface de Trap (Hardware)
 
@@ -144,9 +145,10 @@ begin
                 r_mcause  <= (others => '0');
                 r_mie     <= (others => '0');
                 
-                -- mstatus reset: MIE=0, MPIE=1 (Safe default)
+                -- mstatus reset: MIE=0, MPIE=1, MPP=11 (Machine Mode)
                 r_mstatus <= (others => '0');
                 r_mstatus(c_MPIE_BIT) <= '1'; 
+                r_mstatus(12 downto 11) <= "11"; -- Hardwired Machine Mode
 
             else
                 
@@ -179,9 +181,13 @@ begin
                         when c_ADDR_MCAUSE  => r_mcause  <= Csr_WData_i;
                         when c_ADDR_MIE     => r_mie     <= Csr_WData_i;
                         when c_ADDR_MSTATUS => 
-                            -- Proteção: Apenas bits writable devem ser alterados
-                            -- Simplificação: Permitimos escrita em tudo, mas mantemos bits fixos se necessário
-                            r_mstatus <= Csr_WData_i;
+
+                            -- Proteção: Apenas bits writable (MIE, MPIE) podem ser alterados via SW
+                            r_mstatus(c_MIE_BIT)  <= Csr_WData_i(c_MIE_BIT);  -- Bit 3
+                            r_mstatus(c_MPIE_BIT) <= Csr_WData_i(c_MPIE_BIT); -- Bit 7
+                            -- MPP (bits 12:11) deve ser sempre "11" (Machine) e não mudamos aqui.
+                            -- Os demais bits são Hardwired 0.
+
                         when others         => null;
                     end case;
                 end if;
@@ -196,14 +202,27 @@ begin
 
     process(Csr_Addr_i, r_mtvec, r_mepc, r_mcause, r_mie, r_mstatus, s_mip_comb)
     begin
+
+        -- Default: endereço é válido
+        -- Sobrescrevemos na cláusula 'others'
+
+        Csr_Valid_o <= '1';
+
         case Csr_Addr_i is
+            
             when c_ADDR_MTVEC   => Csr_RData_o <= r_mtvec;
             when c_ADDR_MEPC    => Csr_RData_o <= r_mepc;
             when c_ADDR_MCAUSE  => Csr_RData_o <= r_mcause;
             when c_ADDR_MIE     => Csr_RData_o <= r_mie;
             when c_ADDR_MSTATUS => Csr_RData_o <= r_mstatus;
             when c_ADDR_MIP     => Csr_RData_o <= s_mip_comb; -- MIP é Read-Only (Hardware driven)
-            when others         => Csr_RData_o <= (others => '0');
+
+            when others => 
+
+                -- Sinaliza CSR inexistente
+                Csr_RData_o <= (others => '0');
+                Csr_Valid_o <= '0';
+
         end case;
     end process;
 

@@ -113,6 +113,10 @@ architecture rtl of processor_top is
             signal s_csr_mie         : std_logic_vector(31 downto 0) := (others => '0');
             signal s_csr_mip         : std_logic_vector(31 downto 0) := (others => '0');
 
+        -- 4. Sinal de Validação de CSR (Datapath -> Control)
+
+            signal s_csr_valid       : std_logic := '0';
+
 begin
 
     -- ============== CONTROL PATH ======================== 
@@ -136,6 +140,7 @@ begin
                     CSR_Mstatus_MIE_i  => s_csr_mstatus_mie,
                     CSR_Mie_i          => s_csr_mie,
                     CSR_Mip_i          => s_csr_mip,
+                    Csr_Valid_i        => s_csr_valid,
 
                     -- Interface de dados
                     Instruction_i      => s_instruction,  -- Instrução buscada na memória
@@ -166,7 +171,8 @@ begin
                     ALU_Zero_o         => s_alu_zero,
                     CSR_Mstatus_MIE_o  => s_csr_mstatus_mie,
                     CSR_Mie_o          => s_csr_mie,
-                    CSR_Mip_o          => s_csr_mip
+                    CSR_Mip_o          => s_csr_mip,
+                    CSR_Valid_o        => s_csr_valid
                 );
 
 end architecture rtl; -- rtl

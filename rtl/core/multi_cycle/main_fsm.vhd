@@ -99,6 +99,7 @@ entity main_fsm is
         ----------------------------------------------------------------------------------------------------------
 
             CSRWrite_o     : out std_logic;                          -- Escreve no CSR File
+            Csr_Valid_i    : in  std_logic;                          -- Validade do Endereço de CSR
             TrapEnter_o    : out std_logic;                          -- Pula para MTVEC e salva MEPC
             TrapReturn_o   : out std_logic;                          -- Pula para MEPC (MRET)
             TrapCause_o    : out std_logic_vector(31 downto 0)       -- Código da exceção
@@ -267,8 +268,22 @@ begin
                     -- Traps pulam o Write-Back e voltam direto para Fetch (no novo endereço)
                     next_state <= S_IF; 
                 else
+
                     -- CSRRW/CSRRS: Precisam ir ao Write-Back para escrever no rd
-                    next_state <= S_WB_REG;
+                    -- Verifica se o endereço é válido antes de ir para o WB
+
+                    if Csr_Valid_i = '0' then
+
+                        -- Se inválido, aborta e vai para o Fetch (Trap já foi acionado na saída)
+                        next_state <= S_IF;
+
+                    else
+
+                        -- Se válido, segue para Write-Back para escrever no rd
+                        next_state <= S_WB_REG;
+
+                    end if;
+
                 end if;
 
             -- MEMORY READ (HANDSHAKE)
@@ -372,6 +387,30 @@ begin
 
                     end if;
 
+                else 
+
+                    -- Instrução Ilegal (Exceção)
+                    -- Se não for IRQ, verificamos se o Opcode é conhecido
+
+                    case Opcode_i is
+                        
+                        when c_OPCODE_R_TYPE | c_OPCODE_I_TYPE | c_OPCODE_LOAD | 
+                             c_OPCODE_STORE  | c_OPCODE_BRANCH | c_OPCODE_JAL  | 
+                             c_OPCODE_JALR   | c_OPCODE_LUI    | c_OPCODE_AUIPC | 
+                             c_OPCODE_FENCE  | c_OPCODE_SYSTEM =>
+                             
+                             null; -- Instrução válida, segue fluxo normal
+
+                        when others =>
+
+                             -- Opcode desconhecido: Gera Exceção
+
+                             TrapEnter_o <= '1';
+                             PCWrite_o   <= '1';         -- Atualiza PC para o Handler
+                             TrapCause_o <= x"00000002"; -- 2: Illegal Instruction
+
+                    end case;
+
                 end if;
 
             -- Estados de EXECUÇÃO
@@ -452,13 +491,34 @@ begin
                     elsif Funct12_i = x"302" then     -- MRET (Imm=0x302)
                         TrapReturn_o <= '1';
 
+                    else 
+
+                        -- Qualquer outra instrução de sistema
+                        -- deve ser tratada como ilegal, pois não é suportada
+
+                        TrapEnter_o <= '1';
+                        TrapCause_o <= x"00000002";   -- Illegal Instruction
+
                     end if;
 
                 else
 
                     -- CSR Instructions (CSRRW, etc)
-                    -- Apenas passamos para WB, onde a escrita real ocorre.
-                    null;
+                    -- Instruções de Leitura/Escrita em CSR (CSRRW, CSRRS, etc)
+                    
+                    if Csr_Valid_i = '0' then
+
+                        -- Se o CSR não existe: Exceção de Instrução Ilegal
+                        TrapEnter_o <= '1';
+                        PCWrite_o   <= '1';
+                        TrapCause_o <= x"00000002"; -- 2: Illegal Instruction
+
+                    else
+
+                        -- Se existe: Segue para WB (onde a escrita ocorre)
+                        null;
+
+                    end if;
 
                 end if;
 

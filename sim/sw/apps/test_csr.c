@@ -92,7 +92,7 @@ int main() {
     // TESTE 1: Atomicidade do CSRRW
     // -------------------------------------------------------
 
-    print_str(">>> [1/4] Testando Atomic Swap (CSRRW)...\n");
+    print_str(">>> [1/6] Testando Atomic Swap (CSRRW)...\n");
     
     uint32_t val1 = 0xAAAA5555;
     uint32_t read_back = 0;
@@ -127,7 +127,7 @@ int main() {
     // TESTE 3: Loop de Stress (ECALL)
     // -------------------------------------------------------
 
-    print_str(">>> [3/4] Executando 10 ECALLs em Loop...\n");
+    print_str(">>> [3/6] Executando 10 ECALLs em Loop...\n");
     
     int i;
     int falhas = 0;
@@ -160,7 +160,7 @@ int main() {
     // TESTE 4: Teste de Breakpoint (EBREAK)
     // -------------------------------------------------------
 
-    print_str(">>> [4/4] Testando EBREAK...\n");
+    print_str(">>> [4/6] Testando EBREAK...\n");
     g_last_mcause = 0;
     int contador_antes = g_trap_counter;
 
@@ -179,6 +179,51 @@ int main() {
         print_str(">>> [FALHA] EBREAK ignorado pelo hardware.\n");
         return 1;
     }
+
+    // -------------------------------------------------------
+    // TESTE 5: Acesso a CSR Inválido (Deve gerar mcause=2)
+    // -------------------------------------------------------
+    print_str(">>> [5/6] Testando Acesso a CSR Invalido (0x800)...\n");
+    
+    g_last_mcause = 0;
+    int trap_antes = g_trap_counter;
+    
+    // Tenta ler do endereço 0x800 (que não definimos no csr_file.vhd)
+    // O Trap Handler deve pegar isso, incrementar o contador e pular a instrução.
+    asm volatile ("csrr x0, 0x800"); 
+
+    if (g_trap_counter == trap_antes + 1) {
+        if (g_last_mcause == 2) { // 2 = Illegal Instruction
+
+             print_str(">>> [SUCESSO] Trap gerado corretamente (Cause=2)!\n");
+
+        } else {
+
+             print_str(">>> [FALHA] Trap gerado, mas MCAUSE errado: ");
+             print_hex(g_last_mcause);
+             print_str("\n");
+
+        }
+
+    } else print_str(">>> [FALHA] Hardware ignorou o CSR invalido (nenhum trap gerado).\n");
+
+    // -------------------------------------------------------
+    // TESTE 6: Instrução Ilegal (Opcode Inválido)
+    // -------------------------------------------------------
+    print_str(">>> [6/6] Testando Opcode Ilegal (0xFFFFFFFF)...\n");
+
+    g_last_mcause = 0;
+    trap_antes = g_trap_counter;
+
+    // Injeta uma palavra de instrução inválida (tudo 1s não é um opcode válido no RV32I)
+    asm volatile (".word 0xFFFFFFFF");
+
+    if (g_trap_counter == trap_antes + 1 && g_last_mcause == 2)
+         print_str(">>> [SUCESSO] Trap de Opcode Ilegal confirmado!\n");
+
+    else 
+         print_str(">>> [FALHA] Hardware ignorou instrucao ilegal.\n");
+    
 
     // Encerra
     volatile int *halt = (int *)HALT_ADDR;

@@ -76,6 +76,7 @@ entity datapath is
         CSR_Mstatus_MIE_o  : out std_logic;                           -- Bit Global Interrupt Enable
         CSR_Mie_o          : out std_logic_vector(31 downto 0);       -- Máscara de Enables
         CSR_Mip_o          : out std_logic_vector(31 downto 0);       -- Interrupções Pendentes
+        CSR_Valid_o        : out std_logic;                           -- Sinaliza se o Endereço CSR é Válido
 
         ----------------------------------------------------------------------------------------------------------
         -- Interface com a Unidade de Controle
@@ -178,7 +179,8 @@ begin
             Csr_Addr_i      => r_IR(31 downto 20),      
             Csr_Write_i     => Control_i.csr_write,     
             Csr_WData_i     => r_RS1,                   
-            Csr_RData_o     => s_csr_rdata,             
+            Csr_RData_o     => s_csr_rdata,    
+            Csr_Valid_o     => CSR_Valid_o,         
             
             -- Hardware Trap
             Trap_Enter_i    => Control_i.trap_enter,
