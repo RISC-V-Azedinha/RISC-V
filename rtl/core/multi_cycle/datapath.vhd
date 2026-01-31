@@ -157,9 +157,10 @@ architecture rtl of datapath is
 
     -- Sinais para conexão com o CSR File
 
-    signal s_csr_rdata : std_logic_vector(31 downto 0);
-    signal s_csr_mtvec : std_logic_vector(31 downto 0);                                   -- Endereço do tratador de trap
-    signal s_csr_mepc  : std_logic_vector(31 downto 0);                                   -- Endereço de retorno
+    signal s_csr_rdata     : std_logic_vector(31 downto 0);
+    signal s_csr_mtvec     : std_logic_vector(31 downto 0);                               -- Endereço do tratador de trap
+    signal s_csr_mepc      : std_logic_vector(31 downto 0);                               -- Endereço de retorno
+    signal s_csr_wdata_mux : std_logic_vector(31 downto 0);
 
 begin
 
@@ -176,9 +177,10 @@ begin
             Reset_i         => Reset_i,
             
             -- Leitura/Escrita
-            Csr_Addr_i      => r_IR(31 downto 20),      
+            Csr_Addr_i      => r_IR(31 downto 20),     
+            Csr_Op_i        => r_IR(13 downto 12), 
             Csr_Write_i     => Control_i.csr_write,     
-            Csr_WData_i     => r_RS1,                   
+            Csr_WData_i     => s_csr_wdata_mux,                   
             Csr_RData_o     => s_csr_rdata,    
             Csr_Valid_o     => CSR_Valid_o,         
             
@@ -202,6 +204,8 @@ begin
             Mie_o           => CSR_Mie_o,
             Mip_o           => CSR_Mip_o
         );
+
+    s_csr_wdata_mux <= r_RS1 when r_IR(14) = '0' else std_logic_vector(resize(unsigned(r_IR(19 downto 15)), 32));
 
     -- Gerenciamento dos registradores intermediários do MULTI-CYCLE 
 
