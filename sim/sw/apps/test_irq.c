@@ -1,31 +1,47 @@
 /*
- * Teste de Interrupção de Timer (Simulado)
- * Autor: André Maiolini
+ * Teste Completo de Interrupções (Software, Timer, External)
+ * Plataforma: Simulação (test_processor.py)
  */
 
 #include <stdint.h>
 
-// Endereços de IO Simulado
-#define UART_TX_ADDR    0x10000000
-#define IRQ_TRIGGER     0x20000000 // Endereço para pedir o trigger ao Python
-#define HALT_ADDR       0x80000000
+// ============================================================================
+// ENDEREÇOS DE SIMULAÇÃO
+// ============================================================================
+#define UART_TX_ADDR        0x10000000
+#define IRQ_TRIGGER_ADDR    0x20000000 
+#define HALT_ADDR           0x10000008 // Alterei para bater com seu test_processor (0x10000008)
 
-// CSRs
+// ============================================================================
+// DEFINIÇÕES RISC-V CSR
+// ============================================================================
 #define CSR_MSTATUS     0x300
 #define CSR_MIE         0x304
 #define CSR_MTVEC       0x305
 #define CSR_MCAUSE      0x342
 
-// Bits
-#define MIE_MTIE_BIT    (1 << 7)  // Machine Timer Interrupt Enable
-#define MSTATUS_MIE_BIT (1 << 3)  // Machine Interrupt Enable (Global)
+// Bits MSTATUS
+#define MSTATUS_MIE     (1 << 3)
 
-volatile int g_irq_counter = 0;
-volatile int g_mcause_val = 0;
+// Bits MIE (Interrupt Enable)
+#define MIE_MSIE        (1 << 3)  // Software
+#define MIE_MTIE        (1 << 7)  // Timer
+#define MIE_MEIE        (1 << 11) // External
 
-// -------------------------------------------------------------------------
-// Funções Auxiliares
-// -------------------------------------------------------------------------
+// Códigos MCAUSE (Bit 31 = 1 para Interrupção)
+#define CAUSE_MSI       0x80000003 // Machine Software Interrupt
+#define CAUSE_MTI       0x80000007 // Machine Timer Interrupt
+#define CAUSE_MEI       0x8000000B // Machine External Interrupt
+
+// ============================================================================
+// GLOBAIS
+// ============================================================================
+volatile int g_irq_fired = 0;
+volatile uint32_t g_mcause_capture = 0;
+
+// ============================================================================
+// FUNÇÕES BÁSICAS
+// ============================================================================
 void print_str(const char *str) {
     volatile char *uart = (char *)UART_TX_ADDR;
     while (*str) *uart = *str++;
@@ -41,82 +57,107 @@ void print_hex(uint32_t val) {
     }
 }
 
-// -------------------------------------------------------------------------
-// Trap Handler
-// -------------------------------------------------------------------------
+// ============================================================================
+// TRAP HANDLER
+// ============================================================================
 void __attribute__((naked, aligned(4))) irq_handler(void) {
     asm volatile (
-        // Salva Contexto
         "addi sp, sp, -16 \n\t"
         "sw t0, 0(sp) \n\t"
         "sw t1, 4(sp) \n\t"
-        "sw t2, 8(sp) \n\t"
-
-        // Incrementa Contador
-        "la t1, g_irq_counter \n\t"
-        "lw t2, 0(t1) \n\t"
-        "addi t2, t2, 1 \n\t"
-        "sw t2, 0(t1) \n\t"
-
-        // Salva MCAUSE (para verificação)
-        "csrrw t0, 0x342, x0 \n\t"
-        "la t1, g_mcause_val \n\t"
-        "sw t0, 0(t1) \n\t"
         
-        // Restaura Contexto
-        "lw t2, 8(sp) \n\t"
+        // 1. Sinaliza que IRQ ocorreu
+        "la t0, g_irq_fired \n\t"
+        "li t1, 1 \n\t"
+        "sw t1, 0(t0) \n\t"
+
+        // 2. Captura MCAUSE
+        "csrr t1, 0x342 \n\t" // mcause
+        "la t0, g_mcause_capture \n\t"
+        "sw t1, 0(t0) \n\t"
+
+        // 3. Desabilita a interrupção que causou isso no MIE 
+        // (Para evitar loop infinito já que o simulador segura o pino alto por um tempo)
+        // Lógica simplificada: Desabilita TUDO no MIE temporariamente
+        "csrw 0x304, x0 \n\t" 
+
         "lw t1, 4(sp) \n\t"
         "lw t0, 0(sp) \n\t"
         "addi sp, sp, 16 \n\t"
-
         "mret"
     );
 }
 
-// -------------------------------------------------------------------------
-// Main
-// -------------------------------------------------------------------------
-int main() {
-    print_str("\n>>> [IRQ TEST] Iniciando Configuracao...\n");
+// ============================================================================
+// MAIN TEST
+// ============================================================================
+void test_irq_type(char* name, uint32_t mie_bit, int trigger_code, uint32_t expected_mcause) {
+    print_str("\n>>> TESTANDO: "); print_str(name); print_str("\n");
 
-    // 1. Configurar Vetor (MTVEC)
-    uint32_t handler_addr = (uint32_t)&irq_handler;
-    asm volatile ("csrrw x0, 0x305, %0" : : "r"(handler_addr));
+    // Reset Globals
+    g_irq_fired = 0;
+    g_mcause_capture = 0;
 
-    // 2. Habilitar Timer (MIE bit 7)
-    uint32_t mie_val;
-    asm volatile ("csrrw %0, 0x304, x0" : "=r"(mie_val)); 
-    mie_val |= MIE_MTIE_BIT;
-    asm volatile ("csrrw x0, 0x304, %0" : : "r"(mie_val));
+    // 1. Habilita Interrupção Específica (MIE)
+    uint32_t mie_val = mie_bit; // Apenas a atual
+    asm volatile ("csrw 0x304, %0" :: "r"(mie_val));
 
-    // 3. Habilitar Global (MSTATUS bit 3)
+    // 2. Garante MSTATUS.MIE = 1
     uint32_t mstatus_val;
-    asm volatile ("csrrw %0, 0x300, x0" : "=r"(mstatus_val));
-    mstatus_val |= MSTATUS_MIE_BIT;
-    asm volatile ("csrrw x0, 0x300, %0" : : "r"(mstatus_val));
+    asm volatile ("csrr %0, 0x300" : "=r"(mstatus_val));
+    mstatus_val |= MSTATUS_MIE;
+    asm volatile ("csrw 0x300, %0" :: "r"(mstatus_val));
 
-    print_str(">>> Aguardando Trigger...\n");
-    
-    // Dispara o sinal para o Python
-    volatile int *trigger = (int *)IRQ_TRIGGER;
-    *trigger = 1; 
+    // 3. Solicita Trigger ao Python
+    print_str(" -> Solicitando Trigger...\n");
+    volatile int *trigger = (int *)IRQ_TRIGGER_ADDR;
+    *trigger = trigger_code; 
 
-    // Loop de espera
-    int timeout = 500000;
-    while (g_irq_counter == 0 && timeout > 0) {
+    // 4. Aguarda
+    int timeout = 100000;
+    while (g_irq_fired == 0 && timeout > 0) {
         timeout--;
     }
 
-    if (g_irq_counter > 0) {
-        print_str("\n>>> [SUCESSO] Interrupcao Capturada!\n");
-        print_str(">>> MCAUSE: ");
-        print_hex(g_mcause_val); 
-        print_str("\n");
+    // 5. Valida
+    if (g_irq_fired) {
+        print_str(" -> [OK] Handler executado.\n");
+        print_str(" -> MCAUSE: "); print_hex(g_mcause_capture);
+        
+        if (g_mcause_capture == expected_mcause) {
+            print_str(" (CORRETO)\n");
+        } else {
+            print_str(" (ERRADO! Esperado: "); print_hex(expected_mcause); print_str(")\n");
+        }
     } else {
-        print_str("\n>>> [FALHA] Timeout. O Handler nao rodou.\n");
+        print_str(" -> [FALHA] Timeout! O processador ignorou a interrupcao.\n");
     }
+}
 
+int main() {
+    print_str("\n=== INICIANDO VALIDACAO DE INTERRUPCOES (CORE LEVEL) ===\n");
+
+    // Configura Vetor
+    uint32_t handler_addr = (uint32_t)&irq_handler;
+    asm volatile ("csrw 0x305, %0" :: "r"(handler_addr));
+
+    // TESTE 1: Software Interrupt
+    // Trigger Python: 2 -> Irq_Software_i = 1 -> MCAUSE esperado: 0x80000003
+    test_irq_type("SOFTWARE INTERRUPT (MSI)", MIE_MSIE, 2, CAUSE_MSI);
+
+    // TESTE 2: Timer Interrupt
+    // Trigger Python: 1 -> Irq_Timer_i = 1 -> MCAUSE esperado: 0x80000007
+    test_irq_type("TIMER INTERRUPT (MTI)", MIE_MTIE, 1, CAUSE_MTI);
+
+    // TESTE 3: External Interrupt
+    // Trigger Python: 3 -> Irq_External_i = 1 -> MCAUSE esperado: 0x8000000B
+    test_irq_type("EXTERNAL INTERRUPT (MEI)", MIE_MEIE, 3, CAUSE_MEI);
+
+    print_str("\n=== FIM DOS TESTES ===\n");
+    
+    // Halt Simulation
     volatile int *halt = (int *)HALT_ADDR;
     *halt = 1;
+    
     return 0;
 }

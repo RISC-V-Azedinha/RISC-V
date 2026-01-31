@@ -106,17 +106,46 @@ def flush_buffer_to_mem(mem, addr, bytes_list):
     # Armazena no dicionário de memória (alinhado por endereço de byte)
     mem[addr] = val
 
-async def pulse_timer_irq(dut):
-    """Gera um pulso na linha de interrupção de Timer."""
-    log_info("Trigger recebido! Disparando Timer IRQ (Pulso Longo)...")
-    
-    dut.Irq_Timer_i.value = 1
-    
-    for _ in range(100): 
-        await RisingEdge(dut.CLK_i)
+# ================================================================================================================
+# GATILHO DE INTERRUPÇÕES (Simulação de Hardware Externo/CLINT/PLIC)
+# ================================================================================================================
+
+async def pulse_irq(dut, irq_type):
+    """
+    Gera um pulso na linha de interrupção baseada no tipo solicitado pelo C.
+    irq_type: 1=Timer, 2=Software, 3=External
+    """
+    signal = None
+    name = "Unknown"
+
+    # Seleciona qual pino do processador acionar
+    if irq_type == 1:
+        signal = dut.Irq_Timer_i
+        name = "TIMER (MTIP)"
+    elif irq_type == 2:
+        signal = dut.Irq_Software_i
+        name = "SOFTWARE (MSIP)"
+    elif irq_type == 3:
+        signal = dut.Irq_External_i
+        name = "EXTERNAL (MEIP)"
+
+    if signal is not None:
+        log_info(f"⚡ [SIM] Trigger recebido: Disparando IRQ {name}...")
         
-    dut.Irq_Timer_i.value = 0
-    log_info("Timer IRQ liberado.")
+        # Levanta o sinal
+        signal.value = 1
+        
+        # Mantém alto por tempo suficiente para o core detectar e entrar na trap.
+        # CUIDADO: Se for muito longo e o handler for rápido, o core re-entra na IRQ (Interrupt Storm).
+        # 30 ciclos costuma ser seguro (suficiente para fetch/decode/trap entry).
+        for _ in range(30): 
+            await RisingEdge(dut.CLK_i)
+        
+        # Baixa o sinal (Simula o CLINT limpando a flag ou pulso momentâneo)
+        signal.value = 0
+        log_info(f"⚡ [SIM] IRQ {name} liberada (Low).")
+    else:
+        log_error(f"⚠️ [SIM] Tipo de IRQ inválido recebido: {irq_type}")
 
 # ================================================================================================================
 # 2. CONTROLADOR DE MEMÓRIA E PERIFÉRICOS (Modelo BRAM Síncrono)
@@ -192,7 +221,7 @@ async def memory_and_mmio_controller(dut, mem_data, halt_event):
                     # Gatilho de Interrupção
                     elif addr_d == MMIO_IRQ_TRIGGER_ADDR:
                         # Dispara em background para não travar o handshake da memória
-                        cocotb.start_soon(pulse_timer_irq(dut))
+                        cocotb.start_soon(pulse_irq(dut, data_w))
                     else:
                         # Escrita normal na RAM
                         aligned_addr = addr_d & 0xFFFFFFFC
