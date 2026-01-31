@@ -4,75 +4,67 @@
 #include <stdint.h>
 #include "memory_map.h"
 
-// ============================================================================
-// DEFINIÇÕES DE HARDWARE (ATOMIC SNAPSHOT)
-// ============================================================================
-
-#define TIMER_REG_CTRL  MMIO32(TIMER_BASE_ADDR + 0x00)
-#define TIMER_REG_LOW   MMIO32(TIMER_BASE_ADDR + 0x04)
-#define TIMER_REG_HIGH  MMIO32(TIMER_BASE_ADDR + 0x08)
-
-// Bits de Controle
-#define TIMER_CMD_ENABLE    (1 << 0)    // 1=Rodando, 0=Parado
-#define TIMER_CMD_RESET     (1 << 1)    // 1=Zera Contador (Auto-clear)
-#define TIMER_CMD_SNAPSHOT  (1 << 2)    // 1=Atualiza Shadow Regs (Auto-clear)
-
 #define SYSTEM_CLOCK_HZ 100000000       // 100 MHz
 
 // ============================================================================
 // API INLINE 
 // ============================================================================
 
-// A função é declarada como inline para evitar o overhead fixo de
-// chamada de função, que poderia introduzir ruído nas medições de
-// temporização em benchmarks de baixa latência.
-
 /**
- * @brief Reinicia o timer (Zera e Para).
+ * @brief Reinicia o contador de tempo (Escreve 0 no mtime).
  */
 static inline void hal_timer_reset(void) {
-    TIMER_REG_CTRL = TIMER_CMD_RESET; 
-}
-
-/**
- * @brief Inicia a contagem.
- */
-static inline void hal_timer_start(void) {
-
-    // Escreve apenas o bit ENABLE.
-    // O hardware mantém o contador incrementando.
-    TIMER_REG_CTRL = TIMER_CMD_ENABLE;
-
-}
-
-/**
- * @brief Para a contagem (congela o valor atual).
- */
-static inline void hal_timer_stop(void) {
-
-    TIMER_REG_CTRL = 0; // ENABLE=0
-
+    // Para segurança, escrevemos -1 no CMP antes para evitar IRQ espúria durante o reset
+    CLINT_MTIMECMP_LO = 0xFFFFFFFF;
+    CLINT_MTIMECMP_HI = 0xFFFFFFFF;
+    
+    CLINT_MTIME_LO = 0;
+    CLINT_MTIME_HI = 0;
 }
 
 /**
  * @brief Captura o tempo atual de forma atômica.
  * @return Ciclos contados (64-bit).
- * * Esta função envia o comando SNAPSHOT para o hardware, que copia 
- * o contador interno para os registradores de leitura instantaneamente.
+ * * Lê os registradores MTIME. Como estamos em 32-bit lendo 64-bit,
+ * precisamos garantir que o High não mudou durante a leitura do Low.
  */
 static inline uint64_t hal_timer_get_cycles(void) {
+    uint32_t hi, lo, hi2;
 
-    // 1. Dispara o Snapshot.
-    // Mantemos o bit ENABLE ligado para não parar a contagem enquanto lemos.
-    TIMER_REG_CTRL = TIMER_CMD_ENABLE | TIMER_CMD_SNAPSHOT;
-    
-    // 2. Lê os registradores de sombra (Shadow Registers).
-    // Como são estáticos (até o próximo snapshot), a ordem de leitura não importa.
-    uint32_t lo = TIMER_REG_LOW;
-    uint32_t hi = TIMER_REG_HIGH;
+    do {
+        hi  = CLINT_MTIME_HI;
+        lo  = CLINT_MTIME_LO;
+        hi2 = CLINT_MTIME_HI;
+    } while (hi != hi2); // Repete se houve overflow do Low para o High durante a leitura
     
     return ((uint64_t)hi << 32) | lo;
-    
+}
+
+/**
+ * @brief Define o valor de comparação para gerar interrupção.
+ * @param cycles Valor absoluto em ciclos para disparar a IRQ.
+ */
+static inline void hal_clint_set_cmp(uint64_t cycles) {
+    // Programamos o High como MAX primeiro para evitar disparo acidental
+    CLINT_MTIMECMP_HI = 0xFFFFFFFF; 
+    CLINT_MTIMECMP_LO = (uint32_t)(cycles & 0xFFFFFFFF);
+    CLINT_MTIMECMP_HI = (uint32_t)(cycles >> 32);
+}
+
+/**
+ * @brief Configura o timer para gerar uma interrupção daqui a N ciclos.
+ * @param delta_cycles Quantidade de ciclos a esperar.
+ */
+static inline void hal_timer_set_irq_delta(uint64_t delta_cycles) {
+    uint64_t now = hal_timer_get_cycles();
+    hal_clint_set_cmp(now + delta_cycles);
+}
+
+/**
+ * @brief Desativa (ack) a interrupção do timer jogando o comparador para o infinito.
+ */
+static inline void hal_timer_irq_ack(void) {
+    hal_clint_set_cmp(0xFFFFFFFFFFFFFFFF);
 }
 
 // ============================================================================

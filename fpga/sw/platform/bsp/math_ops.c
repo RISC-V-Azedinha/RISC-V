@@ -1,3 +1,4 @@
+#include "math_ops.h"
 #include <stdint.h>
 
 /* * Software para Operações Matemáticas (RV32I) */
@@ -63,4 +64,19 @@ int32_t __modsi3(int32_t a, int32_t b) {
     if (b < 0) { b = -b; }
     int32_t res = __umodsi3(a, b);
     return neg ? -res : res;
+}
+
+// Multiplicação 64-bit 
+int64_t __muldi3(int64_t a, int64_t b) {
+    uint64_t ua = (uint64_t)a;
+    uint64_t ub = (uint64_t)b;
+    uint64_t res = 0;
+
+    // Mesma lógica do 32-bit, mas com registradores de 64-bit
+    while (ub != 0) {
+        if (ub & 1) res += ua;
+        ua <<= 1;
+        ub >>= 1;
+    }
+    return (int64_t)res;
 }

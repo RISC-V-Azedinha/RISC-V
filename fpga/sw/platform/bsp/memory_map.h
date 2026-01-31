@@ -17,6 +17,7 @@
 #define UART_BASE_ADDR      0x10000000
 #define GPIO_BASE_ADDR      0x20000000
 #define VGA_BASE_ADDR       0x30000000
+#define CLINT_BASE_ADDR     0x50000000
 #define NPU_BASE_ADDR       0x90000000
 
 /* ============================================================================================================== */
@@ -86,15 +87,16 @@
 #define NPU_FLAG_RELU       (1 << 0)                            // 1 = Ativa ReLU na saída
 
 /* ============================================================================================================== */
-/* TIMER MMIO                                                                                                     */
+/* CLINT (Core Local Interruptor) MMIO                                                                            */
 /* ============================================================================================================== */
 
-#define TIMER_BASE_ADDR     0x50000000
-#define TIMER_REG_CTRL      MMIO32(TIMER_BASE_ADDR + 0x00)
-#define TIMER_REG_LOW       MMIO32(TIMER_BASE_ADDR + 0x04)
-#define TIMER_REG_HIGH      MMIO32(TIMER_BASE_ADDR + 0x08)
+// Offsets Padrão RISC-V (Adaptados para nosso bus de 32-bit)
 
-#define TIMER_CTRL_EN      (1 << 0)
+#define CLINT_MSIP          MMIO32(CLINT_BASE_ADDR + 0x00)      // Machine Software Interrupt Pending
+#define CLINT_MTIMECMP_LO   MMIO32(CLINT_BASE_ADDR + 0x08)      // Timer Compare Low
+#define CLINT_MTIMECMP_HI   MMIO32(CLINT_BASE_ADDR + 0x0C)      // Timer Compare High
+#define CLINT_MTIME_LO      MMIO32(CLINT_BASE_ADDR + 0x10)      // Timer Value Low
+#define CLINT_MTIME_HI      MMIO32(CLINT_BASE_ADDR + 0x14)      // Timer Value High
 
 // ----------------------------------------------------------------------------------------------------------
 
