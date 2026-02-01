@@ -10,15 +10,35 @@
 #define IRQ_M_EXT    (1 << 11) // Machine External Interrupt
 
 // ============================================================================
-// API DE CONTROLE DE INTERRUPÇÕES
+// DEFINIÇÕES DO DISPATCHER 
+// ============================================================================
+
+// Tipo para função de Callback (Handler)
+typedef void (*irq_handler_t)(void);
+
+/**
+ * @brief Inicializa o sistema de interrupções centralizado.
+ * - Configura o mtvec para o Dispatcher.
+ * - Habilita interrupções externas no PLIC e na CPU.
+ */
+void hal_irq_init(void);
+
+/**
+ * @brief Registra uma função para tratar uma fonte específica do PLIC.
+ * @param source_id ID da fonte (ex: PLIC_SOURCE_DMA).
+ * @param handler Ponteiro para a função void minha_funcao(void).
+ */
+void hal_irq_register(uint32_t source_id, irq_handler_t handler);
+
+
+// ============================================================================
+// API DE CONTROLE DE INTERRUPÇÕES (INLINE)
 // ============================================================================
 
 /**
  * @brief Habilita Interrupções Globais (MSTATUS.MIE).
  */
 static inline void hal_irq_global_enable(void) {
-    // Usa CSRS (Set Bit) - Assume que o hardware suporta ou usaremos workaround
-    // Se o hardware falhar com CSRS, trocamos por CSRW (Read-Modify-Write manual)
     unsigned long mie_bit = (1 << 3);
     asm volatile ("csrs mstatus, %0" :: "r"(mie_bit));
 }
@@ -36,9 +56,6 @@ static inline void hal_irq_global_disable(void) {
  * @param mask Máscara de bits (ex: IRQ_M_TIMER | IRQ_M_SOFT).
  */
 static inline void hal_irq_mask_enable(uint32_t mask) {
-    // WORKAROUND: Se o hardware tiver bug com CSRS no endereço MIE (0x304)
-    // podemos implementar como Read-Modify-Write manual se necessário.
-    // Por enquanto, usamos a instrução padrão.
     asm volatile ("csrs mie, %0" :: "r"(mask));
 }
 
