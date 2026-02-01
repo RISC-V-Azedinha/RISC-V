@@ -29,6 +29,7 @@ sw-fpga:
 		-o $(BUILD_FPGA_BIN)/$(SW).elf $(FPGA_SW_DIR)/platform/startup/start.s \
 		$(wildcard $(FPGA_SW_DIR)/platform/bsp/*.c) \
 		$(wildcard $(FPGA_SW_DIR)/platform/bsp/hal/*.c) \
+		$(wildcard $(FPGA_SW_DIR)/platform/bsp/irq/*.c) \
 		$(wildcard $(FPGA_SW_DIR)/platform/bsp/npu/*.c) \
 		$(SRC)
 	@$(OBJCOPY) -O binary $(BUILD_FPGA_BIN)/$(SW).elf $(BUILD_FPGA_BIN)/$(SW).bin

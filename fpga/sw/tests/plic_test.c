@@ -2,88 +2,69 @@
 #include <stdbool.h>
 #include "hal/hal_uart.h"
 #include "hal/hal_plic.h"
-#include "memory_map.h"
-
-// Definições de CSR
-#define CSR_MIE_MEIE    (1 << 11) 
-#define CSR_MSTATUS_MIE (1 << 3)  
-#define MCAUSE_MEI      0x8000000B 
+#include "hal/hal_irq.h"
 
 volatile bool g_uart_irq_fired = false;
 volatile char g_rx_char = 0;
 
-// --- Trap Handler ---
-void __attribute__((interrupt("machine"))) trap_handler(void) {
-    uint32_t mcause;
-    asm volatile ("csrr %0, mcause" : "=r"(mcause));
+// =========================================================
+// CALLBACK HANDLER
+// =========================================================
 
-    // Verifica se é Interrupção Externa (PLIC)
-    if (mcause == MCAUSE_MEI) {
-        
-        // 1. CLAIM: Pergunta ao PLIC quem chamou
-        uint32_t source_id = hal_plic_claim();
+void my_uart_handler(void) {
 
-        if (source_id == PLIC_SOURCE_UART) {
-            // Confia no PLIC
-            g_rx_char = hal_uart_getc(); 
-            g_uart_irq_fired = true;
-        }
-
-        // 2. COMPLETE: Avisa o PLIC que terminamos
-        hal_plic_complete(source_id);
+    // Verificação de Segurança:
+    // Só tentamos ler se REALMENTE houver dados na FIFO.
+    if (hal_uart_kbhit()) {
+        g_rx_char = hal_uart_getc(); 
+        g_uart_irq_fired = true;
     }
+
 }
 
-// --- Main ---
+// =========================================================
+// MAIN
+// =========================================================
+
 int main() {
+
+    // 1. Setup Hardware
     hal_uart_init();
-    hal_uart_puts("\n\r=== PLIC + UART INTERRUPT TEST ===\n\r");
+    hal_uart_puts("\n\r=== PLIC UART IRQ TEST ===\n\r");
 
-    // 1. Inicializa o PLIC
-    hal_plic_init();
+    // 2. Setup Dispatcher
+    hal_irq_init(); 
 
-    // 2. Configura a UART no PLIC
+    // 3. Setup Callback
+    hal_irq_register(PLIC_SOURCE_UART, my_uart_handler);
+
+    // 4. Setup PLIC
     hal_plic_set_priority(PLIC_SOURCE_UART, 1);
-    hal_plic_enable(PLIC_SOURCE_UART); // <--- AQUI "ligamos" a interrupção da UART
+    hal_plic_enable(PLIC_SOURCE_UART);
 
-    volatile uint32_t prio_readback = PLIC_PRIORITY(PLIC_SOURCE_UART);
-    volatile uint32_t enable_readback = PLIC_ENABLE;
-    
-    hal_uart_puts(" -> DEBUG: Priority set to 1. Readback: ");
-    hal_uart_putc(prio_readback + '0'); // Esperado '1'
-    hal_uart_puts("\n\r");
+    // 5. Habilita interrupções
+    hal_irq_global_enable(); 
 
-    hal_uart_puts(" -> DEBUG: Enable set for UART. Readback: ");
-    // Verifica se o bit 1 está aceso
-    if (enable_readback & (1 << PLIC_SOURCE_UART)) {
-        hal_uart_puts("OK (Bit 1 is HIGH)\n\r");
-    } else {
-        hal_uart_puts("FAIL (Bit 1 is LOW)\n\r");
-    }
-
-    hal_uart_puts(" -> PLIC Configured. Enabling CPU Interrupts...\n\r");
-
-    // 3. Configura CPU
-    asm volatile ("csrw mtvec, %0" :: "r"(&trap_handler));
-    asm volatile ("csrs mie, %0" :: "r"(CSR_MIE_MEIE));
-    asm volatile ("csrs mstatus, %0" :: "r"(CSR_MSTATUS_MIE));
-
-    hal_uart_puts(" -> Waiting for key press (Type anything)...\n\r");
+    // 6. Print após habilitar 
+    hal_uart_puts(" Sistema Pronto (IRQs ja estao ativas)...\n\r");
+    hal_uart_puts(" Pode digitar quando quiser.\n\r");
 
     while(1) {
         if (g_uart_irq_fired) {
-            // Desabilita IRQ global brevemente para printar
-            asm volatile ("csrc mstatus, %0" :: "r"(CSR_MSTATUS_MIE));
             
-            hal_uart_puts(" -> [IRQ] Received: ");
-            hal_uart_putc(g_rx_char);
-            hal_uart_puts("\n\r");
-            
+            // Snapshot rápido (Seção Crítica mínima)
+            hal_irq_global_disable();
+            char c = g_rx_char;
             g_uart_irq_fired = false;
+            hal_irq_global_enable();
             
-            asm volatile ("csrs mstatus, %0" :: "r"(CSR_MSTATUS_MIE));
+            // Processamento pesado (com IRQs ligadas)
+            hal_uart_puts(" -> [IRQ] Voce digitou: ");
+            hal_uart_putc(c);
+            hal_uart_puts("\n\r");
         }
     }
 
     return 0;
+
 }

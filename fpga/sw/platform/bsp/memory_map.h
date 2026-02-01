@@ -33,6 +33,7 @@
 #define UART_STATUS_TX_BUSY     (1 << 0)
 #define UART_STATUS_RX_VALID    (1 << 1)
 #define UART_CMD_RX_POP         (1 << 0)
+#define UART_CMD_RX_FLUSH       (1 << 2)
 
 /* ============================================================================================================== */
 /* VGA DEFINITIONS (Preservado para compatibilidade com hal_vga.c)                                                */

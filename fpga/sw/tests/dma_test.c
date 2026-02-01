@@ -1,91 +1,111 @@
 #include <stdint.h>
-#include "../platform/bsp/hal/hal_uart.h"
-#include "../platform/bsp/hal/hal_dma.h"
+#include <stdbool.h>
+#include "hal/hal_dma.h"
+#include "hal/hal_uart.h"
+#include "hal/hal_plic.h"
+#include "hal/hal_irq.h"
+
+// Configuração do Teste
+#define BUFFER_SIZE   1024         // 1024 palavras (4KB)
+#define RAM_SRC       0x80010000   // Área segura na RAM
+#define RAM_DST       0x80012000   // src + 8KB (longe o suficiente)
+
+// Flag de Sincronização
+volatile bool g_dma_done = false;
 
 // =========================================================
-// UTILITÁRIOS DE IMPRESSÃO
+// HANDLER DA INTERRUPÇÃO 
 // =========================================================
-void print_hex(uint32_t n) {
-    hal_uart_puts("0x");
-    char hex_chars[] = "0123456789ABCDEF";
-    for (int i = 28; i >= 0; i -= 4) {
-        hal_uart_putc(hex_chars[(n >> i) & 0xF]);
-    }
+
+void my_dma_handler(void) {
+
+    // Apenas sinaliza a flag
+    //  O trabalho pesado de verificação fica na main
+    g_dma_done = true;
+
 }
 
-void print_dec(uint32_t n) {
-    if (n == 0) { hal_uart_putc('0'); return; }
-    char buffer[12];
-    int i = 0;
-    while (n > 0) {
-        buffer[i++] = (n % 10) + '0';
-        n /= 10;
-    }
-    while (i > 0) hal_uart_putc(buffer[--i]);
-}
+// =========================================================
+// FUNÇÕES AUXILIARES
+// =========================================================
 
-// =========================================================
-// CONFIGURAÇÃO DO TESTE
-// =========================================================
-// Usamos uma região segura no meio da RAM (128KB Total)
-// RAM Base: 0x80000000
-// Safe Zone: 0x80010000 (Offset 64KB)
-#define RAM_SAFE_ZONE  0x80010000
-#define BUFFER_SIZE    128 // Palavras (512 Bytes)
+// Disparo Assíncrono (não bloqueante)
+void dma_start_async(uint32_t src, uint32_t dst, uint32_t count) {
+
+    dma_reg_t* dma = (dma_reg_t*)DMA_BASE_ADDR;
+    
+    // Garante que o DMA está livre antes de configurar
+    while(dma->CTRL & DMA_CTRL_BUSY);
+
+    // Configura e Dispara
+    dma->SRC = src;
+    dma->DST = dst;
+    dma->CNT = count;
+    dma->CTRL = DMA_CTRL_START; 
+
+}
 
 // =========================================================
 // MAIN
 // =========================================================
-void main() {
-    hal_uart_init();
-    
-    hal_uart_puts("\n\r");
-    hal_uart_puts("==============================\n\r");
-    hal_uart_puts("   SOC DMA TEST (FPGA)        \n\r");
-    hal_uart_puts("==============================\n\r");
 
-    // Definição manual dos ponteiros para garantir que não colidam com Stack/Text
-    volatile uint32_t* src_ptr = (volatile uint32_t*)(RAM_SAFE_ZONE);
-    volatile uint32_t* dst_ptr = (volatile uint32_t*)(RAM_SAFE_ZONE + 0x1000); // +4KB
+int main() {
 
-    // 1. Preenchimento (CPU)
-    hal_uart_puts("[CPU] Preenchendo Source...\n\r");
-    for (uint32_t i = 0; i < BUFFER_SIZE; i++) {
-        src_ptr[i] = 0xCAFEBABE + i; // Padrão reconhecível
-        dst_ptr[i] = 0x00000000;     // Limpa destino
+    // 1. Inicializa Sistema Básico
+    hal_uart_init(); 
+    hal_uart_puts("\n\r=== DMA IRQ TEST ===============\n\r");
+
+    // 2. Prepara o Cenário na RAM
+    volatile uint32_t* src = (volatile uint32_t*)RAM_SRC;
+    volatile uint32_t* dst = (volatile uint32_t*)RAM_DST;
+
+    hal_uart_puts(" -> Preparando 4KB de dados...\n\r");
+    for(int i=0; i<BUFFER_SIZE; i++) {
+        src[i] = 0xCAFE0000 + i;        // Padrão conhecido
+        dst[i] = 0x00000000;            // Limpa destino
     }
 
-    // 2. Transferência (DMA)
-    hal_uart_puts("[DMA] Iniciando transferencia...\n\r");
-    hal_uart_puts("      SRC: "); print_hex((uint32_t)src_ptr); hal_uart_puts("\n\r");
-    hal_uart_puts("      DST: "); print_hex((uint32_t)dst_ptr); hal_uart_puts("\n\r");
-    hal_uart_puts("      CNT: "); print_dec(BUFFER_SIZE); hal_uart_puts("\n\r");
+    // 3. Configura Interrupções
+    hal_irq_init();                     
+    hal_irq_register(PLIC_SOURCE_DMA, my_dma_handler);
+    hal_plic_set_priority(PLIC_SOURCE_DMA, 1);
+    hal_plic_enable(PLIC_SOURCE_DMA);
 
-    // Chama a HAL (Destino Incremental = 0 no fixed_dst)
-    hal_dma_memcpy((uint32_t)src_ptr, (uint32_t)dst_ptr, BUFFER_SIZE, 0);
+    // Liga a chave geral
+    hal_irq_global_enable();
 
-    hal_uart_puts("[DMA] Transferencia concluida.\n\r");
-
-    // 3. Verificação (CPU)
-    hal_uart_puts("[CPU] Verificando dados...\n\r");
+    // 4. Executa a Operação
+    hal_uart_puts(" -> Disparando DMA...\n\r");
+    dma_start_async((uint32_t)src, (uint32_t)dst, BUFFER_SIZE);
     
-    int errors = 0;
-    for (uint32_t i = 0; i < BUFFER_SIZE; i++) {
-        if (dst_ptr[i] != src_ptr[i]) {
-            errors++;
-            if (errors <= 3) { // Mostra apenas os primeiros erros
-                hal_uart_puts("      ERR ["); print_dec(i); hal_uart_puts("]: ");
-                print_hex(dst_ptr[i]); hal_uart_puts(" != "); print_hex(src_ptr[i]);
-                hal_uart_puts("\n\r");
+    hal_uart_puts(" -> DMA em progresso. Aguardando IRQ...\n\r");
+
+    // 5. Espera Passiva (Wait for Event)
+    // Aqui a CPU fica presa até o hardware avisar que acabou.
+    while(!g_dma_done) {
+        // Em um sistema real, poderíamos usar 'asm("wfi")' para economizar energia
+        // Ou realizar processamento paralelo
+    }
+
+    hal_uart_puts(" -> [IRQ] Evento Recebido! DMA reportou fim.\n\r");
+
+    // 6. Verificação de Integridade 
+    hal_uart_puts(" -> Verificando integridade dos dados...\n\r");
+    
+    int erros = 0;
+    for(int i=0; i<BUFFER_SIZE; i++) {
+        if (dst[i] != (0xCAFE0000 + i)) {
+            erros++;
+            // Para não spamar o terminal, avisa só o primeiro erro
+            if (erros == 1) {
+                hal_uart_puts("    [ERRO] Divergencia no indice 0.\n\r");
             }
         }
     }
 
-    if (errors == 0) {
-        hal_uart_puts("\n\r>>> SUCESSO: MEMORIA COPIADA CORRETAMENTE! <<<\n\r");
-    } else {
-        hal_uart_puts("\n\r>>> FALHA: ERROS ENCONTRADOS: "); print_dec(errors); hal_uart_puts(" <<<\n\r");
-    }
+    if (erros == 0) hal_uart_puts(" -> SUCESSO TOTAL: Todos os 1024 words foram copiados.\n\r");
+    else hal_uart_puts(" -> FALHA CRITICA: Dados corrompidos.\n\r");
 
-    while(1);
+    return 0;
+
 }
