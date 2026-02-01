@@ -124,6 +124,7 @@ architecture rtl of uart_controller is
     signal w_fifo_empty   : std_logic;                       -- Flag de FIFO vazia
     signal w_wr_en        : std_logic;                       -- Enable de escrita na FIFO (pelo RX)
     signal w_rd_en        : std_logic;                       -- Enable de leitura na FIFO (pelo CPU)
+    signal w_flush_cmd    : std_logic;                       -- Comando de Flush (limpeza) 
 
     -- Sinais TX
 
@@ -175,10 +176,12 @@ begin
 
         if rising_edge(clk) then
 
-            if rst = '1' then
+            if rst = '1' or w_flush_cmd = '1' then
+
                 r_head  <= 0;
                 r_tail  <= 0;
                 r_count <= 0;
+            
             else
 
                 -- ESCRITA (RX Hardware inserindo dados)
@@ -341,6 +344,7 @@ begin
                 tx_start_pulse  <= '0';
                 w_rd_en         <= '0';
                 r_tx_data_latch <= (others => '0');
+                w_flush_cmd     <= '0';
             else
                 
                 -- Defaults (Pulsos de 1 ciclo e limpeza de barramento)
@@ -348,6 +352,7 @@ begin
                 tx_start_pulse  <= '0';
                 w_rd_en         <= '0';
                 data_o          <= (others => '0'); 
+                w_flush_cmd     <= '0';
 
                 -- Se há uma requisição válida do Mestre
                 if vld_i = '1' then
@@ -369,6 +374,12 @@ begin
                             if data_i(0) = '1' then
                                 w_rd_en <= '1';      -- Move o ponteiro 'tail'
                             end if;
+
+                            -- Comando de Controle: FLUSH
+                            if data_i(2) = '1' then
+                                w_flush_cmd <= '1';
+                            end if;
+                            
                         end if;
 
                     -- LOGICA DE LEITURA (Periférico -> CPU)
