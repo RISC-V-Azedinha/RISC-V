@@ -212,6 +212,7 @@ architecture rtl of soc_top is
     -- Sinais de Interrupção dos Periféricos
 
         signal s_uart_irq        : std_logic;
+        signal s_dma_irq         : std_logic;
 
     -- Vetor de Fontes de Interrupção para o PLIC
 
@@ -233,6 +234,7 @@ begin
     
     s_plic_sources <= (
         1 => s_uart_irq, 
+        2 => s_dma_irq,
         others => '0'
     );
 
@@ -285,7 +287,7 @@ begin
             m_we_o      => s_dma_m_we, 
             m_vld_o     => s_dma_m_vld,
             m_rdy_i     => s_dma_m_rdy,
-            irq_done_o  => open
+            irq_done_o  => s_dma_irq
         );
 
     -- ============================================================================================================
