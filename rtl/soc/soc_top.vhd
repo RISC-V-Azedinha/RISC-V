@@ -161,12 +161,12 @@ architecture rtl of soc_top is
 
     -- VGA
         
-        signal s_vga_addr   : std_logic_vector(16 downto 0);
-        signal s_vga_data_rx: std_logic_vector(31 downto 0);                   -- Dado lido da VRAM
-        signal s_vga_data_tx: std_logic_vector(31 downto 0);                   -- Dado escrito na VRAM (Cor)
-        signal s_vga_we     : std_logic;
-        signal s_vga_vld    : std_logic;
-        signal s_vga_rdy    : std_logic;
+        signal s_vga_addr    : std_logic_vector(16 downto 0);
+        signal s_vga_data_rx : std_logic_vector(31 downto 0);                  -- Dado lido da VRAM
+        signal s_vga_data_tx : std_logic_vector(31 downto 0);                  -- Dado escrito na VRAM (Cor)
+        signal s_vga_we      : std_logic;
+        signal s_vga_vld     : std_logic;
+        signal s_vga_rdy     : std_logic;
 
     -- NPU (Neural Processing Unit)
         
@@ -187,6 +187,15 @@ architecture rtl of soc_top is
         signal s_clint_vld     : std_logic;
         signal s_clint_rdy     : std_logic;
 
+    -- PLIC (Platform-Level Interrupt Controller)
+
+        signal s_plic_addr     : std_logic_vector(23 downto 0);
+        signal s_plic_data_rx  : std_logic_vector(31 downto 0);
+        signal s_plic_data_tx  : std_logic_vector(31 downto 0);
+        signal s_plic_we       : std_logic;
+        signal s_plic_vld      : std_logic;
+        signal s_plic_rdy      : std_logic;
+
     -- === Auxiliares =============================================================================================
 
     -- Sinais Auxiliares para o DMA WE expandido
@@ -200,15 +209,32 @@ architecture rtl of soc_top is
         signal s_irq_timer       : std_logic;
         signal s_irq_soft        : std_logic;
 
+    -- Sinais de Interrupção dos Periféricos
+
+        signal s_uart_irq        : std_logic;
+
+    -- Vetor de Fontes de Interrupção para o PLIC
+
+        signal s_plic_sources    : std_logic_vector(31 downto 0);
+
     -- ============================================================================================================
 
 begin
 
-    -- ============================================================================================================
-    -- Lógica de Interrupção Externa
-    -- ============================================================================================================
+    -- ============================================================================
+    -- Mapeamento de Interrupções para o PLIC
+    -- ============================================================================
+    -- Source 0: Reservada (Sempre 0)
+    -- Source 1: UART (Rx Data Ready)
+    -- Source 2: GPIO (Não implementado, 0)
+    -- Source 3: DMA  (Não implementado, 0)
+    -- Source 4: NPU  (Não implementado, 0)
+    -- [...]
     
-    s_irq_external <= '0';
+    s_plic_sources <= (
+        1 => s_uart_irq, 
+        others => '0'
+    );
 
     -- ============================================================================================================
     -- Expansão do WE do DMA (1 bit -> 4 bits) ANTES do Arbiter
@@ -234,7 +260,7 @@ begin
             DMem_we_o           => s_cpu_dmem_we,
             DMem_rdy_i          => s_cpu_dmem_rdy,
             DMem_vld_o          => s_cpu_dmem_vld,
-            Irq_External_i      => s_irq_external,   -- Conectado ao sinal interno
+            Irq_External_i      => s_irq_external,   -- Conectado ao PLIC
             Irq_Timer_i         => s_irq_timer,      -- Conectado ao CLINT
             Irq_Software_i      => s_irq_soft        -- Conectado ao CLINT
         );
@@ -358,13 +384,21 @@ begin
             dma_vld_o    => s_dma_s_vld,
             dma_rdy_i    => s_dma_s_rdy,
 
-            -- Interface TIMER
+            -- Interface CLINT
             clint_addr_o  => s_clint_addr,
             clint_data_i  => s_clint_data_rx,
             clint_data_o  => s_clint_data_tx,
             clint_we_o    => s_clint_we,
             clint_vld_o   => s_clint_vld,
-            clint_rdy_i   => s_clint_rdy
+            clint_rdy_i   => s_clint_rdy,
+
+            -- Interface PLIC
+            plic_addr_o   => s_plic_addr, 
+            plic_data_i   => s_plic_data_rx, 
+            plic_data_o   => s_plic_data_tx, 
+            plic_we_o     => s_plic_we, 
+            plic_vld_o    => s_plic_vld, 
+            plic_rdy_i    => s_plic_rdy
             
         );
 
@@ -374,105 +408,120 @@ begin
 
     U_ROM: entity work.boot_rom
         generic map (
-            INIT_FILE => INIT_FILE
+            INIT_FILE      => INIT_FILE
         )
         port map (
-            clk          => CLK_i,
-            vld_a_i      => s_rom_vld_a, 
-            rdy_a_o      => s_rom_rdy_a,
-            addr_a_i     => s_rom_addr_a,
-            data_a_o     => s_rom_data_a,
-            vld_b_i      => s_rom_vld_b,
-            addr_b_i     => s_rom_addr_b,
-            data_b_o     => s_rom_data_b,
-            rdy_b_o      => s_rom_rdy_b
+            clk            => CLK_i,
+            vld_a_i        => s_rom_vld_a, 
+            rdy_a_o        => s_rom_rdy_a,
+            addr_a_i       => s_rom_addr_a,
+            data_a_o       => s_rom_data_a,
+            vld_b_i        => s_rom_vld_b,
+            addr_b_i       => s_rom_addr_b,
+            data_b_o       => s_rom_data_b,
+            rdy_b_o        => s_rom_rdy_b
         );
 
     U_RAM: entity work.dual_port_ram
         generic map (ADDR_WIDTH => 16)  -- 256 KB de RAM
         port map (
-            clk          => CLK_i,
-            vld_a_i      => s_ram_vld_a, 
-            rdy_a_o      => s_ram_rdy_a,
-            we_a         => (others => '0'),
-            addr_a       => s_ram_addr_a(17 downto 2),
-            data_a_i     => (others => '0'),
-            data_a_o     => s_ram_data_a,
-            vld_b_i      => s_ram_vld_b,
-            we_b         => s_ram_we_b,
-            addr_b       => s_ram_addr_b(17 downto 2),
-            data_b_i     => s_ram_data_w,
-            data_b_o     => s_ram_data_b,
-            rdy_b_o      => s_ram_rdy_b
+            clk            => CLK_i,
+            vld_a_i        => s_ram_vld_a, 
+            rdy_a_o        => s_ram_rdy_a,
+            we_a           => (others => '0'),
+            addr_a         => s_ram_addr_a(17 downto 2),
+            data_a_i       => (others => '0'),
+            data_a_o       => s_ram_data_a,
+            vld_b_i        => s_ram_vld_b,
+            we_b           => s_ram_we_b,
+            addr_b         => s_ram_addr_b(17 downto 2),
+            data_b_i       => s_ram_data_w,
+            data_b_o       => s_ram_data_b,
+            rdy_b_o        => s_ram_rdy_b
         );
 
     U_UART : entity work.uart_controller
         generic map (
-            CLK_FREQ  => CLK_FREQ,
-            BAUD_RATE => BAUD_RATE
+            CLK_FREQ       => CLK_FREQ,
+            BAUD_RATE      => BAUD_RATE
         )
         port map (
-            clk          => CLK_i,
-            rst          => Reset_i,
-            addr_i       => s_uart_addr,      
-            data_i       => s_uart_data_tx,   
-            data_o       => s_uart_data_rx,  
-            rdy_o        => s_uart_rdy, 
-            we_i         => s_uart_we,        
-            vld_i        => s_uart_vld,
-            uart_tx_pin  => UART_TX_o,
-            uart_rx_pin  => UART_RX_i
+            clk            => CLK_i,
+            rst            => Reset_i,
+            addr_i         => s_uart_addr,      
+            data_i         => s_uart_data_tx,   
+            data_o         => s_uart_data_rx,  
+            rdy_o          => s_uart_rdy, 
+            we_i           => s_uart_we,        
+            vld_i          => s_uart_vld,
+            uart_tx_pin    => UART_TX_o,
+            uart_rx_pin    => UART_RX_i,
+            irq_o          => s_uart_irq
         );
 
     U_GPIO: entity work.gpio_controller
         port map (
-            clk         => CLK_i,
-            rst         => Reset_i,
+            clk           => CLK_i,
+            rst           => Reset_i,
             
             -- Conexão com o Bus Interconnect
-            vld_i       => s_gpio_vld,
-            we_i        => s_gpio_we,
-            addr_i      => s_gpio_addr,
-            data_i      => s_gpio_data_tx,
-            data_o      => s_gpio_data_rx,
-            rdy_o       => s_gpio_rdy,
-            gpio_leds   => GPIO_LEDS_o,
-            gpio_sw     => GPIO_SW_i
+            vld_i         => s_gpio_vld,
+            we_i          => s_gpio_we,
+            addr_i        => s_gpio_addr,
+            data_i        => s_gpio_data_tx,
+            data_o        => s_gpio_data_rx,
+            rdy_o         => s_gpio_rdy,
+            gpio_leds     => GPIO_LEDS_o,
+            gpio_sw       => GPIO_SW_i
         );
 
     U_VGA: entity work.vga_peripheral
         port map (
-            clk         => CLK_i,
-            rst         => Reset_i,
+            clk           => CLK_i,
+            rst           => Reset_i,
             
             -- Interface com o Processador
-            we_i        => s_vga_we,
-            addr_i      => s_vga_addr,
-            data_i      => s_vga_data_tx,
-            data_o      => s_vga_data_rx,
-            rdy_o       => s_vga_rdy,
-            vld_i       => s_vga_vld,
+            we_i          => s_vga_we,
+            addr_i        => s_vga_addr,
+            data_i        => s_vga_data_tx,
+            data_o        => s_vga_data_rx,
+            rdy_o         => s_vga_rdy,
+            vld_i         => s_vga_vld,
             
             -- Interface Física
-            vga_hs_o    => VGA_HS_o,
-            vga_vs_o    => VGA_VS_o,
-            vga_r_o     => VGA_R_o,
-            vga_g_o     => VGA_G_o,
-            vga_b_o     => VGA_B_o
+            vga_hs_o      => VGA_HS_o,
+            vga_vs_o      => VGA_VS_o,
+            vga_r_o       => VGA_R_o,
+            vga_g_o       => VGA_G_o,
+            vga_b_o       => VGA_B_o
         );
 
     U_CLINT: entity work.clint
         port map (
-            clk_i       => CLK_i,
-            rst_i       => Reset_i,
-            addr_i      => s_clint_addr,
-            data_i      => s_clint_data_tx, 
-            data_o      => s_clint_data_rx, 
-            we_i        => s_clint_we,
-            vld_i       => s_clint_vld,
-            rdy_o       => s_clint_rdy,
-            irq_timer_o => s_irq_timer,
-            irq_soft_o  => s_irq_soft
+            clk_i         => CLK_i,
+            rst_i         => Reset_i,
+            addr_i        => s_clint_addr,
+            data_i        => s_clint_data_tx, 
+            data_o        => s_clint_data_rx, 
+            we_i          => s_clint_we,
+            vld_i         => s_clint_vld,
+            rdy_o         => s_clint_rdy,
+            irq_timer_o   => s_irq_timer,
+            irq_soft_o    => s_irq_soft
+        );
+
+    U_PLIC: entity work.plic
+        port map (
+            Clk_i         => CLK_i, 
+            Reset_i       => Reset_i,
+            Addr_i        => s_plic_addr, 
+            Data_i        => s_plic_data_tx, 
+            Data_o        => s_plic_data_rx, 
+            We_i          => s_plic_we, 
+            Vld_i         => s_plic_vld, 
+            Rdy_o         => s_plic_rdy,
+            Irq_Sources_i => s_plic_sources,     -- IRQ entra aqui
+            Irq_Req_o     => s_irq_external      -- Sai para o Core
         );
 
     -- Inverte o Reset 

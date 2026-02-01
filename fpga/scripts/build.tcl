@@ -111,7 +111,7 @@ puts "\n------------------------------------------------------------------------
 puts ">>> [3/6] Executando Sintese do Projeto...\n"
 
 if {[catch {
-    synth_design -top $topEntity -part $targetPart -generic "INIT_FILE=$bootHex" -flatten_hierarchy rebuilt -retiming 
+    synth_design -top $topEntity -part $targetPart -generic "INIT_FILE=$bootHex" -flatten_hierarchy rebuilt -retiming -quiet
 } err]} {
     puts "\n!!! FALHA NA SINTESE !!!"
     puts "$err"

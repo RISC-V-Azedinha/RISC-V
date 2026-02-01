@@ -49,7 +49,11 @@ entity uart_controller is
         -- Pinos Físicos
 
         uart_tx_pin : out std_logic;
-        uart_rx_pin : in  std_logic
+        uart_rx_pin : in  std_logic;
+
+        -- Sinal de Interrupção
+
+        irq_o       : out std_logic                          -- Ativo Alto quando há dados na FIFO
     
     );
 end entity;
@@ -148,6 +152,11 @@ begin
 
     w_fifo_full  <= '1' when r_count = FIFO_DEPTH else '0';
     w_fifo_empty <= '1' when r_count = 0 else '0';
+
+    -- Lógica de Interrupção --------------------------------------------------------------------------------------
+    -- Dispara enquanto houver dados na FIFO (Level Triggered)
+
+    irq_o <= not w_fifo_empty;
 
     -- Sincronizador RX -------------------------------------------------------------------------------------------
 

@@ -18,6 +18,7 @@
 #define GPIO_BASE_ADDR      0x20000000
 #define VGA_BASE_ADDR       0x30000000
 #define CLINT_BASE_ADDR     0x50000000
+#define PLIC_BASE_ADDR      0x60000000
 #define NPU_BASE_ADDR       0x90000000
 
 /* ============================================================================================================== */
@@ -46,9 +47,6 @@
 /* ============================================================================================================== */
 /* NEURAL PROCESSING UNIT (NPU) MMIO                                                                              */
 /* ============================================================================================================== */
-
-// Base Address (Definido no Bus Interconnect)
-#define NPU_BASE_ADDR       0x90000000
 
 // Registradores de Controle e Status
 #define NPU_REG_STATUS      MMIO32(NPU_BASE_ADDR + 0x00)        // RO: Status Flags
@@ -97,6 +95,24 @@
 #define CLINT_MTIMECMP_HI   MMIO32(CLINT_BASE_ADDR + 0x0C)      // Timer Compare High
 #define CLINT_MTIME_LO      MMIO32(CLINT_BASE_ADDR + 0x10)      // Timer Value Low
 #define CLINT_MTIME_HI      MMIO32(CLINT_BASE_ADDR + 0x14)      // Timer Value High
+
+/* ============================================================================================================== */
+/* PLIC (Platform-Level Interrupt Controller) MMIO [NOVO]                                                         */
+/* ============================================================================================================== */
+
+// Offsets Padrão RISC-V (Mini-PLIC: Context 0 = Machine Mode Hart 0)
+#define PLIC_PRIORITY_BASE  (PLIC_BASE_ADDR + 0x000000)
+#define PLIC_PENDING_BASE   (PLIC_BASE_ADDR + 0x001000)
+#define PLIC_ENABLE_BASE    (PLIC_BASE_ADDR + 0x002000)
+#define PLIC_THRESHOLD      MMIO32(PLIC_BASE_ADDR + 0x200000)
+#define PLIC_CLAIM          MMIO32(PLIC_BASE_ADDR + 0x200004)
+
+// Macro para acessar prioridade de uma fonte específica (ID 1 a 31)
+#define PLIC_PRIORITY(id)   MMIO32(PLIC_PRIORITY_BASE + ((id) * 4))
+
+// Registradores Globais (Bitmaps)
+#define PLIC_PENDING        MMIO32(PLIC_PENDING_BASE)   // Bitmask (Bits 0-31)
+#define PLIC_ENABLE         MMIO32(PLIC_ENABLE_BASE)    // Bitmask (Bits 0-31)
 
 // ----------------------------------------------------------------------------------------------------------
 

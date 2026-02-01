@@ -8,8 +8,11 @@
 --  ╚██████╗███████╗██║██║ ╚████║   ██║   
 --   ╚═════╝╚══════╝╚═╝╚═╝  ╚═══╝   ╚═╝   
 --
--- Descrição: Core Local Interruptor (Compacto) para RISC-V Single Core
---            Implementa mtime, mtimecmp e msip. RISC-V Privileged Spec
+-- Descrição : Core Local Interruptor (Compacto) para RISC-V Single Core
+--             Implementa mtime, mtimecmp e msip. RISC-V Privileged Spec
+--
+-- Autor     : [André Maiolini]
+-- Data      : [31/01/2026]   
 --
 -------------------------------------------------------------------------------------------------------------
 

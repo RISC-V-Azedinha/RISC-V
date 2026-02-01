@@ -139,7 +139,16 @@ entity bus_interconnect is
             clint_data_o        : out std_logic_vector(31 downto 0);
             clint_we_o          : out std_logic;
             clint_vld_o         : out std_logic;
-            clint_rdy_i         : in  std_logic
+            clint_rdy_i         : in  std_logic;
+
+        -- Interface PLIC (Platform-Level Interrupt Controller)
+
+            plic_addr_o         : out std_logic_vector(23 downto 0); 
+            plic_data_i         : in  std_logic_vector(31 downto 0);
+            plic_data_o         : out std_logic_vector(31 downto 0);
+            plic_we_o           : out std_logic;
+            plic_vld_o          : out std_logic;
+            plic_rdy_i          : in  std_logic
 
         -- ========================================================================================
 
@@ -154,7 +163,7 @@ end entity;
 architecture rtl of bus_interconnect is
 
     type slave_t is (
-        SLV_NONE, SLV_ROM, SLV_RAM, SLV_UART, SLV_GPIO, SLV_VGA, SLV_NPU, SLV_DMA, SLV_CLINT
+        SLV_NONE, SLV_ROM, SLV_RAM, SLV_UART, SLV_GPIO, SLV_VGA, SLV_NPU, SLV_DMA, SLV_CLINT, SLV_PLIC
     );
 
     signal imem_slv : slave_t;
@@ -162,9 +171,10 @@ architecture rtl of bus_interconnect is
 
 begin
 
-    --------------------------------------------------------------------------
+    ---------------------------------------------------------------------------------------------------------------
     -- Address decode (com latch implícito)
-    --------------------------------------------------------------------------
+    ---------------------------------------------------------------------------------------------------------------
+
     imem_slv <= SLV_ROM   when imem_addr_i(31 downto 28) = x"0" else
                 SLV_RAM   when imem_addr_i(31 downto 28) = x"8" else
                 SLV_NONE;
@@ -175,13 +185,15 @@ begin
                 SLV_VGA   when dmem_addr_i(31 downto 28) = x"3" else
                 SLV_DMA   when dmem_addr_i(31 downto 28) = x"4" else
                 SLV_CLINT when dmem_addr_i(31 downto 28) = x"5" else
+                SLV_PLIC  when dmem_addr_i(31 downto 28) = x"6" else
                 SLV_RAM   when dmem_addr_i(31 downto 28) = x"8" else
                 SLV_NPU   when dmem_addr_i(31 downto 28) = x"9" else
                 SLV_NONE;
 
-    --------------------------------------------------------------------------
+    ---------------------------------------------------------------------------------------------------------------
     -- IMEM
-    --------------------------------------------------------------------------
+    ---------------------------------------------------------------------------------------------------------------
+
     rom_addr_a_o <= imem_addr_i;
     ram_addr_a_o <= imem_addr_i;
 
@@ -196,9 +208,10 @@ begin
                   ram_rdy_a_i when imem_slv = SLV_RAM else
                   '0';
 
-    --------------------------------------------------------------------------
+    ---------------------------------------------------------------------------------------------------------------
     -- DMEM
-    --------------------------------------------------------------------------
+    ---------------------------------------------------------------------------------------------------------------
+
     rom_addr_b_o <= dmem_addr_i;
     ram_addr_b_o <= dmem_addr_i;
     ram_data_b_o <= dmem_data_i;
@@ -237,6 +250,11 @@ begin
     clint_we_o   <= '1' when (dmem_slv = SLV_CLINT and dmem_we_i /= "0000") else '0';
     clint_vld_o  <= dmem_vld_i when dmem_slv = SLV_CLINT else '0';
 
+    plic_addr_o  <= dmem_addr_i(23 downto 0);
+    plic_data_o  <= dmem_data_i;
+    plic_we_o    <= '1' when (dmem_slv = SLV_PLIC and dmem_we_i /= "0000") else '0'; 
+    plic_vld_o   <= dmem_vld_i when dmem_slv = SLV_PLIC else '0';
+
     dmem_data_o <=
         rom_data_b_i  when dmem_slv = SLV_ROM   else
         ram_data_b_i  when dmem_slv = SLV_RAM   else
@@ -246,17 +264,19 @@ begin
         npu_data_i    when dmem_slv = SLV_NPU   else
         dma_data_i    when dmem_slv = SLV_DMA   else
         clint_data_i  when dmem_slv = SLV_CLINT else
+        plic_data_i   when dmem_slv = SLV_PLIC  else
         (others => '0');
 
     dmem_rdy_o <=
-        rom_rdy_b_i when dmem_slv = SLV_ROM   else
-        ram_rdy_b_i when dmem_slv = SLV_RAM   else
-        uart_rdy_i  when dmem_slv = SLV_UART  else
-        gpio_rdy_i  when dmem_slv = SLV_GPIO  else
-        vga_rdy_i   when dmem_slv = SLV_VGA   else
-        npu_rdy_i   when dmem_slv = SLV_NPU   else
-        dma_rdy_i   when dmem_slv = SLV_DMA   else
-        clint_rdy_i when dmem_slv = SLV_CLINT else
+        rom_rdy_b_i   when dmem_slv = SLV_ROM   else
+        ram_rdy_b_i   when dmem_slv = SLV_RAM   else
+        uart_rdy_i    when dmem_slv = SLV_UART  else
+        gpio_rdy_i    when dmem_slv = SLV_GPIO  else
+        vga_rdy_i     when dmem_slv = SLV_VGA   else
+        npu_rdy_i     when dmem_slv = SLV_NPU   else
+        dma_rdy_i     when dmem_slv = SLV_DMA   else
+        clint_rdy_i   when dmem_slv = SLV_CLINT else
+        plic_rdy_i    when dmem_slv = SLV_PLIC  else
         '0';
 
 end architecture; -- rtl

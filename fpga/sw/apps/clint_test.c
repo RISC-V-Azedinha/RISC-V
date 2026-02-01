@@ -88,9 +88,9 @@ int main() {
     // Habilita as interrupções globalmente (MIE no mstatus)
     hal_irq_global_enable();
     
-    hal_uart_puts("       -> Vetor de Trap configurado.\n\r");
-    hal_uart_puts("       -> Interrupcoes Globais HABILITADAS.\n\r");
-    hal_uart_puts("       -> Status: [PRONTO]\n\r\n\r");
+    hal_uart_puts("\t-> Vetor de Trap configurado.\n\r");
+    hal_uart_puts("\t-> Interrupcoes Globais HABILITADAS.\n\r");
+    hal_uart_puts("\t-> Status: [PRONTO]\n\r\n\r");
 
     // ------------------------------------------------------------------------
     // 2. TESTE DA SOFTWARE IRQ

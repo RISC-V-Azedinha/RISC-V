@@ -69,11 +69,16 @@ architecture rtl of dual_port_ram is
     attribute ram_style : string;
     attribute ram_style of ram : variable is "block";
 
+    -- Desabilita a otimização de cascata profunda que causa o erro de pino ADDR15.
+    -- Isso força o sintetizador a fazer o muxing de profundidade fora dos blocos BRAM.
+    attribute cascade_height : integer;
+    attribute cascade_height of ram : variable is 0;
+
 begin
 
-    -- =========================
+    -- ============================================================================================================
     -- PORTA A
-    -- =========================
+    -- ============================================================================================================
     process(clk)
     begin
 
@@ -99,9 +104,9 @@ begin
         
     end process;
 
-    -- =========================
+    -- ============================================================================================================
     -- PORTA B
-    -- =========================
+    -- ============================================================================================================
     process(clk)
     begin
 
