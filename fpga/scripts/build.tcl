@@ -148,7 +148,7 @@ report_power -file $rptDir/power.rpt
 puts "\n--------------------------------------------------------------------------------------------------------------------------------"
 puts ">>> [5/6] Gerando Bitstream...\n"
 
-write_bitstream -force $bitDir/${topEntity}.bit
+write_bitstream -force $bitDir/${topEntity}.bit -quiet
 
 puts " "
 puts "================================================================"
