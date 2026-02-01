@@ -14,12 +14,15 @@
 
 .PHONY: sw sw-fpga sw-sim boot boot-fpga boot-sim list-apps
 
+# Definindo caminhos de busca para FPGA (Apps, Testes e Servers)
+FPGA_SRC_DIRS := $(FPGA_SW_DIR)/apps $(FPGA_SW_DIR)/tests $(FPGA_SW_DIR)/server
+
 # --- COMPILAÇÃO SW -----------------------------------------------------------
 
 sw-fpga:
 	@if [ -z "$(SW)" ]; then echo "❌ Defina SW=..."; exit 1; fi
 	@echo ">>> 🏗️  [FPGA] Buscando $(SW)..."
-	$(eval SRC := $(shell find $(FPGA_SW_DIR)/apps $(COMMON_SW_DIR) -name "$(SW).c" -o -name "$(SW).s" 2>/dev/null | head -n 1))
+	$(eval SRC := $(shell find $(FPGA_SRC_DIRS) $(COMMON_SW_DIR) -name "$(SW).c" -o -name "$(SW).s" 2>/dev/null | head -n 1))
 	@if [ -z "$(SRC)" ]; then echo "❌ Erro: $(SW) não encontrado"; exit 1; fi
 	@mkdir -p $(BUILD_FPGA_BIN)
 	@$(CC) $(BASE_CFLAGS) -I$(FPGA_SW_DIR)/platform/bsp -T $(FPGA_SW_DIR)/platform/linker/link.ld \
@@ -80,11 +83,18 @@ boot-sim:
 
 list-apps:
 	@echo " "
-	@echo "💾 Aplicações para FPGA ($(FPGA_SW_DIR)/apps):"
+	@echo "📦 SERVIDORES (fpga/sw/server):"
 	@echo "────────────────────────────────────────────"
-	@ls -1 $(FPGA_SW_DIR)/apps 2>/dev/null | grep -E "\.(c|s)$$" | sed 's/\..*//' | sed 's/^/  • /' || echo "  (Nenhuma encontrada)"
+	@ls -1 $(FPGA_SW_DIR)/server 2>/dev/null | grep -E "\.(c|s)$$" | sed 's/\..*//' | sed 's/^/  • /' || echo "  (Vazio)"
 	@echo " "
-	
+	@echo "🛠️  TESTES DE HARDWARE (fpga/sw/tests):"
+	@echo "────────────────────────────────────────────"
+	@ls -1 $(FPGA_SW_DIR)/tests 2>/dev/null | grep -E "\.(c|s)$$" | sed 's/\..*//' | sed 's/^/  • /' || echo "  (Vazio)"
+	@echo " "
+	@echo "💾 APLICAÇÕES FINAIS (fpga/sw/apps):"
+	@echo "────────────────────────────────────────────"
+	@ls -1 $(FPGA_SW_DIR)/apps 2>/dev/null | grep -E "\.(c|s)$$" | sed 's/\..*//' | sed 's/^/  • /' || echo "  (Vazio)"
+	@echo " "
 	@echo "🧪 Aplicações para Simulação ($(SIM_SW_DIR)/apps):"
 	@echo "────────────────────────────────────────────"
 	@ls -1 $(SIM_SW_DIR)/apps 2>/dev/null | grep -E "\.(c|s)$$" | sed 's/\..*//' | sed 's/^/  • /' || echo "  (Nenhuma encontrada)"

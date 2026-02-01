@@ -10,9 +10,9 @@
 // IDs das Fontes de Interrupção (Mapeamento do Hardware soc_top.vhd)
 #define PLIC_SOURCE_NONE    0
 #define PLIC_SOURCE_UART    1
-#define PLIC_SOURCE_GPIO    2  // Reservado (futuro)
-#define PLIC_SOURCE_DMA     3  // Reservado (futuro)
-#define PLIC_SOURCE_NPU     4  // Reservado (futuro)
+#define PLIC_SOURCE_DMA     2  
+#define PLIC_SOURCE_NPU     3  
+#define PLIC_SOURCE_GPIO    4  
 
 #define PLIC_MAX_SOURCES    32
 
