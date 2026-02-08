@@ -1,83 +1,74 @@
 # =============================================================================
 #
-#  ARQUIVO: mk/rules_fpga.mk
-#  DESCRIÇÃO: Regras de Síntese e Implementação (Vivado)
+#  rules_fpga.mk
+#  Síntese, Implementação e Programação da FPGA (Vivado)
 #
 # =============================================================================
 #
-#  Automação do fluxo de FPGA:
-#   1. Verifica se o hardware mudou
-#   2. Se mudou, chama o Vivado (via script TCL) para sintetizar
-#   3. Se não mudou, apenas grava o bitstream existente na placa
+#  Fluxo de FPGA:
+#   1. Verifica mudanças no hardware (fontes VHDL)
+#   2. Se houver mudanças, sintetiza e implementa com Vivado
+#   3. Gera e programa o bitstream na placa
 #
 # =============================================================================
 
-# --- DETECTA O AMBIENTE ------------------------------------------------------
+# --- VARIÁVEIS LOCAIS --------------------------------------------------------
 
-UNAME_R := $(shell uname -r)
-
-ifneq ($(filter %microsoft %WSL,$(UNAME_R)),)
-    # [WINDOWS/WSL] 
-    # Usa PowerShell para chamar o Vivado e Python do Windows
-    # Aspas são necessárias para encapsular o comando no PS
-    VIVADO_CMD  = powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "vivado
-    PYTHON_CMD  = powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "python
-    CMD_END     = "
-    DEFAULT_COM = COM6
-else
-    # [LINUX NATIVO] 
-    # Chama o Vivado e Python direto do PATH
-    # Sem aspas extras
-    VIVADO_CMD  = vivado
-    PYTHON_CMD  = python3
-    CMD_END     = 
-    DEFAULT_COM = /dev/ttyUSB1
-endif
-
-# --- DIRETÓRIOS --------------------------------------------------------------
-
-BITSTREAM    = $(BUILD_FPGA_BIT)/soc_top.bit
-BOOT_HEX     = $(BUILD_FPGA_BOOT)/bootloader.hex
-SCRIPT_PROG  = fpga/scripts/program.tcl
-
-# Define a porta padrão baseada no sistema (pode sobrescrever com make upload COM=...)
-COM          ?= $(DEFAULT_COM)
+BITSTREAM      = $(BUILD_FPGA_BIT)/soc_top.bit
+BOOT_HEX       = $(BUILD_FPGA_BOOT)/bootloader.hex
+COM            ?= $(DEFAULT_COM)
 
 .PHONY: fpga upload
 
-# --- PROGRAMAR FPGA ----------------------------------------------------------
-
-fpga: $(BITSTREAM)
-	@echo ">>> ⚡ Programando FPGA..."
-	@mkdir -p $(BUILD_FPGA_LOGS)
-	@$(VIVADO_CMD) -mode batch -notrace -source $(SCRIPT_PROG) -log $(BUILD_FPGA_LOGS)/prog.log -journal $(BUILD_FPGA_LOGS)/prog.jou$(CMD_END)
-	@rm -rf .Xil
-	@rm -f $(BUILD_FPGA_LOGS)/*.backup*
-	@echo ">>> ✅ FPGA pronta."
-
-# --- BUILD (Síntese) ---------------------------------------------------------
+# =============================================================================
+#  BUILD: Síntese e Implementação
+# =============================================================================
 
 $(BITSTREAM): $(SYNTH_SRCS) $(BOOT_HEX)
-	@echo ">>> 🛠️  Alterações detectadas."
-	@echo ">>> 🔄 Iniciando Síntese..."
+	@echo ">>> 🛠️  Alterações detectadas no design."
+	@echo ">>> 🔄 Iniciando síntese e implementação..."
 	@mkdir -p $(BUILD_FPGA_LOGS)
-	@$(VIVADO_CMD) -mode batch -notrace -source fpga/scripts/build.tcl -log $(BUILD_FPGA_LOGS)/vivado.log -journal $(BUILD_FPGA_LOGS)/vivado.jou$(CMD_END)
-	@echo ">>> 🧹 Limpando..."
+	@$(VIVADO_BIN) -mode batch -notrace -source $(FPGA_SCRIPTS_BUILD) \
+		-log $(BUILD_FPGA_LOGS)/vivado.log \
+		-journal $(BUILD_FPGA_LOGS)/vivado.jou
+	@echo ">>> 🧹 Limpando arquivos temporários..."
 	@rm -rf .Xil usage_statistics* vivado*.backup* vivado*.str
 	@rm -f $(BUILD_FPGA_LOGS)/*.backup*
-	@echo ">>> ✨ Build finalizado."
+	@echo ">>> ✨ Build finalizado com sucesso."
 
-# --- BOOTLOADER DEP ----------------------------------------------------------
+# =============================================================================
+#  BOOTLOADER: Dependência
+# =============================================================================
 
 $(BOOT_HEX):
 	@echo ">>> ⚠️  Bootloader ausente. Compilando..."
 	@$(MAKE) -s boot-fpga
 
-# --- UPLOAD ------------------------------------------------------------------
+# =============================================================================
+#  FPGA: Programação
+# =============================================================================
+
+fpga: $(BITSTREAM)
+	@echo ">>> ⚡ Programando FPGA..."
+	@mkdir -p $(BUILD_FPGA_LOGS)
+	@$(VIVADO_BIN) -mode batch -notrace -source $(FPGA_SCRIPTS_PROG) \
+		-log $(BUILD_FPGA_LOGS)/prog.log \
+		-journal $(BUILD_FPGA_LOGS)/prog.jou
+	@rm -rf .Xil
+	@rm -f $(BUILD_FPGA_LOGS)/*.backup*
+	@echo ">>> ✅ FPGA pronta."
+
+# =============================================================================
+#  UPLOAD: Software via UART
+# =============================================================================
+
 upload:
-	@if [ -z "$(SW)" ]; then echo "❌ Erro: Defina SW=..."; exit 1; fi
+	@if [ -z "$(SW)" ]; then \
+		echo "❌ Erro: Defina SW=..."; \
+		exit 1; \
+	fi
 	@$(MAKE) -s sw-fpga SW=$(SW)
-	@echo ">>> 🚀 Uploading $(SW) na porta $(COM)..."
-	@$(PYTHON_CMD) fpga/upload.py -p $(COM) -f $(BUILD_FPGA_BIN)/$(SW).bin$(CMD_END)
+	@echo ">>> 🚀 Enviando $(SW) para a FPGA via porta $(COM)..."
+	@$(PYTHON_BIN) fpga/upload.py -p $(COM) -f $(BUILD_FPGA_BIN)/$(SW).bin
 
 # =============================================================================

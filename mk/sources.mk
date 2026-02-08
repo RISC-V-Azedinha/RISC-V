@@ -1,20 +1,19 @@
 # =============================================================================
 #
-#  ARQUIVO: mk/sources.mk
-#  DESCRIÇÃO: Descoberta Automática de Fontes (Source Discovery)
+#  sources.mk
+#  Descoberta Automática de Fontes VHDL
 #
 # =============================================================================
 #
-#  Usa o comando 'wildcard' para criar listas de arquivos VHDL dinamicamente.
-#  Separa os arquivos em grupos (RTL Puro vs Wrappers de Simulação) para
-#  evitar que arquivos de teste sejam sintetizados na FPGA.
+#  Descobre automaticamente fontes VHDL por diretório.
+#  Separa fontes puras (RTL) de wrappers de simulação para evitar
+#  confundir o sintetizador com código de teste.
 #
 # =============================================================================
 
-# Definição da NPU (Submódulo)
-# -----------------------------------------------------------------------------
-
-# O diretório base onde o submódulo foi baixado
+# =============================================================================
+#  NPU: Núcleo Neural Processual (Submódulo)
+# =============================================================================
 
 NPU_ROOT := $(RTL_DIR)/perips/npu
 
@@ -32,45 +31,62 @@ NPU_SRCS := \
     $(NPU_ROOT)/rtl/npu_datapath.vhd \
     $(NPU_ROOT)/rtl/npu_top.vhd
 
-# Fontes de Hardware do RISC-V 
-# -----------------------------------------------------------------------------
+# =============================================================================
+#  PACOTES E COMPONENTES GENÉRICOS
+# =============================================================================
 
-# Fontes de Hardware (Sintetizáveis) ------------------------------------------
-
-PKG_SRCS       = $(wildcard $(PKG_DIR)/*.vhd) $(CORE_CURRENT)/riscv_uarch_pkg.vhd
-COMMON_SRCS    = $(wildcard $(CORE_COMMON)/*/*.vhd) $(wildcard $(CORE_COMMON)/*.vhd)
-CORE_SRCS      = $(wildcard $(CORE_CURRENT)/*.vhd)
-SOC_SRCS       = $(wildcard $(SOC_DIR)/*.vhd)
-
-# Periféricos simples (GPIO, UART etc.) ---------------------------------------
-
-PERIPS_SRCS    = $(wildcard $(PERIPS_DIR)/gpio/*.vhd) \
-                 $(wildcard $(PERIPS_DIR)/uart/*.vhd) \
-                 $(PERIPS_DIR)/vga/video_ram.vhd \
-                 $(PERIPS_DIR)/vga/vga_sync.vhd \
-                 $(PERIPS_DIR)/vga/vga_peripheral.vhd 
-
-# RTL Puro (Simulação e Síntese) ----------------------------------------------
-
-RTL_PURE_SRCS  = $(PKG_SRCS) \
-                 $(COMMON_SRCS) \
-                 $(CORE_SRCS) \
-                 $(SOC_SRCS) \
-                 $(PERIPS_SRCS) \
-                 $(NPU_SRCS)
-
-# Fonte Síntese (Com XDC) -----------------------------------------------------
-
-SYNTH_SRCS         = $(RTL_PURE_SRCS) fpga/constraints/pins.xdc
-
-# Wrappers Simulação ----------------------------------------------------------
-
-SIM_WRAPPERS   = $(wildcard $(SIM_CORE_DIR)/wrappers/*.vhd) \
-                 $(wildcard $(SIM_CORE_CURRENT)/wrappers/*.vhd) \
-                 $(wildcard $(SIM_SOC_DIR)/wrappers/*.vhd)
-
-# Fonte Simulação (Com Wrappers) ----------------------------------------------
-
-ALL_SIM_SRCS   = $(RTL_PURE_SRCS) $(SIM_WRAPPERS)
+PKG_SRCS = $(wildcard $(PKG_DIR)/*.vhd) $(CORE_CURRENT)/riscv_uarch_pkg.vhd
 
 # =============================================================================
+#  CORE: Componentes Principais do RISC-V
+# =============================================================================
+
+COMMON_SRCS = $(wildcard $(CORE_COMMON)/*/*.vhd) $(wildcard $(CORE_COMMON)/*.vhd)
+CORE_SRCS   = $(wildcard $(CORE_CURRENT)/*.vhd)
+
+# =============================================================================
+#  SOC: Interconexão de Barramento e Controladores
+# =============================================================================
+
+SOC_SRCS = $(wildcard $(SOC_DIR)/*.vhd)
+
+# =============================================================================
+#  PERIFÉRICOS: GPIO, UART, VGA, etc
+# =============================================================================
+
+PERIPS_SRCS = $(wildcard $(PERIPS_DIR)/gpio/*.vhd) \
+              $(wildcard $(PERIPS_DIR)/uart/*.vhd) \
+              $(PERIPS_DIR)/vga/video_ram.vhd \
+              $(PERIPS_DIR)/vga/vga_sync.vhd \
+              $(PERIPS_DIR)/vga/vga_peripheral.vhd
+
+# =============================================================================
+#  RTL PURO: Síntese e Simulação (sem wrappers)
+# =============================================================================
+
+RTL_PURE_SRCS = $(PKG_SRCS) \
+                $(COMMON_SRCS) \
+                $(CORE_SRCS) \
+                $(SOC_SRCS) \
+                $(PERIPS_SRCS) \
+                $(NPU_SRCS)
+
+# =============================================================================
+#  SÍNTESE: RTL + Constraints (XDC)
+# =============================================================================
+
+SYNTH_SRCS = $(RTL_PURE_SRCS) fpga/constraints/pins.xdc
+
+# =============================================================================
+#  SIMULAÇÃO: Wrappers para Cocotb
+# =============================================================================
+
+SIM_WRAPPERS = $(wildcard $(SIM_CORE_DIR)/wrappers/*.vhd) \
+               $(wildcard $(SIM_CORE_CURRENT)/wrappers/*.vhd) \
+               $(wildcard $(SIM_SOC_DIR)/wrappers/*.vhd)
+
+# =============================================================================
+#  SIMULAÇÃO: RTL Puro + Wrappers
+# =============================================================================
+
+ALL_SIM_SRCS = $(RTL_PURE_SRCS) $(SIM_WRAPPERS)
