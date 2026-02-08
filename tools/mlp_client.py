@@ -1,8 +1,14 @@
 import serial, struct, time
 import numpy as np
+import argparse
 
-SERIAL_PORT = 'COM6'   
-BAUD_RATE   = 921600   
+parser = argparse.ArgumentParser(description='MLP Client')
+parser.add_argument('-p', '--port', default='/dev/ttyUSB1', help='Porta Serial (Ex: /dev/ttyUSB1 ou COM6)')
+parser.add_argument('-b', '--baud', type=int, default=921600, help='Baud Rate')
+args = parser.parse_args()
+
+SERIAL_PORT = args.port
+BAUD_RATE   = args.baud 
 NETWORK_SHAPE = [64, 32, 16] 
 Q_MULT, Q_SHIFT, Q_ZP, Q_RELU = 1, 0, 10, 1
 

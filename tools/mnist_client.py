@@ -3,6 +3,7 @@ import time
 import struct
 import numpy as np
 import sys
+import argparse
 from datetime import datetime
 from sklearn.datasets import fetch_openml
 from sklearn.linear_model import LogisticRegression
@@ -11,8 +12,13 @@ from sklearn.model_selection import train_test_split
 # ==============================================================================
 # CONFIGURAÇÃO DE USUÁRIO
 # ==============================================================================
-SERIAL_PORT = 'COM6' 
-BAUD_RATE   = 921600
+parser = argparse.ArgumentParser(description='MNIST Client')
+parser.add_argument('-p', '--port', default='/dev/ttyUSB1', help='Porta Serial (Ex: /dev/ttyUSB1 ou COM6)')
+parser.add_argument('-b', '--baud', type=int, default=921600, help='Baud Rate')
+args = parser.parse_args()
+
+SERIAL_PORT = args.port
+BAUD_RATE   = args.baud
 
 # ==============================================================================
 # SISTEMA DE CORES & LOG (VISUAL CLÁSSICO)

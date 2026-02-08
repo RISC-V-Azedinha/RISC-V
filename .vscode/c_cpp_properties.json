@@ -7,7 +7,7 @@
                 "${workspaceFolder}/fpga/sw/platform/bsp"
             ],
             "defines": [],
-            "compilerPath": "riscv32-unknown-elf-gcc",
+            "compilerPath": "riscv64-unknown-elf-gcc",
             "cStandard": "c11",
             "cppStandard": "c++17",
             "intelliSenseMode": "gcc-x64"

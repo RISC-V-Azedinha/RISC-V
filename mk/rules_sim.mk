@@ -40,7 +40,7 @@ cocotb:
 	@echo ">>> 🧪 COCOTB - Iniciando Testes Automatizados"
 	@echo "======================================================================"
 	@echo " "
-	@echo ">>> 🏗️  Arquitetura  :   $(CORE)"
+	@echo ">>> 🏗️  Arquitetura :   $(CORE)"
 	@echo ">>> 🎯 Top Level    :   $(TOP)"
 	@echo ">>> 📂 Testbench    :   $(TEST)"
 	@echo ">>> 💾 Software     :   $(if $(SW),$(SW).hex,nenhum)"
@@ -58,7 +58,7 @@ cocotb:
 		COCOTB_TEST_MODULES=$(TEST) \
 		WORKDIR=$(BUILD_CORE_DIR) \
 		VHDL_SOURCES="$(ALL_SIM_SRCS)" \
-		GHDL_ARGS="-fsynopsys" \
+		GHDL_ARGS="-fsynopsys --std=08 -frelaxed" \
 		PYTHONPATH=$(COCOTB_PYTHONPATH):$(SIM_CORE_COMMON):$(SIM_CORE_CURRENT) \
 		SIM_ARGS="--vcd=$(BUILD_CORE_DIR)/wave-$(TEST).vcd --ieee-asserts=disable-at-0 $(SIM_ARGS_EXTRA)" \
 		SIM_BUILD=$(BUILD_CORE_DIR) \

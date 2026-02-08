@@ -84,7 +84,7 @@ else:
             self.fd = sys.stdin.fileno()
             self.old_settings = termios.tcgetattr(self.fd)
             try:
-                tty.setraw(self.fd) # setraw é melhor para monitor serial que setcbreak
+                tty.setcbreak(self.fd) 
             except termios.error:
                 pass
             return self
