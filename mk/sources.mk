@@ -46,7 +46,9 @@ SOC_SRCS       = $(wildcard $(SOC_DIR)/*.vhd)
 
 PERIPS_SRCS    = $(wildcard $(PERIPS_DIR)/gpio/*.vhd) \
                  $(wildcard $(PERIPS_DIR)/uart/*.vhd) \
-                 $(wildcard $(PERIPS_DIR)/vga/*.vhd)
+                 $(PERIPS_DIR)/vga/video_ram.vhd \
+                 $(PERIPS_DIR)/vga/vga_sync.vhd \
+                 $(PERIPS_DIR)/vga/vga_peripheral.vhd 
 
 # RTL Puro (Simulação e Síntese) ----------------------------------------------
 
