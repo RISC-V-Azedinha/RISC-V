@@ -83,59 +83,131 @@ RISC-V/
 ```
 
 ## 🛠️ Prerequisites
+
 To compile and simulate this project, install the following tools and ensure they are in your PATH:
 
-1. **GHDL**: Open-source VHDL simulator.
-2. **GTKWave**: Waveform viewer.
-3. **RISC-V GCC Toolchain** (riscv32-unknown-elf-gcc): For compiling C/Assembly programs.
+### Required Tools
+1. **GHDL**: Open-source VHDL simulator (for simulation).
+2. **GTKWave**: Waveform viewer (for waveform inspection).
+3. **RISC-V GCC Toolchain** (riscv64-unknown-elf-gcc): For compiling C/Assembly programs.
 4. **COCOTB**: Python-based coroutine testbench framework for hardware simulation.
-5. **Python 3**: Required for running cocotb testbenches.
-6. **Vivado**: Used for RTL synthesis, implementation, bitstream generation, and FPGA configuration of the target device.
+5. **Python 3.10+**: Required for running cocotb testbenches and build utilities.
 
-## 🚀 How to Compile and Simulate (Using the Makefile)
+### Optional Tools
+6. **Vivado**: Required for RTL synthesis, implementation, bitstream generation, and FPGA configuration on Nexys 4 DDR board.
+
+### Platform Support
+
+**Native Linux**: All tools work directly from the terminal.
+
+**Windows Subsystem for Linux (WSL 1/2)**: The build system automatically detects WSL and handles tool invocation correctly:
+- Vivado is called as `vivado.exe` from within WSL
+- Python is invoked as `python3` or `python.exe` depending on installation
+- Serial communication defaults to Windows COM ports (e.g., `COM6`)
+
+The system automatically detects your platform and configures paths appropriately. No manual configuration needed!
+
+## 🏗️ Build System Architecture
+
+The build system is organized into modular Makefiles in the `mk/` directory:
+
+- **mk/detect.mk**: Automatically detects platform (WSL vs Linux) and tool availability
+- **mk/config.mk**: Centralized configuration, paths, compiler flags, and architecture selection
+- **mk/rules_sw.mk**: Software compilation rules for FPGA and simulation targets
+- **mk/rules_sim.mk**: Simulation and COCOTB testbench execution rules
+- **mk/rules_fpga.mk**: FPGA synthesis, implementation, and programming rules
+- **mk/sources.mk**: Automatic discovery and organization of VHDL source files
+
+This modular structure ensures:
+- **Clean separation of concerns**: Each file has a single, well-defined purpose
+- **Easy debugging**: Configuration errors are isolated and easy to trace
+- **Platform transparency**: WSL and Linux users use identical commands
+- **Maintainability**: Adding new tools or architectures requires minimal changes
+
+## 🚀 Quick Start: Using the Makefile
 
 All commands are executed from the root of the repository. The Makefile automates software compilation, hardware simulation via COCOTB, and waveform visualization. It supports dynamic architecture selection (CORE), automatic software compilation, and linker script selection based on the test type.
 
 ```
- 
+
      ██████╗ ██╗███████╗ ██████╗ ██╗   ██╗    
      ██╔══██╗██║██╔════╝██╔════╝ ██║   ██║    
      ██████╔╝██║███████╗██║█████╗██║   ██║    
      ██╔══██╗██║╚════██║██║╚════╝╚██╗ ██╔╝    
      ██║  ██║██║███████║╚██████╗  ╚████╔╝     
      ╚═╝  ╚═╝╚═╝╚══════╝ ╚═════╝   ╚═══╝      
- 
-======================================================================================================
-                        RISC-V Project Build System                      
-======================================================================================================
- 
- 📦 SOFTWARE COMPILATION
- ─────────────────────────────────────────────────────────────────────────────────────────────────────
-   make sw SW=<prog>                                            Compilar aplicação C/ASM (em sw/apps)
-   make boot                                                    Compilar bootloader (em sw/bootloader)
-   make list-apps                                               Listar aplicações disponíveis
- 
- 🧪 HARDWARE TESTING & SIMULATION
- ─────────────────────────────────────────────────────────────────────────────────────────────────────
-   make cocotb [CORE=<core>] TEST=<test> TOP=<top> [SW=<prog>]  Rodar teste COCOTB
-   make cocotb TEST=<test> TOP=<top>                            Teste de componente (unit)
-   make list-tests [CORE=<core>]                                Listar testes disponíveis
- 
+
+================================================================================
+                    RISC-V Project Build System (v2.0)
+             Modular • Multi-Platform • WSL & Linux Compatible
+================================================================================
+
+📦 SOFTWARE COMPILATION
+───────────────────────────────────────────────────────────────────────────────
+  make sw SW=<prog>              Compile C/ASM application (auto-detect FPGA/Sim)
+  make boot                      Compile FPGA bootloader
+  make list-apps                 List available applications
+
+🧪 HARDWARE TESTING & SIMULATION
+───────────────────────────────────────────────────────────────────────────────
+  make cocotb [CORE=<core>] TEST=<test> TOP=<top> [SW=<prog>]
+                                 Run COCOTB simulation with optional software
+  make cocotb TEST=<test> TOP=<top>      Unit test (no software)
+  make list-tests [CORE=<core>]  List available testbenches
+
+📊 VISUALIZATION & DEBUG
+───────────────────────────────────────────────────────────────────────────────
+  make view TEST=<test>          Open waveform (VCD) in GTKWave
+  make info                      Show system info and project config
+  make detect-info               Show platform and tool detection status
+
 🔌 FPGA & UPLOAD
- ─────────────────────────────────────────────────────────────────────────────────────────────────────
-   make fpga                                                    Sintetizar e programar a FPGA
-   make upload SW=<prog> [COM=<port>]                           Enviar software via UART
+───────────────────────────────────────────────────────────────────────────────
+  make fpga                      Synthesize and program FPGA bitstream
+  make upload SW=<prog> [COM=<port>]
+                                 Upload software via UART serial
 
- 📊 VISUALIZATION & DEBUG
- ─────────────────────────────────────────────────────────────────────────────────────────────────────
-   make view TEST=<test>                                        Abrir ondas (VCD) no GTKWave
- 
- 🧹 MAINTENANCE
- ─────────────────────────────────────────────────────────────────────────────────────────────────────
-   make clean                                                   Limpar diretório de build
- 
-======================================================================================================
+🧹 MAINTENANCE
+───────────────────────────────────────────────────────────────────────────────
+  make clean                     Clean build directory
+  make help                      Show this help message
 
+================================================================================
+
+💡 QUICK EXAMPLES:
+  make list-apps                 See available programs
+  make cocotb TEST=test_processor TOP=processor_top SW=fibonacci
+  make view TEST=test_processor
+  make fpga                      Synthesize for Nexys 4 DDR
+  make upload SW=uart_echo       Send to FPGA via UART
+
+```
+
+### 0. System Information
+
+Check if your platform is correctly detected:
+```bash
+make detect-info
+```
+
+Output example (Linux):
+```
+OS Detectado         : LINUX
+Plataforma           : LINUX
+WSL Detectado        : no
+
+Ferramentas Disponíveis:
+  • Vivado           : ✓ Sim
+  • Python3          : ✓ Sim
+  • GTKWave          : ✓ Sim
+  • RISC-V GCC       : ✓ Sim
+
+Porta Serial Padrão  : /dev/ttyUSB1
+```
+
+Or view complete project configuration:
+```bash
+make info
 ```
 
 ### 1. Clean Project
@@ -169,72 +241,89 @@ make cocotb [CORE=<core>] TEST=<testbench_name> TOP=<top_level> [SW=<program_nam
 ```
 
 **Parameters:**
-- `CORE`: Microarchitecture to test (default: `single_cycle`). Options: `single_cycle`, `multi_cycle`, or any custom architecture
+- `CORE`: Microarchitecture to test (default: `single_cycle`). Options: `single_cycle`, `multi_cycle`, or any custom architecture defined in `rtl/core/`
 - `TEST`: Name of the Python testbench file (without `.py` extension) located in `sim/core/<core>/`, `sim/core/common/`, `sim/soc/`, or `sim/perips/`
 - `TOP`: Top-level VHDL entity to test (default: `processor_top`)
 - `SW`: Optional software program to load into memory during simulation. **Automatically compiled if not present.**
 
+**Key Features:**
+- **Automatic bootloader injection**: For SoC tests (`boot_rom`, `soc_top`, `memory_system`, `memory_wrapper`), the bootloader is automatically compiled and injected
+- **Automatic compiler selection**: Build system detects test type and selects appropriate linker script:
+  - Processor tests use `link.ld` (address 0x00000000)
+  - SoC tests use `link_soc.ld` (address 0x80000000)
+- **Platform transparent**: Same commands work on Windows WSL and native Linux
+
 **Examples:**
 
 ```bash
+# List all available testbenches
+make list-tests
+make list-tests CORE=multi_cycle
+
 # Unit tests - Common components (work with all architectures)
 make cocotb TEST=test_alu TOP=alu
 make cocotb TEST=test_reg_file TOP=reg_file
 make cocotb TEST=test_imm_gen TOP=imm_gen
-make cocotb TEST=test_load_unit TOP=load_unit
-make cocotb TEST=test_store_unit TOP=store_unit
+make cocotb TEST=test_lsu TOP=load_unit
 
 # Single-cycle specific tests (default architecture)
-make cocotb TEST=test_alu_control TOP=alu_control
-make cocotb TEST=test_control TOP=control
-make cocotb TEST=test_datapath TOP=datapath_wrapper
-make cocotb TEST=test_decoder TOP=decoder_wrapper
+make cocotb TEST=test_processor TOP=processor_top
+make cocotb TEST=test_fetch_stage TOP=fetch_stage_wrapper
 
 # Processor test with software (automatic compilation & memory mapping)
-make cocotb TEST=test_processor TOP=processor_top SW=hello
 make cocotb TEST=test_processor TOP=processor_top SW=fibonacci
+make cocotb TEST=test_processor TOP=processor_top SW=branch_test
 
-# Multi-cycle architecture (available)
-make cocotb CORE=multi_cycle TEST=test_datapath TOP=datapath_wrapper
+# Multi-cycle architecture
+make cocotb CORE=multi_cycle TEST=test_processor TOP=processor_top
+make cocotb CORE=multi_cycle TEST=test_processor TOP=processor_top SW=fibonacci
 
-# SoC tests with automatic bootloader compilation
+# SoC tests (automatic bootloader injection)
 make cocotb TEST=test_soc_top TOP=soc_top
-make cocotb TEST=test_boot_rom TOP=boot_rom
+make cocotb TEST=test_bus_arbiter TOP=bus_arbiter
+make cocotb TEST=test_dma_controller TOP=dma_controller
 
 ```
 
-**What happens:**
-- The Makefile automatically detects the architecture (CORE) and selects appropriate linker script
-- The software is automatically compiled if `SW=` is specified
-- The bootloader is automatically compiled for SoC tests (`boot_rom`, `soc_top`, etc.)
-- GHDL simulator runs under COCOTB control
-- Python testbenches interact with VHDL signals in real-time
-- Test results are logged to the terminal
-- Waveforms are generated in VCD format for inspection
+**Execution Flow:**
+1. Build system detects which test is being run by its name pattern
+2. Software is automatically compiled with appropriate linker script (if `SW=` specified)
+3. Bootloader is automatically compiled for SoC tests
+4. GHDL simulator starts under COCOTB control
+5. Python testbenches execute and interact with VHDL signals in real-time
+6. Test results displayed in terminal with detailed assertions
+7. VCD waveform generated for detailed signal inspection
 
 **Memory Mapping:**
-- **Processor tests** (processor_top): `0x00000000` (using `link.ld`)
-- **SoC tests** (soc_top, boot_rom, etc.): `0x80000000` (using `link_soc.ld`)
+- **Processor unit tests** (processor_top, fetch_stage, etc.): `0x00000000` (using `link.ld`)
+- **SoC integration tests** (soc_top, boot_rom, memory_*, bus_*, dma_*, etc.): `0x80000000` (using `link_soc.ld`)
+- **Peripheral tests** (gpio, uart, vga): Component-specific memory mapping
 
-**Output:**
-- Terminal: Test pass/fail messages with detailed logging
-- `build/cocotb/<core>/results.xml`: Test results in XML format
-- `build/cocotb/<core>/wave-test_<name>.vcd`: Waveform file for visualization
+**Generated Artifacts:**
+- Terminal: Color-coded test pass/fail messages with assertions
+- `build/cocotb/<core>/results.xml`: Detailed test results (JUnit format)
+- `build/cocotb/<core>/wave-test_<name>.vcd`: Waveform file for GTKWave inspection
+- `build/sw/`: Compiled software binaries (.hex, .bin)
 
 ### 4. Visualize Waveforms
 
-Open the last simulation waveform in GTKWave:
+Open simulation waveforms in GTKWave (requires running test first to generate VCD):
 ```bash
 make view [CORE=<core>] TEST=<testbench_name>
 ```
 
-Example:
+**Examples:**
 ```bash
+# Run test and view waveform in one workflow
+make cocotb TEST=test_processor TOP=processor_top SW=fibonacci
 make view TEST=test_processor
-make view CORE=single_cycle TEST=test_datapath
+
+# View specific architecture
+make cocotb CORE=multi_cycle TEST=test_processor TOP=processor_top
+make view CORE=multi_cycle TEST=test_processor
 ```
 
-This opens `build/cocotb/<core>/wave-test_<testbench_name>.vcd` in GTKWave for detailed signal inspection.
+Opens `build/cocotb/<core>/wave-test_<testbench_name>.vcd` in GTKWave for detailed signal inspection and debugging.
 
 ## 🔌 FPGA Programming & Upload
 
@@ -260,12 +349,35 @@ make upload SW=fibonacci
 make upload SW=pong COM=COM3
 ```
 
-## ✅ Verification
+## ✅ Verification & Testing
 
 This project uses **COCOTB** (Coroutine-based Co-simulation Testbench) for comprehensive automated testing:
 
-- **Python Testbenches**: Testbenches are written in Python using COCOTB, making them more readable and maintainable than traditional VHDL testbenches.
-- **Self-Verifying Tests**: Each module includes automated assertions that validate correct behavior.
-- **Real-Time Signal Access**: Python can directly interact with VHDL signals for precise control and monitoring.
-- **Detailed Logging**: Tests provide detailed console output showing all test cases and results.
-- **Waveform Generation**: Each test generates VCD waveforms for deeper inspection using GTKWave.
+### Test Organization
+
+- **`sim/core/common/`**: Unit tests for ISA-common components (ALU, RegFile, ImmGen, LSU, etc.) - work with all architectures
+- **`sim/core/<arch>/`**: Architecture-specific tests (e.g., datapath, control logic for single-cycle or multi-cycle)
+- **`sim/soc/`**: System-on-Chip integration tests (bus, memory, boot, DMA, interrupt controller)
+- **`sim/perips/`**: Peripheral controller tests (UART, GPIO, VGA)
+- **`sim/sw/`**: Software programs for testing (Assembly and C applications)
+
+### Test Features
+
+- **Python Testbenches**: Written in Python using COCOTB for readability and maintainability versus traditional VHDL testbenches
+- **Self-Verifying**: Each testbench includes automated assertions that validate correct behavior
+- **Real-Time Signal Access**: Python directly interacts with VHDL signals for precise control and monitoring
+- **Automatic Test Detection**: Build system automatically identifies test type (unit vs integration) by name pattern
+- **Bootloader Management**: SoC tests automatically compile and inject bootloader at correct memory address
+- **Detailed Logging**: Tests provide color-coded console output showing all test cases and detailed assertions
+- **Waveform Generation**: Each test generates VCD artifacts for inspection in GTKWave
+- **Clean Compilation**: Only recompiles when sources change; smart dependency tracking
+
+### Running Tests in Batch
+
+```bash
+# Run all unit tests
+make list-tests CORE=single_cycle | grep test_ | xargs -I {} make cocotb TEST={} TOP={}
+
+# Run all SoC tests
+make list-tests | grep -E "^  • test_(soc|boot|bus|dma|memory)" | xargs -I {} make cocotb TEST={} TOP={}
+```
