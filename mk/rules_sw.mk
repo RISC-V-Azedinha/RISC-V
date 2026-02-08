@@ -1,23 +1,26 @@
 # =============================================================================
 #
-#  ARQUIVO: mk/rules_sw.mk
-#  DESCRIÇÃO: Regras de Compilação de Software (Firmware & Bootloader)
+#  rules_sw.mk
+#  Compilação de Software (Firmware & Bootloader)
 #
 # =============================================================================
 #
-#  Contém as regras para:
-#   - Compilar aplicações de usuário (.c -> .elf -> .bin/.hex)
-#   - Compilar o Bootloader (código de inicialização da ROM)
+#  Regras para:
+#   - Compilar aplicações de usuário (.c/.s -> .elf -> .bin/.hex)
+#   - Compilar bootloader da ROM
 #   - Listar softwares disponíveis
 #
 # =============================================================================
 
-.PHONY: sw sw-fpga sw-sim boot boot-fpga boot-sim list-apps
+# --- VARIÁVEIS LOCAIS --------------------------------------------------------
 
-# Definindo caminhos de busca para FPGA (Apps, Testes e Servers)
 FPGA_SRC_DIRS := $(FPGA_SW_DIR)/apps $(FPGA_SW_DIR)/tests $(FPGA_SW_DIR)/server
 
-# --- COMPILAÇÃO SW -----------------------------------------------------------
+.PHONY: sw sw-fpga sw-sim boot boot-fpga boot-sim list-apps
+
+# =============================================================================
+#  SW: Compilação para FPGA
+# =============================================================================
 
 sw-fpga:
 	@if [ -z "$(SW)" ]; then echo "❌ Defina SW=..."; exit 1; fi
@@ -36,6 +39,10 @@ sw-fpga:
 	@$(OBJCOPY) -O verilog $(BUILD_FPGA_BIN)/$(SW).elf $(BUILD_FPGA_BIN)/$(SW).hex
 	@echo ">>> ✅ [FPGA] Binário pronto: $(BUILD_FPGA_BIN)/$(SW).bin"
 
+# =============================================================================
+#  SW: Compilação para Simulação
+# =============================================================================
+
 sw-sim:
 	@if [ -z "$(SW)" ]; then echo "❌ Defina SW=..."; exit 1; fi
 	@echo ">>> 🧪 [SIM] Buscando $(SW)..."
@@ -48,6 +55,10 @@ sw-sim:
 	@$(OBJCOPY) -O verilog $(BUILD_SIM)/$(SW).elf $(BUILD_SIM)/$(SW).hex
 	@echo ">>> ✅ [SIM] Hex pronto: $(BUILD_SIM)/$(SW).hex"
 
+# =============================================================================
+#  SW: Auto-detect (FPGA ou Simulação)
+# =============================================================================
+
 sw:
 	@if [ -z "$(SW)" ]; then echo "❌ Defina SW=..."; exit 1; fi
 	@if [ -n "$$(find $(FPGA_SW_DIR)/apps -name "$(SW).c" -o -name "$(SW).s" 2>/dev/null)" ]; then \
@@ -58,9 +69,12 @@ sw:
 		echo ">>> 🔄 App Comum detectado."; $(MAKE) -s sw-fpga SW=$(SW); $(MAKE) -s sw-sim SW=$(SW); \
 	else echo "❌ App $(SW) não encontrado."; exit 1; fi
 
-# --- BOOTLOADER --------------------------------------------------------------
+# =============================================================================
+#  BOOT: Bootloader para FPGA
+# =============================================================================
 
 boot: boot-fpga
+
 boot-fpga:
 	@mkdir -p $(BUILD_FPGA_BOOT)
 	@echo ">>> 🔨 [BOOT-FPGA] Compilando..."
@@ -71,6 +85,10 @@ boot-fpga:
 	@od -An -t x4 -v -w4 $(BUILD_FPGA_BOOT)/bootloader.bin > $(BUILD_FPGA_BOOT)/bootloader.hex
 	@echo ">>> ✅ [BOOT-FPGA] Hex gerado: $(BUILD_FPGA_BOOT)/bootloader.hex"
 
+# =============================================================================
+#  BOOT: Bootloader para Simulação
+# =============================================================================
+
 boot-sim:
 	@mkdir -p $(BUILD_COCOTB_BOOT)
 	@echo ">>> 🧪 [BOOT-SIM] Compilando..."
@@ -80,7 +98,9 @@ boot-sim:
 	@$(OBJCOPY) -O binary $(BUILD_COCOTB_BOOT)/bootloader.elf $(BUILD_COCOTB_BOOT)/bootloader.bin
 	@od -An -t x4 -v -w4 $(BUILD_COCOTB_BOOT)/bootloader.bin > $(BUILD_COCOTB_BOOT)/bootloader.hex
 
-# --- LISTAGEM DE APPS --------------------------------------------------------
+# =============================================================================
+#  LIST-APPS: Listar aplicações disponíveis
+# =============================================================================
 
 list-apps:
 	@echo " "

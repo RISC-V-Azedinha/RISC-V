@@ -2,7 +2,12 @@
 #  RISC-V PROJECT MAIN MAKEFILE
 # =============================================================================
 
-# Configurações Globais (Diretórios e Ferramentas)
+# Default targets 
+
+.PHONY: all help info clean detect-info
+all: help
+
+# Inclusão de Configuração (mk/config.mk carrega mk/detect.mk automaticamente)
 include mk/config.mk
 
 # Definição dos Fontes (VHDL)
@@ -11,9 +16,6 @@ include mk/sources.mk
 # =============================================================================
 #  TARGETS PRINCIPAIS
 # =============================================================================
-
-.PHONY: all
-all: help
 
 # Regras de Software (GCC, Bootloader)
 include mk/rules_sw.mk
@@ -64,6 +66,11 @@ help:
 	@echo "   make fpga                                                    Sintetizar e programar a FPGA"
 	@echo "   make upload SW=<prog> [COM=<port>]                           Enviar software via UART"
 	@echo " "
+	@echo " ⚙️  INFORMAÇÕES & DEBUG"
+	@echo " ────────────────────────────────────────────────────────────────────────────────────────────────────────"
+	@echo "   make info                                                    Mostrar informações do sistema e config"
+	@echo "   make detect-info                                             Mostrar detecção do SO e ferramentas"
+	@echo " "
 	@echo " 🧹 MAINTENANCE"
 	@echo " ────────────────────────────────────────────────────────────────────────────────────────────────────────"
 	@echo "   make clean                                                   Limpar diretório de build"
@@ -71,12 +78,26 @@ help:
 	@echo "========================================================================================================="
 
 # =============================================================================
-#                            SOFTWARE: TARGETS ESPECÍFICOS
+#                            TARGETS ESPECÍFICOS
 # =============================================================================
 
 clean:
 	@echo ">>> 🧹 Limpando diretório de build..."
 	@rm -rf $(BUILD_DIR) *.cf
 	@echo ">>> ✅ Limpeza concluída"
+
+# =============================================================================
+#  INFORMAÇÕES E DEBUG
+# =============================================================================
+
+info: detect-info
+	@echo " "
+	@echo "╔═════════════════════════════════════════════════════════════╗"
+	@echo "║           CONFIGURAÇÃO DO PROJETO RISC-V                    ║"
+	@echo "╚═════════════════════════════════════════════════════════════╝"
+	@echo " "
+	@echo "  Arquitetura Ativa    : $(CORE)"
+	@echo "  Diretório de Build   : $(BUILD_DIR)"
+	@echo " "
 
 # =============================================================================
