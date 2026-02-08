@@ -17,7 +17,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <ctype.h>
+#include <stddef.h>
 #include "hal/hal_uart.h"
 #include "hal/hal_npu.h"
 #include "hal/hal_dma.h"

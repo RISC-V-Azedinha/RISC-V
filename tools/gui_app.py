@@ -5,6 +5,7 @@ import numpy as np
 import serial
 import struct
 import time
+import argparse
 from PIL import Image, ImageDraw, ImageOps, ImageFilter, ImageTk 
 from sklearn.datasets import fetch_openml
 from sklearn.linear_model import LogisticRegression
@@ -13,8 +14,14 @@ from sklearn.model_selection import train_test_split
 # ==============================================================================
 # CONFIGURAÇÃO
 # ==============================================================================
-SERIAL_PORT = 'COM6'
-BAUD_RATE   = 921600
+parser = argparse.ArgumentParser(description='GUI MNIST Client')
+parser.add_argument('-p', '--port', default='/dev/ttyUSB1', help='Porta Serial (Ex: /dev/ttyUSB1 ou COM6)')
+parser.add_argument('-b', '--baud', type=int, default=921600, help='Baud Rate')
+args = parser.parse_args()
+
+SERIAL_PORT = args.port
+BAUD_RATE   = args.baud
+
 CANVAS_SIZE = 400
 PEN_WIDTH   = 40  
 

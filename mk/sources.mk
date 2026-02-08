@@ -21,11 +21,15 @@ NPU_ROOT := $(RTL_DIR)/perips/npu
 NPU_SRCS := \
     $(NPU_ROOT)/pkg/npu_pkg.vhd \
     $(NPU_ROOT)/rtl/common/fifo_sync.vhd \
+    $(NPU_ROOT)/rtl/common/ram_dual.vhd \
     $(NPU_ROOT)/rtl/core/mac_pe.vhd \
     $(NPU_ROOT)/rtl/core/systolic_array.vhd \
     $(NPU_ROOT)/rtl/core/input_buffer.vhd \
     $(NPU_ROOT)/rtl/core/npu_core.vhd \
     $(NPU_ROOT)/rtl/ppu/post_process.vhd \
+    $(NPU_ROOT)/rtl/npu_register_file.vhd \
+    $(NPU_ROOT)/rtl/npu_controller.vhd \
+    $(NPU_ROOT)/rtl/npu_datapath.vhd \
     $(NPU_ROOT)/rtl/npu_top.vhd
 
 # Fontes de Hardware do RISC-V 

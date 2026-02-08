@@ -1,0 +1,12 @@
+# Força tudo para o padrão Linux (LF)
+* text=auto eol=lf
+
+# Scripts e Makefiles PRECISAM ser LF para rodar
+*.sh text eol=lf
+*.mk text eol=lf
+makefile text eol=lf
+
+# Arquivos binários não devem ser tocados
+*.bit binary
+*.bin binary
+*.pdf binary

@@ -64,8 +64,8 @@ architecture rtl of vga_peripheral is
 
     -- Sinais internos
 
-    signal pixel_x    : integer range 0 to 800;            -- Contador horizontal completo
-    signal pixel_y    : integer range 0 to 525;            -- Contador vertical completo
+    signal pixel_x    : integer range 0 to 799;            -- Contador horizontal completo
+    signal pixel_y    : integer range 0 to 524;            -- Contador vertical completo
     signal video_on   : std_logic;                         -- Sinal de área ativa de vídeo
     signal s_vsync    : std_logic;                         -- Sinal interno de VSYNC
     
