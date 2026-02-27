@@ -62,6 +62,7 @@ set_property -dict { PACKAGE_PIN P2    IOSTANDARD LVCMOS33 } [get_ports { GPIO_L
 
 set_property -dict { PACKAGE_PIN C4    IOSTANDARD LVCMOS33 } [get_ports { UART_RX_i }];
 set_property -dict { PACKAGE_PIN D4    IOSTANDARD LVCMOS33 } [get_ports { UART_TX_o }];
+set_property -dict { PACKAGE_PIN E5    IOSTANDARD LVCMOS33 } [get_ports { UART_RTS_i }];
 
 ## =========================================================================================================================
 ## Interface VGA
