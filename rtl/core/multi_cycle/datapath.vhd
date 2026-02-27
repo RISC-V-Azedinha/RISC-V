@@ -92,6 +92,13 @@ entity datapath is
 
         Instruction_o      : out std_logic_vector(31 downto 0);       -- Envia a instrução para o controle
         ALU_Zero_o         : out std_logic;                           -- Envia a flag Zero para o controle
+
+        ----------------------------------------------------------------------------------------------------------
+        -- Interface de DEBUG ATIVO (Hardware Interlock)
+        ----------------------------------------------------------------------------------------------------------
+
+        debug_reg_addr_i   : in  std_logic_vector(4 downto 0);        -- Endereço lido pelo Debugger externo
+        debug_reg_data_o   : out std_logic_vector(31 downto 0);       -- Dado devolvido ao Debugger externo
     
         ----------------------------------------------------------------------------------------------------------
         -- Interface de DEBUG (somente observação – simulação / bring-up)
@@ -302,7 +309,9 @@ begin
                     WriteAddr_i  => r_IR(11 downto 7),                -- rd  (bits [11: 7]) - 5 bits
                     WriteData_i  => s_write_back_data,                -- Dados a serem escritos (da ALU ou da memória) - 32 bits
                     ReadData1_o  => s_read_data_1,                    -- Dados lidos do registrador rs1 (32 bits)
-                    ReadData2_o  => s_read_data_2                     -- Dados lidos do registrador rs2 (32 bits)
+                    ReadData2_o  => s_read_data_2,                    -- Dados lidos do registrador rs2 (32 bits)
+                    debug_addr_i => debug_reg_addr_i,                 -- Endereço a ser lido pelo DEBUGER
+                    debug_data_o => debug_reg_data_o                  -- Dado enviado para o DEBUGER
                 );
 
     -- ============== Estágio de Execução (EXECUTE) ==========================================

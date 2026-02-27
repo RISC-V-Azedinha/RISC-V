@@ -67,6 +67,12 @@ entity control is
 
             Control_o      : out t_control;                          -- Barramento com todos os sinais de controle 
                                                                      -- (decoder, pcsrc, alucontrol)
+        ----------------------------------------------------------------------------------------------------------
+        -- Interface para o DEBUG
+        ----------------------------------------------------------------------------------------------------------
+
+            soc_en_i          : in  std_logic;                       -- 1 = Roda normal, 0 = Congela CPU
+            is_fetch_stage_o  : out std_logic;                       -- Indica se está no estágio IF
 
         ----------------------------------------------------------------------------------------------------------
         -- CSR Interface 
@@ -146,50 +152,54 @@ begin
     port map (
 
         -- Sinais de controle e sincronismo
-        Clk_i          => Clk_i,
-        Reset_i        => Reset_i,
-        Opcode_i       => s_opcode,
-        Funct3_i       => s_funct3,  
-        Funct12_i      => s_funct12, 
+        Clk_i            => Clk_i,
+        Reset_i          => Reset_i,
+        Opcode_i         => s_opcode,
+        Funct3_i         => s_funct3,  
+        Funct12_i        => s_funct12, 
+
+        -- Sinais de DEBUG
+        soc_en_i         => soc_en_i,
+        is_fetch_stage_o => is_fetch_stage_o,
 
         -- Sinais de Interrupção
-        Irq_MIE_i      => CSR_Mstatus_MIE_i,
-        Irq_Mie_Reg_i  => CSR_Mie_i,
-        Irq_Mip_Reg_i  => CSR_Mip_i,
+        Irq_MIE_i        => CSR_Mstatus_MIE_i,
+        Irq_Mie_Reg_i    => CSR_Mie_i,
+        Irq_Mip_Reg_i    => CSR_Mip_i,
 
         -- Conexão do Handshake
-        imem_rdy_i     => imem_rdy_i,
-        imem_vld_o     => imem_vld_o,
-        dmem_rdy_i     => dmem_rdy_i,
-        dmem_vld_o     => dmem_vld_o,
+        imem_rdy_i       => imem_rdy_i,
+        imem_vld_o       => imem_vld_o,
+        dmem_rdy_i       => dmem_rdy_i,
+        dmem_vld_o       => dmem_vld_o,
 
         -- Saídas de Controle de Escrita/Enable
-        PCWrite_o      => s_fsm_pc_write,                            -- Escrita Incondicional
-        PCWriteCond_o  => s_fsm_pc_write_cond,                       -- Escrita Condicional (Branch)
-        OPCWrite_o     => Control_o.opc_write,
-        IRWrite_o      => Control_o.ir_write,
-        MemWrite_o     => Control_o.mem_write,
-        RegWrite_o     => Control_o.reg_write,
-        RS1Write_o     => Control_o.rs1_write,
-        RS2Write_o     => Control_o.rs2_write,
-        ALUrWrite_o    => Control_o.alur_write,
-        MDRWrite_o     => Control_o.mdr_write,
+        PCWrite_o        => s_fsm_pc_write,                            -- Escrita Incondicional
+        PCWriteCond_o    => s_fsm_pc_write_cond,                       -- Escrita Condicional (Branch)
+        OPCWrite_o       => Control_o.opc_write,
+        IRWrite_o        => Control_o.ir_write,
+        MemWrite_o       => Control_o.mem_write,
+        RegWrite_o       => Control_o.reg_write,
+        RS1Write_o       => Control_o.rs1_write,
+        RS2Write_o       => Control_o.rs2_write,
+        ALUrWrite_o      => Control_o.alur_write,
+        MDRWrite_o       => Control_o.mdr_write,
 
         -- Sinais ZICSR / Trap
-        CSRWrite_o     => Control_o.csr_write,
-        Csr_Valid_i    => Csr_Valid_i,
-        TrapEnter_o    => Control_o.trap_enter,
-        TrapReturn_o   => Control_o.trap_return,
-        TrapCause_o    => Control_o.trap_cause,
+        CSRWrite_o       => Control_o.csr_write,
+        Csr_Valid_i      => Csr_Valid_i,
+        TrapEnter_o      => Control_o.trap_enter,
+        TrapReturn_o     => Control_o.trap_return,
+        TrapCause_o      => Control_o.trap_cause,
 
         -- Saídas de Seleção (Muxes)
-        PCSrc_o        => Control_o.pc_src,
-        ALUSrcA_o      => Control_o.alu_src_a,
-        ALUSrcB_o      => Control_o.alu_src_b,
-        WBSel_o        => Control_o.wb_sel,
+        PCSrc_o          => Control_o.pc_src,
+        ALUSrcA_o        => Control_o.alu_src_a,
+        ALUSrcB_o        => Control_o.alu_src_b,
+        WBSel_o          => Control_o.wb_sel,
 
         -- Interface Interna
-        ALUOp_o        => s_fsm_alu_op
+        ALUOp_o          => s_fsm_alu_op
 
     );
 

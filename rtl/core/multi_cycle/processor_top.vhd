@@ -79,7 +79,14 @@ entity processor_top is
 
     Irq_External_i      : in  std_logic;                          -- Interrupção Externa (ex: Botão)
     Irq_Timer_i         : in  std_logic;                          -- Interrupção de Timer
-    Irq_Software_i      : in  std_logic                           -- Interrupção de Software (ex: IPI)
+    Irq_Software_i      : in  std_logic;                          -- Interrupção de Software (ex: IPI)
+
+    -- Interface de Debug (Hardware Interlock)
+
+    soc_en_i            : in  std_logic;                          -- 1 = Roda normal, 0 = Congela CPU
+    is_fetch_stage_o    : out std_logic;                          -- Avisa o Debugger que está no Fetch
+    debug_reg_addr_i    : in  std_logic_vector( 4 downto 0);      -- Endereço do reg para leitura out-of-band
+    debug_reg_data_o    : out std_logic_vector(31 downto 0)       -- Dado lido do reg
 
   );
 
@@ -142,6 +149,10 @@ begin
                     CSR_Mip_i          => s_csr_mip,
                     Csr_Valid_i        => s_csr_valid,
 
+                    -- Sinais de Controle de Debug 
+                    soc_en_i           => soc_en_i,
+                    is_fetch_stage_o   => is_fetch_stage_o,
+
                     -- Interface de dados
                     Instruction_i      => s_instruction,  -- Instrução buscada na memória
                     ALU_Zero_i         => s_alu_zero,     -- Flag zero da ALU
@@ -157,6 +168,8 @@ begin
                 port map (
                     CLK_i              => CLK_i,
                     Reset_i            => Reset_i,
+                    debug_reg_addr_i   => debug_reg_addr_i,
+                    debug_reg_data_o   => debug_reg_data_o,
                     IMem_addr_o        => IMem_addr_o,
                     IMem_data_i        => IMem_data_i,
                     DMem_addr_o        => DMem_addr_o,
