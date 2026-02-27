@@ -27,6 +27,7 @@ use ieee.numeric_std.all;
 -------------------------------------------------------------------------------------------------------------------
 
 entity soc_top is
+
     generic (
 
         INIT_FILE : string  := "build/fpga/boot/bootloader.hex";
@@ -34,6 +35,7 @@ entity soc_top is
         BAUD_RATE : integer := 921_600       -- Taxa de Baud para a UART (bps)
     
     );
+    
     port (
 
         -- Sinais de Controle do Sistema ------------------------------------------------
@@ -43,6 +45,7 @@ entity soc_top is
         -- Pinos Externos (Interface UART) ----------------------------------------------
         UART_TX_o   : out std_logic;         -- Saída TX da UART
         UART_RX_i   : in  std_logic;         -- Entrada RX da UART
+        UART_RTS_i  : in  std_logic;         -- Entrada RTS da UART 
 
         -- Pinos Externos (Interface GPIO) ----------------------------------------------
         GPIO_LEDS_o : out std_logic_vector(15 downto 0);
@@ -56,6 +59,7 @@ entity soc_top is
         VGA_B_o     : out std_logic_vector(3 downto 0)
 
     );
+
 end entity;
 
 -------------------------------------------------------------------------------------------------------------------
@@ -219,6 +223,23 @@ architecture rtl of soc_top is
 
         signal s_plic_sources    : std_logic_vector(31 downto 0);
 
+    -- === Controle de DEBUG ======================================================================================
+
+        signal s_soc_en          : std_logic;
+        signal s_is_fetch_stage  : std_logic;
+
+    -- Sinais de multiplexação UART
+
+        signal s_uart_rx_soc     : std_logic;
+        signal s_uart_rx_debug   : std_logic;
+        signal s_uart_tx_soc     : std_logic;
+        signal s_uart_tx_debug   : std_logic;
+
+    -- Sinais de Leitura de Registradores (Debug)
+    
+        signal s_debug_reg_addr  : std_logic_vector(4 downto 0);
+        signal s_debug_reg_data  : std_logic_vector(31 downto 0);
+
     -- ============================================================================================================
 
 begin
@@ -247,6 +268,46 @@ begin
     s_dma_we_expanded <= (others => s_dma_m_we);
 
     -- ============================================================================================================
+    -- MULTIPLEXAÇÃO FÍSICA DE DEBUG VIA RTS (Y-Split)
+    -- ============================================================================================================
+    
+        -- Roteamento do RX (Entrada vinda do PC)
+        -- Se RTS=0, SoC escuta. Se RTS=1, SoC fica surdo ('1' é o estado de repouso da UART).
+
+        s_uart_rx_soc   <= UART_RX_i when UART_RTS_i = '0' else '1'; 
+        s_uart_rx_debug <= UART_RX_i when UART_RTS_i = '1' else '1';
+        
+        -- Roteamento do TX (Saída para o PC)
+
+        UART_TX_o       <= s_uart_tx_soc when UART_RTS_i = '0' else s_uart_tx_debug;
+
+    -- ============================================================================================================
+    -- DEBUG CONTROLLER (Hardware Interlock Out-of-Band)
+    -- ============================================================================================================
+    
+    U_DEBUG: entity work.debug_controller
+        generic map (
+            CLK_FREQ         => CLK_FREQ,
+            BAUD_RATE        => BAUD_RATE
+        )
+        port map (
+            -- Sincronização global de controle
+            clk_i            => CLK_i,
+            rst_i            => Reset_i,
+            
+            -- Interface Física UART Isolada
+            uart_rx_i        => s_uart_rx_debug,
+            uart_tx_o        => s_uart_tx_debug,
+            uart_rts_i       => UART_RTS_i,
+            
+            -- Controle e Leitura da CPU
+            is_fetch_stage_i => s_is_fetch_stage,
+            soc_en_o         => s_soc_en,
+            reg_addr_o       => s_debug_reg_addr,
+            reg_data_i       => s_debug_reg_data
+        );
+
+    -- ============================================================================================================
     -- NÚCLEO PROCESSADOR (CPU)
     -- ============================================================================================================
 
@@ -254,6 +315,10 @@ begin
         port map (
             CLK_i               => CLK_i,
             Reset_i             => Reset_i,
+            soc_en_i            => s_soc_en,
+            is_fetch_stage_o    => s_is_fetch_stage,
+            debug_reg_addr_i    => s_debug_reg_addr,
+            debug_reg_data_o    => s_debug_reg_data,
             IMem_addr_o         => s_cpu_imem_addr,
             IMem_data_i         => s_cpu_imem_data,
             IMem_vld_o          => s_cpu_imem_vld, 
@@ -458,8 +523,8 @@ begin
             rdy_o          => s_uart_rdy, 
             we_i           => s_uart_we,        
             vld_i          => s_uart_vld,
-            uart_tx_pin    => UART_TX_o,
-            uart_rx_pin    => UART_RX_i,
+            uart_tx_pin    => s_uart_tx_soc,
+            uart_rx_pin    => s_uart_rx_soc,
             irq_o          => s_uart_irq
         );
 
