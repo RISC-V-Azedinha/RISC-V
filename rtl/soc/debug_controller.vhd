@@ -72,6 +72,8 @@ architecture rtl of debug_controller is
     constant CMD_RESUME   : std_logic_vector(7 downto 0) := x"02";
     constant CMD_STEP     : std_logic_vector(7 downto 0) := x"03";
     constant CMD_RESET    : std_logic_vector(7 downto 0) := x"04";
+    constant CMD_SET_BKP  : std_logic_vector(7 downto 0) := x"05";
+    constant CMD_CLR_BKP  : std_logic_vector(7 downto 0) := x"06";
     constant CMD_READ_REG : std_logic_vector(7 downto 0) := x"10";
 
     -- ========================================================================
@@ -109,7 +111,8 @@ architecture rtl of debug_controller is
     type t_dbg_state is (
         IDLE, WAIT_FE, WAIT_BA, WAIT_BE, 
         ARMED_WAIT_FETCH, DEBUG_ACTIVE, STEP_EXEC, STEP_FETCH,
-        DUMP_REGS, APPLY_RESET
+        DUMP_REGS, APPLY_RESET,
+        BKP_B0, BKP_B1, BKP_B2, BKP_B3
     );
     signal dbg_state : t_dbg_state;
     
@@ -119,6 +122,12 @@ architecture rtl of debug_controller is
     signal byte_idx : integer range 0 to 3;
 
     signal s_mux_reg_data : std_logic_vector(31 downto 0);
+
+    -- Sinais do Hardware Breakpoint
+    
+    signal r_bkp_addr : std_logic_vector(31 downto 0) := (others => '0');
+    signal r_bkp_en   : std_logic := '0';
+    signal r_bkp_hit  : std_logic := '0';
 
 begin
 
@@ -219,6 +228,29 @@ begin
     end process;
 
     -- ========================================================================
+    -- HARDWARE BREAKPOINT MONITOR
+    -- ========================================================================
+
+    process(clk_i)
+    begin
+        if rising_edge(clk_i) then
+            if rst_i = '1' then
+                r_bkp_hit <= '0';
+            else
+                -- Limpa o gatilho quando o debugger mandar retomar, dar step ou resetar
+                if (dbg_state = DEBUG_ACTIVE and s_rx_valid = '1' and 
+                   (s_rx_data = CMD_RESUME or s_rx_data = CMD_STEP or s_rx_data = CMD_RESET)) then
+                    r_bkp_hit <= '0';
+                
+                -- Se estiver armado e o PC bater com o endereço alvo, puxa o freio de mão!
+                elsif r_bkp_en = '1' and pc_i = r_bkp_addr and is_fetch_stage_i = '1' then
+                    r_bkp_hit <= '1';
+                end if;
+            end if;
+        end if;
+    end process;
+
+    -- ========================================================================
     -- MAIN DEBUG FSM
     -- ========================================================================
     
@@ -239,13 +271,13 @@ begin
 
                 if uart_rts_i = '0' then
                     dbg_state <= IDLE;
-                    soc_en_o  <= '1';
+                    soc_en_o  <= not r_bkp_hit;
                 else
                     case dbg_state is
                         
                         -- HANDSHAKE (CAFEBABE)
                         when IDLE =>
-                            soc_en_o <= '1';
+                            soc_en_o <= not r_bkp_hit;
                             if s_rx_valid = '1' and s_rx_data = x"CA" then dbg_state <= WAIT_FE; end if;
                         when WAIT_FE =>
                             if s_rx_valid = '1' then
@@ -266,7 +298,7 @@ begin
                                 soc_en_o  <= '0'; 
                                 dbg_state <= DEBUG_ACTIVE;
                             else
-                                soc_en_o  <= '1'; 
+                                soc_en_o  <= not r_bkp_hit;
                             end if;
 
                         -- AGUARDANDO COMANDOS
@@ -274,9 +306,11 @@ begin
                             soc_en_o <= '0'; 
                             if s_rx_valid = '1' then
                                 case s_rx_data is
-                                    when CMD_RESUME => dbg_state <= IDLE;
-                                    when CMD_STEP   => dbg_state <= STEP_EXEC;
-                                    when CMD_RESET  => dbg_state <= APPLY_RESET; 
+                                    when CMD_RESUME   => dbg_state <= IDLE;
+                                    when CMD_STEP     => dbg_state <= STEP_EXEC;
+                                    when CMD_RESET    => dbg_state <= APPLY_RESET; 
+                                    when CMD_SET_BKP  => dbg_state <= BKP_B0;
+                                    when CMD_CLR_BKP  => r_bkp_en  <= '0';
                                     when CMD_READ_REG => 
                                         dbg_state <= DUMP_REGS;
                                         reg_idx <= 0;
@@ -327,6 +361,24 @@ begin
                             if is_fetch_stage_i = '1' then
                                 soc_en_o  <= '0'; 
                                 dbg_state <= DEBUG_ACTIVE;
+                            end if;
+
+                        -- LEITURA DO ENDEREÇO DE BREAKPOINT (4 BYTES - LITTLE ENDIAN)
+                        when BKP_B0 =>
+                            soc_en_o <= '0';
+                            if s_rx_valid = '1' then r_bkp_addr(7 downto 0) <= s_rx_data; dbg_state <= BKP_B1; end if;
+                        when BKP_B1 =>
+                            soc_en_o <= '0';
+                            if s_rx_valid = '1' then r_bkp_addr(15 downto 8) <= s_rx_data; dbg_state <= BKP_B2; end if;
+                        when BKP_B2 =>
+                            soc_en_o <= '0';
+                            if s_rx_valid = '1' then r_bkp_addr(23 downto 16) <= s_rx_data; dbg_state <= BKP_B3; end if;
+                        when BKP_B3 =>
+                            soc_en_o <= '0';
+                            if s_rx_valid = '1' then 
+                                r_bkp_addr(31 downto 24) <= s_rx_data; 
+                                r_bkp_en <= '1';         
+                                dbg_state <= DEBUG_ACTIVE; 
                             end if;
 
                     end case;
