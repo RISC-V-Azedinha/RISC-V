@@ -1,6 +1,6 @@
 ------------------------------------------------------------------------------------------------------------------
 --
--- File: control.vhd
+-- File: main_fsm.vhd
 --
 -- ███████╗███████╗███╗   ███╗
 -- ██╔════╝██╔════╝████╗ ████║
@@ -55,6 +55,13 @@ entity main_fsm is
 
             dmem_rdy_i   : in  std_logic; 
             dmem_vld_o   : out std_logic;  
+
+        ----------------------------------------------------------------------------------------------------------
+        -- Interface de DEBUG 
+        ----------------------------------------------------------------------------------------------------------
+
+            soc_en_i         : in  std_logic;
+            is_fetch_stage_o : out std_logic;
 
         ----------------------------------------------------------------------------------------------------------
         -- Status de Interrupção
@@ -176,7 +183,7 @@ begin
                 current_state <= S_IF;
                 s_br_wait_q   <= '0'; 
 
-            else 
+            elsif soc_en_i = '1' then
 
                 current_state <= next_state;
 
@@ -315,7 +322,7 @@ begin
     -- 3. Lógica de Saída (Combinacional - Moore) -----------------------------------------------------------------
 
     process(current_state, Opcode_i, Funct3_i, Funct12_i, dmem_rdy_i, imem_rdy_i, s_br_wait_q, 
-            s_take_irq, s_irq_timer_pending, s_irq_ext_pending, s_irq_soft_pending)
+            s_take_irq, s_irq_timer_pending, s_irq_ext_pending, s_irq_soft_pending, soc_en_i)
     begin
         
         -- Default Outputs (por segurança)
@@ -563,7 +570,29 @@ begin
                 PCSrc_o     <= "10"; -- Alvo JALR (ALUResult)
 
         end case;
+
+        -- HALT do DEBUGGER
+
+        if soc_en_i = '0' then
+            PCWrite_o     <= '0';
+            OPCWrite_o    <= '0';
+            PCWriteCond_o <= '0';
+            IRWrite_o     <= '0';
+            MemWrite_o    <= '0';
+            RegWrite_o    <= '0';
+            RS1Write_o    <= '0';
+            RS2Write_o    <= '0';
+            ALUrWrite_o   <= '0';
+            MDRWrite_o    <= '0';
+            CSRWrite_o    <= '0';
+            imem_vld_o    <= '0';
+            dmem_vld_o    <= '0';
+        end if;
+
     end process;
+
+    -- Sinaliza para o Controlador de Debug que estamos no estágio de IF
+    is_fetch_stage_o <= '1' when current_state = S_IF else '0';
 
 end architecture; -- rtl
 
