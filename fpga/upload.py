@@ -59,7 +59,6 @@ if os.name == 'nt':
         return msvcrt.kbhit()
     
     def get_char():
-        # Retorna bytes
         return msvcrt.getch()
         
     class TerminalContext:
@@ -76,7 +75,6 @@ else:
         return dr != []
     
     def get_char():
-        # Lê 1 byte do stdin
         return sys.stdin.read(1).encode('utf-8')
 
     class TerminalContext:
@@ -98,13 +96,34 @@ else:
 # LÓGICA DO PROTOCOLO
 # ==============================================================================
 
+def auto_reset(ser):
+    Log.info("Acionando Reset de Hardware via Debug Controller...")
+    
+    # 1. Arma o Debugger (RTS Ativo em Baixo -> False envia 3.3V)
+    ser.rts = False
+    time.sleep(0.05)
+    
+    # 2. Envia Magic Word para assumir o controle
+    ser.write(b'\xCA\xFE\xBA\xBE')
+    time.sleep(0.05)
+    
+    # 3. Envia o comando de Soft-Reset (0x04)
+    ser.write(b'\x04')
+    time.sleep(0.05)
+    
+    # Limpa o buffer ANTES de soltar o processador!
+    ser.reset_input_buffer()
+    
+    # 4. Devolve a UART para o SoC e dá "Play" no processador
+    ser.rts = True
+    
+    Log.success("Placa resetada remotamente!")
+
 def wait_for_bootloader(ser):
     Log.info("Aguardando sinal 'BOOT' da FPGA...")
-    Log.warn("Por favor, reinicie a placa agora (Reset Button).")
     
     buffer = ""
     while True:
-        # Checa saída de emergência
         if kb_hit():
             if get_char() == b'\x1b': raise KeyboardInterrupt("Abortado pelo usuário.")
 
@@ -115,21 +134,18 @@ def wait_for_bootloader(ser):
                 if "BOOT" in buffer:
                     Log.success("Bootloader detectado!")
                     return
-                # Limpa buffer se ficar muito grande para evitar falso positivo antigo
                 if len(buffer) > 50: buffer = buffer[-20:] 
             except Exception:
                 pass
 
 def perform_handshake(ser, file_size):
-
     time.sleep(0.1) 
     ser.reset_input_buffer()
 
-    # 1. Magic Word
-    Log.info("Enviando Magic Word (0xCAFEBABE)...")
+    # O Bootloader recebe a Magic Word (RTS já está True aqui)
+    Log.info("Enviando Magic Word para o Bootloader (0xCAFEBABE)...")
     ser.write(b'\xCA\xFE\xBA\xBE')
     
-    # Aguarda ACK ('!') com timeout manual curto
     start_time = time.time()
     ack = b''
     while time.time() - start_time < 2.0:
@@ -138,12 +154,10 @@ def perform_handshake(ser, file_size):
             break
     
     if ack != b'!':
-        raise Exception(f"Sem resposta da Magic Word. Recebido: {ack}")
+        raise Exception(f"Sem resposta do Bootloader. Recebido: {ack}")
     
-    # 2. Tamanho do Arquivo
     Log.info(f"Enviando tamanho do arquivo: {file_size} bytes")
     ser.write(struct.pack('<I', file_size))
-    # Pequeno delay para a FPGA processar
     time.sleep(0.05)
 
 def upload_file(ser, filename):
@@ -155,44 +169,34 @@ def upload_file(ser, filename):
     with open(filename, "rb") as f:
         payload = f.read()
         total_sent = 0
-        BAR_WIDTH = 40 # Tamanho visual da barra (caracteres)
+        BAR_WIDTH = 40 
         
-        # Garante que começa vazio
         sys.stdout.write(f"\r{Log.CYAN}Progresso: [{' ' * BAR_WIDTH}] 0%{Log.RESET}")
         sys.stdout.flush()
         
         for i in range(0, len(payload), CHUNK_SIZE):
-            # 1. Verifica cancelamento
             if kb_hit() and get_char() == b'\x1b': 
-                print("\n") # Pula linha para não estragar o log
+                print("\n") 
                 raise KeyboardInterrupt("Cancelado durante upload.")
             
-            # 2. Envia dados
             chunk = payload[i : i + CHUNK_SIZE]
             ser.write(chunk)
             ser.flush()
             total_sent += len(chunk)
             
-            # 3. Calcula Barra de Progresso
-            # Porcentagem (0 a 100)
             percent = min(100, int((total_sent / file_size) * 100))
-            # Quantos caracteres '=' desenhar
             filled_len = int(BAR_WIDTH * total_sent // file_size)
-            # Cria a string da barra: Parte cheia '=' + Parte vazia ' '
             bar = '=' * filled_len + ' ' * (BAR_WIDTH - filled_len)
             
-            # 4. Desenha na tela usando \r para voltar ao início
             sys.stdout.write(f"\r{Log.CYAN}Progresso: [{bar}] {percent}%{Log.RESET}")
             sys.stdout.flush()
             
-            # Throttle (evita saturar a FPGA e o visual)
             time.sleep(0.002) 
             
-        print("\n") # Pula para a próxima linha ao terminar
+        print("\n")
     
     Log.success("Upload concluído. Aguardando verificação...")
     
-    # Espera confirmação final ('R')
     while True:
         if ser.in_waiting:
             c = ser.read(1).decode('utf-8', errors='ignore')
@@ -210,10 +214,8 @@ def serial_monitor(ser):
 
     try:
         while True:
-            # 1. RECEPÇÃO (RX): FPGA -> PC
             if ser.in_waiting:
                 data = ser.read(ser.in_waiting)
-                # Tenta decodificar para printar bonito, senão printa raw
                 try:
                     text = data.decode('utf-8', errors='replace')
                     sys.stdout.write(text)
@@ -221,29 +223,23 @@ def serial_monitor(ser):
                 except:
                     pass
 
-            # 2. TRANSMISSÃO (TX): PC -> FPGA
             if kb_hit():
                 char_bytes = get_char()
                 
-                # Checa saída
-                if char_bytes == b'\x1b' or char_bytes == b'\x03': # ESC ou Ctrl+C
+                if char_bytes == b'\x1b' or char_bytes == b'\x03': 
                     print(f"\n{Log.YELLOW}Encerrando monitor.{Log.RESET}")
                     break
                 
-                # No Linux/Mac em modo RAW, Enter vem como \r. 
-                # Dependendo da FPGA, pode precisar converter \r para \n ou \r\n
                 if char_bytes == b'\r':
-                    char_bytes = b'\r\n' # Ajuste comum para terminais
-                    sys.stdout.write('\n') # Echo local de nova linha
+                    char_bytes = b'\r\n' 
+                    sys.stdout.write('\n') 
                 else:
-                    # Echo local opcional (se a FPGA não fizer echo)
-                    # sys.stdout.write(char_bytes.decode('utf-8', errors='ignore'))
                     pass
 
                 ser.write(char_bytes)
                 sys.stdout.flush()
 
-            time.sleep(0.005) # Evita uso de 100% CPU
+            time.sleep(0.005)
 
     except KeyboardInterrupt:
         print(f"\n{Log.YELLOW}Encerrando monitor.{Log.RESET}")
@@ -265,23 +261,20 @@ def main():
     Log.raw(f"\n{Log.CYAN}--- FPGA LOADER  ----------------------------------------------------------------{Log.RESET}\n")
     Log.info(f"Porta: {args.port} | Baud: {args.baud} | Arq: {args.file}")
 
-    # Contexto do Terminal (crucial para Linux/Mac)
     with TerminalContext():
         ser = None
         try:
-            ser = serial.Serial(args.port, args.baud, timeout=2)
+            # IMPORTANTE: Desabilitar o controle de fluxo por hardware na porta serial
+            ser = serial.Serial(args.port, args.baud, rtscts=False, dsrdtr=False, timeout=2)
+            ser.rts = True # Garante que iniciamos no modo SoC
             
-            # 1. Bootloader
+            # --- O NOVO FLUXO 100% AUTOMATIZADO ---
+            auto_reset(ser)
             wait_for_bootloader(ser)
             
-            # 2. Handshake
             file_size = os.path.getsize(args.file)
             perform_handshake(ser, file_size)
-            
-            # 3. Upload
             upload_file(ser, args.file)
-            
-            # 4. Monitor
             serial_monitor(ser)
 
         except serial.SerialException as e:
