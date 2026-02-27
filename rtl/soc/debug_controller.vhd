@@ -8,22 +8,34 @@
 -- ██████╔╝███████╗██████╔╝╚██████╔╝╚██████╔╝
 -- ╚═════╝ ╚══════╝╚═════╝  ╚═════╝  ╚═════╝ 
 --     
--- Descrição : Controlador de Debug Out-of-Band (Y-Split).
---             Possui TX/RX independentes. Controlado pelo pino RTS.
+-- Descrição : Controlador de Debug Out-of-Band (Multiplexado).
+--      Possui TX/RX independentes. Controlado pela multiplexação de RTS.
+--
+-- Autor     : [André Maiolini]
+-- Data      : [27/02/2026]
+-- 
 ------------------------------------------------------------------------------------------------------------------
 
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
+library ieee;                     -- Biblioteca padrão IEEE
+use ieee.std_logic_1164.all;      -- Tipos lógicos (std_logic, std_logic_vector)
+use ieee.numeric_std.all;         -- Biblioteca para operações aritméticas com vetores lógicos (signed, unsigned)
+
+-------------------------------------------------------------------------------------------------------------------
+-- ENTIDADE: Definição da interface do controlador de debug
+-------------------------------------------------------------------------------------------------------------------
 
 entity debug_controller is
 
     generic (
+
         CLK_FREQ    : integer := 100_000_000;
         BAUD_RATE   : integer := 115_200
+
     );
 
     port (
+
+        -- Sinais de Controle e Sincronismo Global
         clk_i            : in  std_logic;
         rst_i            : in  std_logic;
         
@@ -35,27 +47,37 @@ entity debug_controller is
         -- Controle de Estado da CPU
         is_fetch_stage_i : in  std_logic;
         soc_en_o         : out std_logic;
+        debug_rst_o      : out std_logic;
         
         -- Interface de Leitura de Registradores (Ligar na porta dedicada do reg_file)
         reg_addr_o       : out std_logic_vector(4 downto 0);
-        reg_data_i       : in  std_logic_vector(31 downto 0)
+        reg_data_i       : in  std_logic_vector(31 downto 0);
+        pc_i             : in  std_logic_vector(31 downto 0) 
+
     );
     
 end entity debug_controller;
+
+-------------------------------------------------------------------------------------------------------------------
+-- ARQUITETURA: Implementação do controlador de debug
+-------------------------------------------------------------------------------------------------------------------
 
 architecture rtl of debug_controller is
 
     constant c_BIT_PERIOD : integer := CLK_FREQ / BAUD_RATE;
     
     -- Opcodes do Protocolo
+
     constant CMD_HALT     : std_logic_vector(7 downto 0) := x"01";
     constant CMD_RESUME   : std_logic_vector(7 downto 0) := x"02";
     constant CMD_STEP     : std_logic_vector(7 downto 0) := x"03";
+    constant CMD_RESET    : std_logic_vector(7 downto 0) := x"04";
     constant CMD_READ_REG : std_logic_vector(7 downto 0) := x"10";
 
     -- ========================================================================
-    -- Sinais do Mini-RX
+    -- Sinais do Controlador-RX
     -- ========================================================================
+
     type t_rx_state is (RX_IDLE, RX_START, RX_DATA, RX_STOP);
     signal rx_state   : t_rx_state;
     signal rx_timer   : integer range 0 to c_BIT_PERIOD;
@@ -63,12 +85,13 @@ architecture rtl of debug_controller is
     signal rx_shifter : std_logic_vector(7 downto 0);
     signal rx_sync    : std_logic_vector(1 downto 0);
     
-    signal w_rx_data  : std_logic_vector(7 downto 0);
-    signal w_rx_valid : std_logic;
+    signal s_rx_data  : std_logic_vector(7 downto 0);
+    signal s_rx_valid : std_logic;
 
     -- ========================================================================
-    -- Sinais do Mini-TX
+    -- Sinais do Controlador-TX
     -- ========================================================================
+
     type t_tx_state is (TX_IDLE, TX_START, TX_DATA, TX_STOP);
     signal tx_state       : t_tx_state;
     signal tx_timer       : integer range 0 to c_BIT_PERIOD;
@@ -77,25 +100,30 @@ architecture rtl of debug_controller is
     
     signal r_tx_start     : std_logic;
     signal r_tx_data      : std_logic_vector(7 downto 0);
-    signal w_tx_busy      : std_logic;
+    signal s_tx_busy      : std_logic;
 
     -- ========================================================================
     -- Sinais da FSM Principal (Interlock)
     -- ========================================================================
+
     type t_dbg_state is (
         IDLE, WAIT_FE, WAIT_BA, WAIT_BE, 
         ARMED_WAIT_FETCH, DEBUG_ACTIVE, STEP_EXEC, STEP_FETCH,
-        DUMP_REGS -- Estado de iteração para enviar dados
+        DUMP_REGS, APPLY_RESET
     );
     signal dbg_state : t_dbg_state;
     
     -- Contadores para o dump de registradores (32 regs * 4 bytes)
-    signal reg_idx  : integer range 0 to 31;
+
+    signal reg_idx  : integer range 0 to 32;
     signal byte_idx : integer range 0 to 3;
+
+    signal s_mux_reg_data : std_logic_vector(31 downto 0);
 
 begin
 
     -- Sincronizador RX
+
     process(clk_i)
     begin
         if rising_edge(clk_i) then
@@ -104,16 +132,17 @@ begin
     end process;
 
     -- ========================================================================
-    -- MINI-RX MACHINE
+    -- RX MACHINE
     -- ========================================================================
+
     process(clk_i)
     begin
         if rising_edge(clk_i) then
             if rst_i = '1' then
                 rx_state <= RX_IDLE;
-                w_rx_valid <= '0';
+                s_rx_valid <= '0';
             else
-                w_rx_valid <= '0';
+                s_rx_valid <= '0';
                 case rx_state is
                     when RX_IDLE =>
                         rx_timer <= 0;
@@ -136,8 +165,8 @@ begin
                     when RX_STOP =>
                         if rx_timer < c_BIT_PERIOD - 1 then rx_timer <= rx_timer + 1;
                         else
-                            w_rx_data  <= rx_shifter;
-                            w_rx_valid <= '1';
+                            s_rx_data  <= rx_shifter;
+                            s_rx_valid <= '1';
                             rx_state   <= RX_IDLE;
                         end if;
                 end case;
@@ -146,15 +175,16 @@ begin
     end process;
 
     -- ========================================================================
-    -- MINI-TX MACHINE
+    -- TX MACHINE
     -- ========================================================================
+
     process(clk_i)
     begin
         if rising_edge(clk_i) then
             if rst_i = '1' then
                 tx_state <= TX_IDLE;
                 uart_tx_o <= '1';
-                w_tx_busy <= '0';
+                s_tx_busy <= '0';
             else
                 case tx_state is
                     when TX_IDLE =>
@@ -162,10 +192,10 @@ begin
                         if r_tx_start = '1' then
                             tx_shifter <= r_tx_data;
                             tx_state   <= TX_START;
-                            w_tx_busy  <= '1';
+                            s_tx_busy  <= '1';
                             tx_timer   <= 0;
                         else
-                            w_tx_busy <= '0';
+                            s_tx_busy <= '0';
                         end if;
                     when TX_START =>
                         uart_tx_o <= '0';
@@ -191,17 +221,21 @@ begin
     -- ========================================================================
     -- MAIN DEBUG FSM
     -- ========================================================================
-    reg_addr_o <= std_logic_vector(to_unsigned(reg_idx, 5));
+    
+    reg_addr_o <= std_logic_vector(to_unsigned(reg_idx, 5)) when reg_idx < 32 else "00000";
+    s_mux_reg_data <= pc_i when reg_idx = 32 else reg_data_i;
 
     process(clk_i)
     begin
         if rising_edge(clk_i) then
             if rst_i = '1' then
-                dbg_state <= IDLE;
-                soc_en_o  <= '1';
-                r_tx_start <= '0';
+                dbg_state   <= IDLE;
+                soc_en_o    <= '1';
+                debug_rst_o <= '0';
+                r_tx_start  <= '0';
             else
-                r_tx_start <= '0'; -- Pulso padrao
+                r_tx_start  <= '0';
+                debug_rst_o <= '0'; -- Pulso padrao de 1 ciclo
 
                 if uart_rts_i = '0' then
                     dbg_state <= IDLE;
@@ -212,18 +246,18 @@ begin
                         -- HANDSHAKE (CAFEBABE)
                         when IDLE =>
                             soc_en_o <= '1';
-                            if w_rx_valid = '1' and w_rx_data = x"CA" then dbg_state <= WAIT_FE; end if;
+                            if s_rx_valid = '1' and s_rx_data = x"CA" then dbg_state <= WAIT_FE; end if;
                         when WAIT_FE =>
-                            if w_rx_valid = '1' then
-                                if w_rx_data = x"FE" then dbg_state <= WAIT_BA; else dbg_state <= IDLE; end if;
+                            if s_rx_valid = '1' then
+                                if s_rx_data = x"FE" then dbg_state <= WAIT_BA; else dbg_state <= IDLE; end if;
                             end if;
                         when WAIT_BA =>
-                            if w_rx_valid = '1' then
-                                if w_rx_data = x"BA" then dbg_state <= WAIT_BE; else dbg_state <= IDLE; end if;
+                            if s_rx_valid = '1' then
+                                if s_rx_data = x"BA" then dbg_state <= WAIT_BE; else dbg_state <= IDLE; end if;
                             end if;
                         when WAIT_BE =>
-                            if w_rx_valid = '1' then
-                                if w_rx_data = x"BE" then dbg_state <= ARMED_WAIT_FETCH; else dbg_state <= IDLE; end if;
+                            if s_rx_valid = '1' then
+                                if s_rx_data = x"BE" then dbg_state <= ARMED_WAIT_FETCH; else dbg_state <= IDLE; end if;
                             end if;
 
                         -- PAUSA SEGURA
@@ -238,10 +272,11 @@ begin
                         -- AGUARDANDO COMANDOS
                         when DEBUG_ACTIVE =>
                             soc_en_o <= '0'; 
-                            if w_rx_valid = '1' then
-                                case w_rx_data is
+                            if s_rx_valid = '1' then
+                                case s_rx_data is
                                     when CMD_RESUME => dbg_state <= IDLE;
                                     when CMD_STEP   => dbg_state <= STEP_EXEC;
+                                    when CMD_RESET  => dbg_state <= APPLY_RESET; 
                                     when CMD_READ_REG => 
                                         dbg_state <= DUMP_REGS;
                                         reg_idx <= 0;
@@ -250,32 +285,36 @@ begin
                                 end case;
                             end if;
 
-                        -- ROTINA DE DESPEJO DE REGISTRADORES (128 BYTES)
+                        -- ESTADO DE RESET
+                        when APPLY_RESET =>
+                            debug_rst_o <= '1';          -- Dispara reset do sistema
+                            soc_en_o    <= '0';          -- Mantém a CPU congelada
+                            dbg_state   <= DEBUG_ACTIVE; -- Volta para modo Debug
+
+                        -- ROTINA DE DESPEJO DE REGISTRADORES (132 BYTES)
                         when DUMP_REGS =>
                             soc_en_o <= '0';
-                            -- Só avança se o TX estiver livre e não mandamos pulso neste ciclo
-                            if w_tx_busy = '0' and r_tx_start = '0' then
+                            if s_tx_busy = '0' and r_tx_start = '0' then
                                 
-                                -- Multiplexa qual byte do registrador de 32 bits enviar (Little Endian)
+                                -- Usamos a variável MUX em vez do reg_data_i direto
                                 case byte_idx is
-                                    when 0 => r_tx_data <= reg_data_i(7 downto 0);
-                                    when 1 => r_tx_data <= reg_data_i(15 downto 8);
-                                    when 2 => r_tx_data <= reg_data_i(23 downto 16);
-                                    when 3 => r_tx_data <= reg_data_i(31 downto 24);
+                                    when 0 => r_tx_data <= s_mux_reg_data(7 downto 0);
+                                    when 1 => r_tx_data <= s_mux_reg_data(15 downto 8);
+                                    when 2 => r_tx_data <= s_mux_reg_data(23 downto 16);
+                                    when 3 => r_tx_data <= s_mux_reg_data(31 downto 24);
                                 end case;
                                 
-                                r_tx_start <= '1'; -- Dispara o byte
+                                r_tx_start <= '1'; 
                                 
-                                -- Atualiza contadores para o próximo ciclo livre
                                 if byte_idx = 3 then
                                     byte_idx <= 0;
-                                    if reg_idx = 31 then
-                                        dbg_state <= DEBUG_ACTIVE; -- Terminou todos!
+                                    if reg_idx = 32 then -- NOVO: Vai até 32 (PC)
+                                        dbg_state <= DEBUG_ACTIVE;
                                     else
-                                        reg_idx <= reg_idx + 1; -- Próximo registrador
+                                        reg_idx <= reg_idx + 1; 
                                     end if;
                                 else
-                                    byte_idx <= byte_idx + 1; -- Próximo byte do mesmo registrador
+                                    byte_idx <= byte_idx + 1; 
                                 end if;
                             end if;
 
@@ -296,4 +335,6 @@ begin
         end if;
     end process;
 
-end architecture rtl;
+end architecture; -- rtl
+
+-------------------------------------------------------------------------------------------------------------------

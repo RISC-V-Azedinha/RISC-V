@@ -227,6 +227,8 @@ architecture rtl of soc_top is
 
         signal s_soc_en          : std_logic;
         signal s_is_fetch_stage  : std_logic;
+        signal s_debug_rst       : std_logic; 
+        signal s_sys_rst         : std_logic;
 
     -- Sinais de multiplexação UART
 
@@ -244,9 +246,15 @@ architecture rtl of soc_top is
 
 begin
 
-    -- ============================================================================
+    -- ============================================================================================================
+    -- CONTROLE DE RESET
+    -- ============================================================================================================
+
+    s_sys_rst <= Reset_i OR s_debug_rst;
+
+    -- ============================================================================================================
     -- Mapeamento de Interrupções para o PLIC
-    -- ============================================================================
+    -- ============================================================================================================
     -- Source 0: Reservada (Sempre 0)
     -- Source 1: UART (Rx Data Ready)
     -- Source 2: GPIO (Não implementado, 0)
@@ -303,8 +311,10 @@ begin
             -- Controle e Leitura da CPU
             is_fetch_stage_i => s_is_fetch_stage,
             soc_en_o         => s_soc_en,
+            debug_rst_o      => s_debug_rst,
             reg_addr_o       => s_debug_reg_addr,
-            reg_data_i       => s_debug_reg_data
+            reg_data_i       => s_debug_reg_data,
+            pc_i             => s_cpu_imem_addr
         );
 
     -- ============================================================================================================
@@ -314,7 +324,7 @@ begin
     U_CORE: entity work.processor_top
         port map (
             CLK_i               => CLK_i,
-            Reset_i             => Reset_i,
+            Reset_i             => s_sys_rst,
             soc_en_i            => s_soc_en,
             is_fetch_stage_o    => s_is_fetch_stage,
             debug_reg_addr_i    => s_debug_reg_addr,
@@ -341,7 +351,7 @@ begin
     U_DMA: entity work.dma_controller
         port map (
             clk_i       => CLK_i,
-            rst_i       => Reset_i,
+            rst_i       => s_sys_rst,
             cfg_addr_i  => s_dma_s_addr,
             cfg_data_i  => s_dma_s_wdata, 
             cfg_data_o  => s_dma_s_rdata, 
@@ -364,7 +374,7 @@ begin
     U_ARBITER: entity work.bus_arbiter
         port map (
             clk_i       => CLK_i,
-            rst_i       => Reset_i,
+            rst_i       => s_sys_rst,
             
             -- Master 0: CPU
             m0_addr_i   => s_cpu_dmem_addr,
@@ -516,7 +526,7 @@ begin
         )
         port map (
             clk            => CLK_i,
-            rst            => Reset_i,
+            rst            => s_sys_rst,
             addr_i         => s_uart_addr,      
             data_i         => s_uart_data_tx,   
             data_o         => s_uart_data_rx,  
@@ -531,7 +541,7 @@ begin
     U_GPIO: entity work.gpio_controller
         port map (
             clk           => CLK_i,
-            rst           => Reset_i,
+            rst           => s_sys_rst,
             
             -- Conexão com o Bus Interconnect
             vld_i         => s_gpio_vld,
@@ -547,7 +557,7 @@ begin
     U_VGA: entity work.vga_peripheral
         port map (
             clk           => CLK_i,
-            rst           => Reset_i,
+            rst           => s_sys_rst,
             
             -- Interface com o Processador
             we_i          => s_vga_we,
@@ -568,7 +578,7 @@ begin
     U_CLINT: entity work.clint
         port map (
             clk_i         => CLK_i,
-            rst_i         => Reset_i,
+            rst_i         => s_sys_rst,
             addr_i        => s_clint_addr,
             data_i        => s_clint_data_tx, 
             data_o        => s_clint_data_rx, 
@@ -582,7 +592,7 @@ begin
     U_PLIC: entity work.plic
         port map (
             Clk_i         => CLK_i, 
-            Reset_i       => Reset_i,
+            Reset_i       => s_sys_rst,
             Addr_i        => s_plic_addr, 
             Data_i        => s_plic_data_tx, 
             Data_o        => s_plic_data_rx, 
@@ -594,7 +604,7 @@ begin
         );
 
     -- Inverte o Reset 
-    s_npu_rst_n <= not Reset_i;
+    s_npu_rst_n <= not s_sys_rst;
 
     U_NPU: entity work.npu_top
         port map (
