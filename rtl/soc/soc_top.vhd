@@ -352,6 +352,7 @@ begin
         port map (
             clk_i       => CLK_i,
             rst_i       => s_sys_rst,
+            soc_en_i    => s_soc_en,
             cfg_addr_i  => s_dma_s_addr,
             cfg_data_i  => s_dma_s_wdata, 
             cfg_data_o  => s_dma_s_rdata, 
@@ -579,6 +580,7 @@ begin
         port map (
             clk_i         => CLK_i,
             rst_i         => s_sys_rst,
+            soc_en_i      => s_soc_en,
             addr_i        => s_clint_addr,
             data_i        => s_clint_data_tx, 
             data_o        => s_clint_data_rx, 
@@ -608,16 +610,17 @@ begin
 
     U_NPU: entity work.npu_top
         port map (
-            clk     => CLK_i,
-            rst_n   => s_npu_rst_n,
+            clk      => CLK_i,
+            rst_n    => s_npu_rst_n,
+            soc_en_i => s_soc_en,
             
             -- Conexão com o Bus Interconnect
-            vld_i   => s_npu_vld,
-            we_i    => s_npu_we,
-            addr_i  => s_npu_addr,
-            data_i  => s_npu_data_tx,
-            data_o  => s_npu_data_rx,
-            rdy_o   => s_npu_rdy,
+            vld_i    => s_npu_vld,
+            we_i     => s_npu_we,
+            addr_i   => s_npu_addr,
+            data_i   => s_npu_data_tx,
+            data_o   => s_npu_data_rx,
+            rdy_o    => s_npu_rdy,
 
             -- Interface de Interrupção
             irq_done_o => s_npu_irq

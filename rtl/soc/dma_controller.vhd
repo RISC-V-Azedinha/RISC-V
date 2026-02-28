@@ -35,6 +35,7 @@ entity dma_controller is
 
         clk_i       : in  std_logic;
         rst_i       : in  std_logic;
+        soc_en_i    : in  std_logic;
 
         -- ========================================================================================================
         -- Interface Slave (Configuração pela CPU)
@@ -215,7 +216,7 @@ begin
     -- Lógica Combinacional: Próximo Estado e Saídas do Mestre
     -- ============================================================================================================
 
-    process(current_state, r_busy, r_count, m_rdy_i, r_src_addr, r_dst_addr, r_data_buffer)
+    process(current_state, r_busy, r_count, m_rdy_i, r_src_addr, r_dst_addr, r_data_buffer, soc_en_i)
     begin
         next_state <= current_state;
         
@@ -230,7 +231,9 @@ begin
             
             when IDLE =>
                 if r_busy = '1' then
-                    if r_count = 0 then
+                    if soc_en_i = '0' then
+                        next_state <= IDLE; 
+                    elsif r_count = 0 then
                         next_state <= CHECK_DONE; 
                     else
                         next_state <= READ_REQ;
@@ -271,6 +274,8 @@ begin
                 if r_count <= 1 then
                     next_state <= IDLE;
                     irq_done_o <= '1';
+                elsif soc_en_i = '0' then
+                    next_state <= CHECK_DONE; 
                 else
                     next_state <= READ_REQ;
                 end if;
