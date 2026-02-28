@@ -287,7 +287,7 @@ begin
         
         -- Roteamento do TX (Saída para o PC)
 
-        UART_TX_o       <= s_uart_tx_soc when UART_RTS_i = '0' else s_uart_tx_debug;
+        UART_TX_o <= s_uart_tx_debug when (UART_RTS_i = '1' or s_soc_en = '0') else s_uart_tx_soc;
 
     -- ============================================================================================================
     -- DEBUG CONTROLLER (Hardware Interlock Out-of-Band)
