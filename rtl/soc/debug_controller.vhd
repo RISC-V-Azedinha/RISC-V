@@ -125,13 +125,15 @@ architecture rtl of debug_controller is
 
     -- Sinais do Hardware Breakpoint
     
-    signal r_bkp_addr   : std_logic_vector(31 downto 0) := (others => '0');
-    signal r_bkp_en     : std_logic := '0';
-    signal r_bkp_hit    : std_logic := '0';
-    signal r_bkp_bypass : std_logic := '0';
+    signal r_bkp_addr    : std_logic_vector(31 downto 0) := (others => '0');
+    signal r_bkp_en      : std_logic := '0';
+    signal r_bkp_hit     : std_logic := '0';
+    signal r_bkp_bypass  : std_logic := '0';
 
-    signal s_bkp_match  : std_logic;
-    signal r_soc_en     : std_logic := '1';
+    signal s_bkp_match   : std_logic;
+    signal r_soc_en      : std_logic := '1';
+    signal r_bkp_alerted : std_logic := '0';
+    signal r_bkp_delay   : integer range 0 to 2047 := 0;
 
 begin
 
@@ -285,23 +287,48 @@ begin
         if rising_edge(clk_i) then
             
             if rst_i = '1' then
-                dbg_state   <= IDLE;
-                r_soc_en    <= '1';
-                debug_rst_o <= '0';
-                r_tx_start  <= '0';
-                r_bkp_en    <= '0'; 
+
+                dbg_state     <= IDLE;
+                r_soc_en      <= '1';
+                debug_rst_o   <= '0';
+                r_tx_start    <= '0';
+                r_bkp_en      <= '0'; 
+                r_bkp_alerted <= '0';
+
             else
+
                 r_tx_start  <= '0';
                 debug_rst_o <= '0'; 
 
                 if uart_rts_i = '0' then
+
                     dbg_state <= IDLE;
-                    r_soc_en  <= '1'; -- Volta a rodar livremente
+                    r_soc_en  <= '1'; 
+
+                    -- Gatilho de notificação de breakpoint
+                    if r_bkp_hit = '1' and r_bkp_alerted = '0' then
+                        
+                        -- Aguarda o PC/USB recuperar do Framing Error do MUX
+                        if r_bkp_delay < 1500 then
+                            r_bkp_delay <= r_bkp_delay + 1;
+                        
+                        -- Depois do delay, atira o 0xBB com segurança
+                        elsif s_tx_busy = '0' then
+                            r_tx_data <= x"BB";
+                            r_tx_start <= '1';
+                            r_bkp_alerted <= '1'; 
+                        end if;
+                    else
+                        r_bkp_delay <= 0; -- Reseta o timer se não houver hit
+                    end if;
+
                 else
+
                     case dbg_state is
                         
                         when IDLE =>
                             r_soc_en <= '1';
+                            r_bkp_alerted <= '0';
                             if s_rx_valid = '1' and s_rx_data = x"CA" then dbg_state <= WAIT_FE; end if;
                         when WAIT_FE =>
                             if s_rx_valid = '1' then
