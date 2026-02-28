@@ -32,6 +32,7 @@ entity clint is
 
         clk_i       : in  std_logic;
         rst_i       : in  std_logic;
+        soc_en_i    : in  std_logic;
         
         -- Interface de Barramento (MMIO slave) -------------------------------------------------------------
 
@@ -94,7 +95,10 @@ begin
             else
 
                 -- Incremento Contínuo do Timer 
-                r_mtime <= r_mtime + 1;
+                -- O tempo só avança se a CPU não estiver halted pelo debugger!
+                if soc_en_i = '1' then
+                    r_mtime <= r_mtime + 1;
+                end if;
 
                 -- Handshake de Barramento
                 rdy_o <= '0'; -- Pulso único
