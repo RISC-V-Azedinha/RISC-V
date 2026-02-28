@@ -585,8 +585,6 @@ begin
             ALUrWrite_o   <= '0';
             MDRWrite_o    <= '0';
             CSRWrite_o    <= '0';
-            imem_vld_o    <= '0';
-            dmem_vld_o    <= '0';
         end if;
 
     end process;

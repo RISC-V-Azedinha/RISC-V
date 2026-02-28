@@ -125,13 +125,29 @@ architecture rtl of debug_controller is
 
     -- Sinais do Hardware Breakpoint
     
-    signal r_bkp_addr : std_logic_vector(31 downto 0) := (others => '0');
-    signal r_bkp_en   : std_logic := '0';
-    signal r_bkp_hit  : std_logic := '0';
+    signal r_bkp_addr   : std_logic_vector(31 downto 0) := (others => '0');
+    signal r_bkp_en     : std_logic := '0';
+    signal r_bkp_hit    : std_logic := '0';
+    signal r_bkp_bypass : std_logic := '0';
+
+    signal s_bkp_match  : std_logic;
+    signal r_soc_en     : std_logic := '1';
 
 begin
 
+    -- ========================================================================
+    -- ZERO-LATENCY HARDWARE BREAKPOINT MATCH
+    -- ========================================================================
+
+    -- Detecta o endereço combinacionalmente no mesmo ciclo de clock
+    s_bkp_match <= '1' when (r_bkp_en = '1' and pc_i = r_bkp_addr and is_fetch_stage_i = '1' and r_bkp_bypass = '0') else '0';
+
+    -- A CPU é congelada IMEDIATAMENTE (Latência Zero) se houver hit
+    soc_en_o <= '0' when (r_bkp_hit = '1' or s_bkp_match = '1') else r_soc_en;
+
+    -- ========================================================================
     -- Sincronizador RX
+    -- ========================================================================
 
     process(clk_i)
     begin
@@ -230,20 +246,27 @@ begin
     -- ========================================================================
     -- HARDWARE BREAKPOINT MONITOR
     -- ========================================================================
-
     process(clk_i)
     begin
         if rising_edge(clk_i) then
             if rst_i = '1' then
-                r_bkp_hit <= '0';
+                r_bkp_hit    <= '0';
+                r_bkp_bypass <= '0';
             else
-                -- Limpa o gatilho quando o debugger mandar retomar, dar step ou resetar
+                -- 1. Se recebermos comando para andar, limpa o hit e levanta o escudo (Bypass)
                 if (dbg_state = DEBUG_ACTIVE and s_rx_valid = '1' and 
-                   (s_rx_data = CMD_RESUME or s_rx_data = CMD_STEP or s_rx_data = CMD_RESET)) then
-                    r_bkp_hit <= '0';
+                   (s_rx_data = CMD_RESUME or s_rx_data = CMD_STEP or s_rx_data = CMD_RESET or s_rx_data = CMD_CLR_BKP)) then
+                    r_bkp_hit    <= '0';
+                    r_bkp_bypass <= '1';
+                end if;
                 
-                -- Se estiver armado e o PC bater com o endereço alvo, puxa o freio de mão!
-                elsif r_bkp_en = '1' and pc_i = r_bkp_addr and is_fetch_stage_i = '1' then
+                -- 2. Assim que o PC sair do endereço da armadilha, desliga o escudo
+                if pc_i /= r_bkp_addr then
+                    r_bkp_bypass <= '0';
+                end if;
+                
+                -- 3. Registra o hit para manter a CPU congelada nos ciclos seguintes
+                if s_bkp_match = '1' then
                     r_bkp_hit <= '1';
                 end if;
             end if;
@@ -253,31 +276,32 @@ begin
     -- ========================================================================
     -- MAIN DEBUG FSM
     -- ========================================================================
-    
-    reg_addr_o <= std_logic_vector(to_unsigned(reg_idx, 5)) when reg_idx < 32 else "00000";
+
+    reg_addr_o <= std_logic_vector(to_unsigned(reg_idx mod 32, 5));
     s_mux_reg_data <= pc_i when reg_idx = 32 else reg_data_i;
 
     process(clk_i)
     begin
         if rising_edge(clk_i) then
+            
             if rst_i = '1' then
                 dbg_state   <= IDLE;
-                soc_en_o    <= '1';
+                r_soc_en    <= '1';
                 debug_rst_o <= '0';
                 r_tx_start  <= '0';
+                r_bkp_en    <= '0'; 
             else
                 r_tx_start  <= '0';
-                debug_rst_o <= '0'; -- Pulso padrao de 1 ciclo
+                debug_rst_o <= '0'; 
 
                 if uart_rts_i = '0' then
                     dbg_state <= IDLE;
-                    soc_en_o  <= not r_bkp_hit;
+                    r_soc_en  <= '1'; -- Volta a rodar livremente
                 else
                     case dbg_state is
                         
-                        -- HANDSHAKE (CAFEBABE)
                         when IDLE =>
-                            soc_en_o <= not r_bkp_hit;
+                            r_soc_en <= '1';
                             if s_rx_valid = '1' and s_rx_data = x"CA" then dbg_state <= WAIT_FE; end if;
                         when WAIT_FE =>
                             if s_rx_valid = '1' then
@@ -292,18 +316,16 @@ begin
                                 if s_rx_data = x"BE" then dbg_state <= ARMED_WAIT_FETCH; else dbg_state <= IDLE; end if;
                             end if;
 
-                        -- PAUSA SEGURA
                         when ARMED_WAIT_FETCH =>
                             if is_fetch_stage_i = '1' then
-                                soc_en_o  <= '0'; 
+                                r_soc_en  <= '0'; 
                                 dbg_state <= DEBUG_ACTIVE;
                             else
-                                soc_en_o  <= not r_bkp_hit;
+                                r_soc_en  <= '1';
                             end if;
 
-                        -- AGUARDANDO COMANDOS
                         when DEBUG_ACTIVE =>
-                            soc_en_o <= '0'; 
+                            r_soc_en <= '0'; 
                             if s_rx_valid = '1' then
                                 case s_rx_data is
                                     when CMD_RESUME   => dbg_state <= IDLE;
@@ -319,18 +341,15 @@ begin
                                 end case;
                             end if;
 
-                        -- ESTADO DE RESET
                         when APPLY_RESET =>
-                            debug_rst_o <= '1';          -- Dispara reset do sistema
-                            soc_en_o    <= '0';          -- Mantém a CPU congelada
-                            dbg_state   <= DEBUG_ACTIVE; -- Volta para modo Debug
+                            debug_rst_o <= '1';          
+                            r_soc_en    <= '0';          
+                            r_bkp_en    <= '0'; 
+                            dbg_state   <= DEBUG_ACTIVE; 
 
-                        -- ROTINA DE DESPEJO DE REGISTRADORES (132 BYTES)
                         when DUMP_REGS =>
-                            soc_en_o <= '0';
+                            r_soc_en <= '0';
                             if s_tx_busy = '0' and r_tx_start = '0' then
-                                
-                                -- Usamos a variável MUX em vez do reg_data_i direto
                                 case byte_idx is
                                     when 0 => r_tx_data <= s_mux_reg_data(7 downto 0);
                                     when 1 => r_tx_data <= s_mux_reg_data(15 downto 8);
@@ -342,7 +361,7 @@ begin
                                 
                                 if byte_idx = 3 then
                                     byte_idx <= 0;
-                                    if reg_idx = 32 then -- NOVO: Vai até 32 (PC)
+                                    if reg_idx = 32 then
                                         dbg_state <= DEBUG_ACTIVE;
                                     else
                                         reg_idx <= reg_idx + 1; 
@@ -352,29 +371,21 @@ begin
                                 end if;
                             end if;
 
-                        -- STEP INSTRUCTION
                         when STEP_EXEC =>
-                            soc_en_o <= '1';
+                            r_soc_en <= '1';
                             if is_fetch_stage_i = '0' then dbg_state <= STEP_FETCH; end if;
                         when STEP_FETCH =>
-                            soc_en_o <= '1';
+                            r_soc_en <= '1';
                             if is_fetch_stage_i = '1' then
-                                soc_en_o  <= '0'; 
+                                r_soc_en  <= '0'; 
                                 dbg_state <= DEBUG_ACTIVE;
                             end if;
 
-                        -- LEITURA DO ENDEREÇO DE BREAKPOINT (4 BYTES - LITTLE ENDIAN)
-                        when BKP_B0 =>
-                            soc_en_o <= '0';
-                            if s_rx_valid = '1' then r_bkp_addr(7 downto 0) <= s_rx_data; dbg_state <= BKP_B1; end if;
-                        when BKP_B1 =>
-                            soc_en_o <= '0';
-                            if s_rx_valid = '1' then r_bkp_addr(15 downto 8) <= s_rx_data; dbg_state <= BKP_B2; end if;
-                        when BKP_B2 =>
-                            soc_en_o <= '0';
-                            if s_rx_valid = '1' then r_bkp_addr(23 downto 16) <= s_rx_data; dbg_state <= BKP_B3; end if;
-                        when BKP_B3 =>
-                            soc_en_o <= '0';
+                        when BKP_B0 => r_soc_en <= '0'; if s_rx_valid = '1' then r_bkp_addr(7 downto 0) <= s_rx_data; dbg_state <= BKP_B1; end if;
+                        when BKP_B1 => r_soc_en <= '0'; if s_rx_valid = '1' then r_bkp_addr(15 downto 8) <= s_rx_data; dbg_state <= BKP_B2; end if;
+                        when BKP_B2 => r_soc_en <= '0'; if s_rx_valid = '1' then r_bkp_addr(23 downto 16) <= s_rx_data; dbg_state <= BKP_B3; end if;
+                        when BKP_B3 => 
+                            r_soc_en <= '0'; 
                             if s_rx_valid = '1' then 
                                 r_bkp_addr(31 downto 24) <= s_rx_data; 
                                 r_bkp_en <= '1';         
