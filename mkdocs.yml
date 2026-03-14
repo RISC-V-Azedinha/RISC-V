@@ -64,7 +64,8 @@ nav:
       - Requisitos e Setup: intro/setup.md
       - Primeiros Passos: intro/quickstart.md
   - Arquitetura de Hardware:
-      - Processador Single-Cycle: hardware/single-cycle.md
+      - Microarquitetura Monociclo: hardware/single-cycle.md
+      - Microarquitetura Multiciclo: hardware/multi-cycle.md
   - Simulação e Verificação:
       - Ambiente de Testes (Cocotb): dev/simulation.md     # Baseado nos ficheiros em sim/
       - Fluxo de Síntese (FPGA): dev/fpga_build.md         # Baseado em fpga/scripts/
