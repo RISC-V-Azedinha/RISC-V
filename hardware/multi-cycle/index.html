@@ -10,29 +10,29 @@
       
       
       
-        <link rel="canonical" href="https://RISC-V-Azedinha.github.io/RISC-V/">
+        <link rel="canonical" href="https://RISC-V-Azedinha.github.io/RISC-V/hardware/multi-cycle/">
       
       
+        <link rel="prev" href="../single-cycle/">
       
-        <link rel="next" href="intro/setup/">
       
       
         
       
       
-      <link rel="icon" href="assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.3">
     
     
       
-        <title>Visão Geral - RISC-V SOC</title>
+        <title>Microarquitetura Multiciclo - RISC-V SOC</title>
       
     
     
-      <link rel="stylesheet" href="assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -51,9 +51,9 @@
       
     
     
-      <link rel="stylesheet" href="stylesheets/extra.css">
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
     
-    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -77,11 +77,6 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
-        
-        <a href="#visao-geral-do-projeto" class="md-skip">
-          Skip to content
-        </a>
-      
     </div>
     <div data-md-component="announce">
       
@@ -92,7 +87,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="." title="RISC-V SOC" class="md-header__button md-logo" aria-label="RISC-V SOC" data-md-component="logo">
+    <a href="../.." title="RISC-V SOC" class="md-header__button md-logo" aria-label="RISC-V SOC" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 17H7V7h10m4 4V9h-2V7a2 2 0 0 0-2-2h-2V3h-2v2h-2V3H9v2H7c-1.11 0-2 .89-2 2v2H3v2h2v2H3v2h2v2a2 2 0 0 0 2 2h2v2h2v-2h2v2h2v-2h2a2 2 0 0 0 2-2v-2h2v-2h-2v-2m-6 2h-2v-2h2m2-2H9v6h6z"/></svg>
@@ -112,7 +107,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Visão Geral
+              Microarquitetura Multiciclo
             
           </span>
         </div>
@@ -209,13 +204,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="." class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../.." class="md-tabs__link">
           
   
   
@@ -231,11 +224,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="hardware/single-cycle/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../single-cycle/" class="md-tabs__link">
           
   
   
@@ -255,7 +250,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="dev/simulation.md" class="md-tabs__link">
+        <a href="../../dev/simulation.md" class="md-tabs__link">
           
   
   
@@ -275,7 +270,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="apps/pong.md" class="md-tabs__link">
+        <a href="../../apps/pong.md" class="md-tabs__link">
           
   
   
@@ -309,7 +304,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="." title="RISC-V SOC" class="md-nav__button md-logo" aria-label="RISC-V SOC" data-md-component="logo">
+    <a href="../.." title="RISC-V SOC" class="md-nav__button md-logo" aria-label="RISC-V SOC" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 17H7V7h10m4 4V9h-2V7a2 2 0 0 0-2-2h-2V3h-2v2h-2V3H9v2H7c-1.11 0-2 .89-2 2v2H3v2h2v2H3v2h2v2a2 2 0 0 0 2 2h2v2h2v-2h2v2h2v-2h2a2 2 0 0 0 2-2v-2h2v-2h-2v-2m-6 2h-2v-2h2m2-2H9v6h6z"/></svg>
@@ -336,29 +331,24 @@
       
   
   
-    
   
   
-  
     
     
     
     
       
-        
-        
-      
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
         
           
-          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="">
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
             
   
   
@@ -376,7 +366,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_1">
             <span class="md-nav__icon md-icon"></span>
             
@@ -391,37 +381,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Visão Geral
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="." class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -437,59 +400,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#contextualizacao" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Contextualização
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#objetivos-e-recursos-principais" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Objetivos e Recursos Principais
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#estrutura-do-repositorio" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Estrutura do Repositório
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -502,7 +412,7 @@
   
   
     <li class="md-nav__item">
-      <a href="intro/setup/" class="md-nav__link">
+      <a href="../../intro/setup/" class="md-nav__link">
         
   
   
@@ -530,7 +440,7 @@
   
   
     <li class="md-nav__item">
-      <a href="intro/quickstart.md" class="md-nav__link">
+      <a href="../../intro/quickstart.md" class="md-nav__link">
         
   
   
@@ -562,24 +472,29 @@
       
   
   
+    
   
   
+  
     
     
     
     
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
             
   
   
@@ -597,7 +512,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -615,7 +530,7 @@
   
   
     <li class="md-nav__item">
-      <a href="hardware/single-cycle/" class="md-nav__link">
+      <a href="../single-cycle/" class="md-nav__link">
         
   
   
@@ -640,10 +555,17 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="hardware/multi-cycle/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -659,6 +581,7 @@
   
 
       </a>
+      
     </li>
   
 
@@ -728,7 +651,7 @@
   
   
     <li class="md-nav__item">
-      <a href="dev/simulation.md" class="md-nav__link">
+      <a href="../../dev/simulation.md" class="md-nav__link">
         
   
   
@@ -756,7 +679,7 @@
   
   
     <li class="md-nav__item">
-      <a href="dev/fpga_build.md" class="md-nav__link">
+      <a href="../../dev/fpga_build.md" class="md-nav__link">
         
   
   
@@ -841,7 +764,7 @@
   
   
     <li class="md-nav__item">
-      <a href="apps/pong.md" class="md-nav__link">
+      <a href="../../apps/pong.md" class="md-nav__link">
         
   
   
@@ -869,7 +792,7 @@
   
   
     <li class="md-nav__item">
-      <a href="apps/fractal.md" class="md-nav__link">
+      <a href="../../apps/fractal.md" class="md-nav__link">
         
   
   
@@ -914,49 +837,6 @@
   
   
   
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#contextualizacao" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Contextualização
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#objetivos-e-recursos-principais" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Objetivos e Recursos Principais
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#estrutura-do-repositorio" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Estrutura do Repositório
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
   
 </nav>
                   </div>
@@ -976,57 +856,9 @@
   
 
 
-<h1 id="visao-geral-do-projeto">Visão Geral do Projeto</h1>
-<p><img alt="VHDL" src="https://img.shields.io/badge/VHDL-2008-blue?style=for-the-badge&amp;logo=vhdl" />
-<img alt="GHDL" src="https://img.shields.io/badge/Simulator-GHDL-green?style=for-the-badge&amp;logo=ghdl" />
-<img alt="GTKWave" src="https://img.shields.io/badge/Waveform-GTKWave-9cf?style=for-the-badge&amp;logo=gtkwave" />
-<img alt="Python" src="https://img.shields.io/badge/Python-3.10-blue?style=for-the-badge&amp;logo=python" /></p>
-<p><img alt="RISC-V SOC" class="hero-img" src="assets/risc-v.jpg" /></p>
-<p>Bem-vindo à documentação oficial do Processador RISC-V. Este projeto engloba a implementação de um processador de 32 bits baseado na ISA <code>RV32I_Zicsr</code>, projetado para suportar múltiplas microarquiteturas. O hardware foi desenvolvido inteiramente em <code>VHDL-2008</code>, com um forte foco em clareza, modularidade e propósitos educacionais para o estudo de arquitetura de computadores.</p>
-<div class="admonition note">
-<p class="admonition-title">RV32I_Zicsr</p>
-<p>O <code>RV32I</code> é o conjunto obrigatório de instruções base de inteiros de 32 bits. A extensão <code>Zicsr</code> adiciona a capacidade de ler e escrever nos Control and Status Registers (Registradores de Controlo e Estado). Isso será detalhado na seção dedicada à exceções e interrupções.</p>
-</div>
-<h2 id="contextualizacao">Contextualização</h2>
-<p>A evolução da computação está intimamente ligada ao design das Arquiteturas de Conjunto de Instruções (ISAs), que definem a interface fundamental entre o software e o hardware. Historicamente, arquiteturas CISC (Complex Instruction Set Computer), dominadas por instruções complexas e de tamanho variável, foram concebidas numa época em que a memória era escassa e cara, o que obrigava os projetistas a transferirem a complexidade semântica para o silício.</p>
-<p>Com o tempo e os avanços nos compiladores e nas hierarquias de memória, o paradigma RISC (Reduced Instruction Set Computer) provou ser eficiente e escalável. Focando num conjunto reduzido e altamente otimizado de instruções, as arquiteturas RISC priorizam formatos fixos, decodificação simplificada e adotam um modelo rígido de <strong>load/store</strong>, onde apenas instruções específicas interagem com a memória, enquanto todas as operações lógicas e aritméticas ocorrem estritamente entre os registradores.</p>
-<div class="admonition note">
-<p class="admonition-title">Load/Store</p>
-<p>Significa que apenas as instruções de tipo <code>load</code> (carregar) e <code>store</code> (armazenar) têm a capacidade de acessar e manipular diretamente a memória principal (RAM). A separação das operações de dados das operações de memória permite que a CPU se concentre em realizar cálculos rapidamente, reduzindo a necessidade de acessos frequentes à memória, o que pode melhorar a eficiência e o desempenho geral do processador.</p>
-</div>
-<p>Nesse cenário de evolução, o RISC-V surge como um marco: uma ISA aberta, livre de royalties e desenvolvida de forma colaborativa para evitar o acúmulo de instruções legadas típicas de arquiteturas comerciais mais antigas. Sua filosofia é pautada na extrema modularidade — estabelecendo um conjunto base de instruções de números inteiros obrigatório (como o RV32I) e permitindo a adição de extensões padronizadas (multiplicação, ponto flutuante) ou customizadas pelo projetista. Essa transparência arquitetônica torna o RISC-V a fundação ideal tanto para a pesquisa de ponta quanto para o desenvolvimento de Systems-on-Chip (SoCs) customizados e sistemas embarcados.</p>
-<p>A implementação de um processador requer o mapeamento dessa ISA para o hardware físico através de uma <strong>microarquitetura</strong>. Diferentes abordagens microarquiteturais representam trade-offs diretos de engenharia. Organizações monociclo priorizam o Clock Per Instruction (CPI) mínimo, executando cada instrução em um único pulso de relógio, porém limitando severamente a frequência máxima (Clock Rate) devido ao atraso de propagação do caminho crítico. Em contrapartida, organizações multiciclo e com pipeline particionam o fluxo de dados em estágios, permitindo clocks muito mais rápidos e reaproveitamento funcional das unidades lógicas, ao custo de maior complexidade de controle estrutural.</p>
-<div class="admonition info">
-<p class="admonition-title">A Equação de Desempenho da CPU</p>
-<p>O tempo de execução de um programa em um processador é regido pela relação matemática entre o software (ISA/Compilador) e o hardware (Microarquitetura/Tecnologia Física).</p>
-<div class="arithmatex">\[T_{execução} = N_{instruções} \times CPI \times T_{ciclo}\]</div>
-<p>Onde <span class="arithmatex">\(N_{instruções}\)</span> é o número de instruções do programa (definido pela ISA RV32I), <span class="arithmatex">\(CPI\)</span> são os ciclos por instrução (determinado pela microarquitetura escolhida) e <span class="arithmatex">\(T_{ciclo}\)</span> é o período do relógio (limitado pelo hardware e caminhos críticos).</p>
-</div>
-<p>Em sistemas computacionais modernos, o núcleo de processamento (Core) raramente opera de forma isolada. Ele é integrado em um System-on-Chip (SoC), atuando como o maestro que interage com controladores de barramento, memórias locais (RAM/ROM) e controladores de periféricos. Essa comunicação é tipicamente realizada via MMIO (Memory Mapped I/O), garantindo que a CPU possa gerenciar componentes externos (como UART, GPIO ou aceleradores) utilizando as mesmas instruções load/store utilizadas para acessar a memória padrão.</p>
-<h2 id="objetivos-e-recursos-principais">Objetivos e Recursos Principais</h2>
-<ul>
-<li><strong>Target ISA:</strong> RISC-V Base Integer Instruction Set (RV32I).</li>
-<li><strong>Microarquiteturas Flexíveis:</strong> Módulos para implementações Monociclo, Multiciclo e futuro suporte a Pipeline, sem alterar as definições da ISA no core.</li>
-<li><strong>Design Modular:</strong> Componentes essenciais como ALU, Register File e Control Unit isolados, cada um com seus próprios testbenches auto-verificáveis.</li>
-<li><strong>Integração de SoC:</strong> Camada completa de integração contendo suporte a Bootloader, interconexões de barramento customizáveis e mapeamento de memória.</li>
-<li><strong>Periféricos Inclusos:</strong> Controladores de Propósito Geral (GPIO), Comunicação Serial (UART) e Controlador de Vídeo (VGA) nativos.</li>
-<li><strong>Ecossistema de Verificação e Build:</strong> Infraestrutura altamente automatizada (via Makefile) utilizando o simulador GHDL e testbenches em Python (COCOTB), junto com compilação dinâmica de software C/Assembly (RISC-V GCC).</li>
-</ul>
-<h2 id="estrutura-do-repositorio">Estrutura do Repositório</h2>
-<p>O design é arquitetado para separar de forma limpa o hardware (RTL), o ambiente de simulação e a compilação do software:</p>
-<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>RISC-V/
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>├── rtl/          # Código VHDL sintetizável (Core, SoC e Periféricos)
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>├── sim/          # Ambiente de simulação automatizada (Cocotb/Python)
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>├── fpga/         # Implementação física (Constraints, Scripts Vivado e Upload)
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>├── sw/           # Softwares (Apps em C/Assembly) e Board Support Package (BSP)
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>├── pkg/          # Pacotes VHDL globais (Definições da ISA)
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>├── build/        # Artefatos gerados (.hex, .bin e formas de onda .vcd)
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>└── mk/           # Sistema de automação modular (Makefiles)
-</span></code></pre></div>
-<div class="admonition tip">
-<p class="admonition-title">Por onde começar?</p>
-<p>Se você deseja compilar o ecossistema e rodar as primeiras simulações, visite a página de Ferramentas e Setup.</p>
-</div>
+  <h1>Microarquitetura Multiciclo</h1>
+
+
 
 
 
@@ -1047,7 +879,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="March 14, 2026 04:22:30 UTC">March 14, 2026 04:22:30</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="March 14, 2026 05:23:49 UTC">March 14, 2026 05:23:49</span>
   </span>
 
     
@@ -1084,22 +916,22 @@
       
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
-        
           
-          <a href="intro/setup/" class="md-footer__link md-footer__link--next" aria-label="Next: Requisitos e Setup">
-            <div class="md-footer__title">
-              <span class="md-footer__direction">
-                Next
-              </span>
-              <div class="md-ellipsis">
-                Requisitos e Setup
-              </div>
-            </div>
+          <a href="../single-cycle/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Microarquitetura Monociclo">
             <div class="md-footer__button md-icon">
               
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Microarquitetura Monociclo
+              </div>
             </div>
           </a>
+        
         
       </nav>
     
@@ -1129,12 +961,12 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["navigation.instant", "navigation.tabs", "navigation.footer", "navigation.tracking", "navigation.top", "toc.follow", "content.code.copy", "content.tabs.link", "search.highlight", "search.suggest", "content.tooltips"], "search": "assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tabs", "navigation.footer", "navigation.tracking", "navigation.top", "toc.follow", "content.code.copy", "content.tabs.link", "search.highlight", "search.suggest", "content.tooltips"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
-        <script src="javascripts/mathjax.js"></script>
+        <script src="../../javascripts/mathjax.js"></script>
       
         <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
       

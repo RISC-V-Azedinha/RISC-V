@@ -16,6 +16,8 @@
         <link rel="prev" href="../../intro/setup/">
       
       
+        <link rel="next" href="../multi-cycle/">
+      
       
         
       
@@ -25,7 +27,7 @@
     
     
       
-        <title>Processador Single-Cycle - RISC-V SOC</title>
+        <title>Microarquitetura Monociclo - RISC-V SOC</title>
       
     
     
@@ -78,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#1-a-anatomia-da-instrucao-decodificacao-e-controle" class="md-skip">
+        <a href="#microarquitetura-monociclo-single-cycle" class="md-skip">
           Skip to content
         </a>
       
@@ -112,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Processador Single-Cycle
+              Microarquitetura Monociclo
             
           </span>
         </div>
@@ -541,6 +543,8 @@
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
       
       
+        
+      
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
           
@@ -549,7 +553,7 @@
   <span class="md-ellipsis">
     
   
-    Processador Single-Cycle
+    Microarquitetura Monociclo
   
 
     
@@ -567,7 +571,7 @@
   <span class="md-ellipsis">
     
   
-    Processador Single-Cycle
+    Microarquitetura Monociclo
   
 
     
@@ -583,6 +587,8 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -591,99 +597,22 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-a-anatomia-da-instrucao-decodificacao-e-controle" class="md-nav__link">
+  <a href="#1-a-anatomia-da-instrucao" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. A Anatomia da Instrução (Decodificação e Controle)
+        1. A Anatomia da Instrução
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="1. A Anatomia da Instrução (Decodificação e Controle)">
+    <nav class="md-nav" aria-label="1. A Anatomia da Instrução">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#estrutura-gramatical-da-instrucao" class="md-nav__link">
+  <a href="#11-formatos-de-instrucoes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Estrutura Gramatical da Instrução
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#gerador-de-imediatos-imm_gen" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Gerador de Imediatos (imm_gen)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#unidade-de-controle-principal-control-e-decoder" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Unidade de Controle Principal (control e decoder)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#exemplo-pratico-rastreio-da-instrucao-lw-load-word" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        💡 Exemplo Prático: Rastreio da Instrução lw (Load Word)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#1-a-instrucao-em-binario" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. A Instrução em Binário
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-o-processamento-no-imm_gen" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. O Processamento no imm_gen
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-o-processamento-no-decoder" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. O Processamento no decoder
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-a-sintese-no-control" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. A Síntese no control
+        1.1. Formatos de Instruções
       
     </span>
   </a>
@@ -696,22 +625,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-o-caminho-de-dados-datapath" class="md-nav__link">
+  <a href="#2-o-gerador-de-imediatos-immgen" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. O Caminho de Dados (Datapath)
+        2. O Gerador de Imediatos (ImmGen)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="2. O Caminho de Dados (Datapath)">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-o-caminho-de-dados-datapath" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. O Caminho de Dados (Datapath)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. O Caminho de Dados (Datapath)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#banco-de-registradores-reg_file" class="md-nav__link">
+  <a href="#31-banco-de-registradores" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Banco de Registradores (reg_file)
+        3.1. Banco de Registradores
       
     </span>
   </a>
@@ -719,10 +659,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#unidade-logica-e-aritmetica-alu-e-alu_control" class="md-nav__link">
+  <a href="#32-unidade-logica-e-aritmetica" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Unidade Lógica e Aritmética (alu e alu_control)
+        3.2. Unidade Lógica e Aritmética
       
     </span>
   </a>
@@ -730,10 +670,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#unidade-de-branch-branch_unit" class="md-nav__link">
+  <a href="#33-unidade-de-branch" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Unidade de Branch (branch_unit)
+        3.3. Unidade de Branch
       
     </span>
   </a>
@@ -746,22 +686,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-integracao-top-level" class="md-nav__link">
+  <a href="#4-a-unidade-de-controle-control-path" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Integração (Top-Level)
+        4. A Unidade de Controle (Control Path)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="3. Integração (Top-Level)">
+    <nav class="md-nav" aria-label="4. A Unidade de Controle (Control Path)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#o-caminho-de-dados-datapathvhd" class="md-nav__link">
+  <a href="#41-sinais-de-controle" class="md-nav__link">
     <span class="md-ellipsis">
       
-        O Caminho de Dados (datapath.vhd)
+        4.1. Sinais de Controle
       
     </span>
   </a>
@@ -769,10 +709,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#a-integracao-no-top-level-processor_topvhd" class="md-nav__link">
+  <a href="#42-operacao-da-alu" class="md-nav__link">
     <span class="md-ellipsis">
       
-        A Integração no Top-Level (processor_top.vhd)
+        4.2. Operação da ALU
       
     </span>
   </a>
@@ -781,6 +721,17 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-integracao-no-top-level" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Integração no Top-Level
+      
+    </span>
+  </a>
   
 </li>
       
@@ -788,6 +739,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../multi-cycle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Microarquitetura Multiciclo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1043,6 +1022,8 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -1051,99 +1032,22 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-a-anatomia-da-instrucao-decodificacao-e-controle" class="md-nav__link">
+  <a href="#1-a-anatomia-da-instrucao" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. A Anatomia da Instrução (Decodificação e Controle)
+        1. A Anatomia da Instrução
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="1. A Anatomia da Instrução (Decodificação e Controle)">
+    <nav class="md-nav" aria-label="1. A Anatomia da Instrução">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#estrutura-gramatical-da-instrucao" class="md-nav__link">
+  <a href="#11-formatos-de-instrucoes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Estrutura Gramatical da Instrução
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#gerador-de-imediatos-imm_gen" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Gerador de Imediatos (imm_gen)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#unidade-de-controle-principal-control-e-decoder" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Unidade de Controle Principal (control e decoder)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#exemplo-pratico-rastreio-da-instrucao-lw-load-word" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        💡 Exemplo Prático: Rastreio da Instrução lw (Load Word)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#1-a-instrucao-em-binario" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. A Instrução em Binário
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-o-processamento-no-imm_gen" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. O Processamento no imm_gen
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-o-processamento-no-decoder" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. O Processamento no decoder
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-a-sintese-no-control" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. A Síntese no control
+        1.1. Formatos de Instruções
       
     </span>
   </a>
@@ -1156,22 +1060,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-o-caminho-de-dados-datapath" class="md-nav__link">
+  <a href="#2-o-gerador-de-imediatos-immgen" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. O Caminho de Dados (Datapath)
+        2. O Gerador de Imediatos (ImmGen)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="2. O Caminho de Dados (Datapath)">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-o-caminho-de-dados-datapath" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. O Caminho de Dados (Datapath)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. O Caminho de Dados (Datapath)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#banco-de-registradores-reg_file" class="md-nav__link">
+  <a href="#31-banco-de-registradores" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Banco de Registradores (reg_file)
+        3.1. Banco de Registradores
       
     </span>
   </a>
@@ -1179,10 +1094,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#unidade-logica-e-aritmetica-alu-e-alu_control" class="md-nav__link">
+  <a href="#32-unidade-logica-e-aritmetica" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Unidade Lógica e Aritmética (alu e alu_control)
+        3.2. Unidade Lógica e Aritmética
       
     </span>
   </a>
@@ -1190,10 +1105,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#unidade-de-branch-branch_unit" class="md-nav__link">
+  <a href="#33-unidade-de-branch" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Unidade de Branch (branch_unit)
+        3.3. Unidade de Branch
       
     </span>
   </a>
@@ -1206,22 +1121,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-integracao-top-level" class="md-nav__link">
+  <a href="#4-a-unidade-de-controle-control-path" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Integração (Top-Level)
+        4. A Unidade de Controle (Control Path)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="3. Integração (Top-Level)">
+    <nav class="md-nav" aria-label="4. A Unidade de Controle (Control Path)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#o-caminho-de-dados-datapathvhd" class="md-nav__link">
+  <a href="#41-sinais-de-controle" class="md-nav__link">
     <span class="md-ellipsis">
       
-        O Caminho de Dados (datapath.vhd)
+        4.1. Sinais de Controle
       
     </span>
   </a>
@@ -1229,10 +1144,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#a-integracao-no-top-level-processor_topvhd" class="md-nav__link">
+  <a href="#42-operacao-da-alu" class="md-nav__link">
     <span class="md-ellipsis">
       
-        A Integração no Top-Level (processor_top.vhd)
+        4.2. Operação da ALU
       
     </span>
   </a>
@@ -1241,6 +1156,17 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-integracao-no-top-level" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Integração no Top-Level
+      
+    </span>
+  </a>
   
 </li>
       
@@ -1264,199 +1190,439 @@
   
 
 
-  <h1>Processador Single-Cycle</h1>
-
-<h2 id="1-a-anatomia-da-instrucao-decodificacao-e-controle">1. A Anatomia da Instrução (Decodificação e Controle)</h2>
-<p>O núcleo RISC-V (RV32I) de ciclo único processa instruções de 32 bits, operando através de um ciclo contínuo de <strong>busca</strong>, <strong>decodificação</strong> e <strong>execução</strong>. A compreensão da sua microarquitetura exige a análise de três pilares fundamentais: a estrutura gramatical da instrução, o módulo responsável pela extensão de imediatos e a Unidade de Controle Principal.</p>
-<h3 id="estrutura-gramatical-da-instrucao">Estrutura Gramatical da Instrução</h3>
-<p>Na arquitetura RISC-V, os campos da instrução possuem posições fixas para simplificar a decodificação em hardware. Uma instrução típica de 32 bits é fatiada da seguinte forma:</p>
+<h1 id="microarquitetura-monociclo-single-cycle">Microarquitetura Monociclo (Single-Cycle)</h1>
+<p>A microarquitetura de ciclo único (<em>Single-Cycle</em>) é a implementação mais direta e fundamental do processador RISC-V. O seu princípio de funcionamento é simples: <strong>cada instrução é buscada, decodificada e totalmente executada em um único pulso de relógio</strong>.</p>
+<p>Embora não seja a abordagem mais eficiente em termos de frequência máxima (devido ao longo caminho crítico), é a base pedagógica perfeita para compreender a interação entre as instruções da ISA RV32I e o hardware digital.</p>
+<h2 id="1-a-anatomia-da-instrucao">1. A Anatomia da Instrução</h2>
+<p>O núcleo RISC-V (RV32I) processa instruções de 32 bits. Para simplificar a decodificação em hardware, os campos da instrução possuem posições fixas ou altamente regulares. Uma instrução típica de 32 bits é fatiada da seguinte forma:</p>
 <table>
 <thead>
 <tr>
-<th style="text-align: left;">Campo</th>
-<th style="text-align: left;">Bits</th>
-<th style="text-align: left;">Descrição</th>
+<th>Campo</th>
+<th>Bits</th>
+<th>Descrição</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align: left;"><strong><code>opcode</code></strong></td>
-<td style="text-align: left;">6:0</td>
-<td style="text-align: left;">Indica a categoria ou formato da instrução (ex: R-Type, I-Type, Load, Store).</td>
+<td><strong><code>opcode</code></strong></td>
+<td><code>[6:0]</code></td>
+<td>Indica a categoria ou formato da instrução (ex: R-Type, I-Type, Load, Store). É o sinal vital para a Unidade de Controle.</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong><code>rd</code></strong></td>
-<td style="text-align: left;">11:7</td>
-<td style="text-align: left;">Endereço do registrador de destino, onde o resultado da operação será guardado.</td>
+<td><strong><code>rd</code></strong></td>
+<td><code>[11:7]</code></td>
+<td>Endereço do registrador de destino (<em>Destination</em>), onde o resultado da operação será guardado.</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong><code>funct3</code></strong></td>
-<td style="text-align: left;">14:12</td>
-<td style="text-align: left;">Subcódigo de operação (3 bits) utilizado para diferenciar operações dentro do mesmo <code>opcode</code> (ex: distinguir soma e subtração, ou tipos de saltos).</td>
+<td><strong><code>funct3</code></strong></td>
+<td><code>[14:12]</code></td>
+<td>Subcódigo de operação (3 bits) utilizado para diferenciar operações dentro do mesmo <code>opcode</code> (ex: distinguir <code>ADD</code> de <code>SUB</code>, ou tipos de saltos condicionais).</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong><code>rs1</code></strong></td>
-<td style="text-align: left;">19:15</td>
-<td style="text-align: left;">Endereço do registrador de origem 1.</td>
+<td><strong><code>rs1</code></strong></td>
+<td><code>[19:15]</code></td>
+<td>Endereço do registrador de origem 1 (<em>Source 1</em>).</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong><code>rs2</code></strong></td>
-<td style="text-align: left;">24:20</td>
-<td style="text-align: left;">Endereço do registrador de origem 2.</td>
+<td><strong><code>rs2</code></strong></td>
+<td><code>[24:20]</code></td>
+<td>Endereço do registrador de origem 2 (<em>Source 2</em>).</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong><code>funct7</code></strong></td>
-<td style="text-align: left;">31:25</td>
-<td style="text-align: left;">Subcódigo adicional (7 bits), tipicamente utilizado em instruções do formato R para refinar ainda mais a operação da Unidade Lógica e Aritmética (ULA).</td>
+<td><strong><code>funct7</code></strong></td>
+<td><code>[31:25]</code></td>
+<td>Subcódigo adicional (7 bits) usado em instruções do tipo R para especificar ainda mais a operação.</td>
 </tr>
 </tbody>
 </table>
-<h3 id="gerador-de-imediatos-imm_gen">Gerador de Imediatos (<code>imm_gen</code>)</h3>
-<p>O módulo <code>imm_gen</code> é responsável por extrair e estender o valor imediato das instruções de 32 bits. O seu objetivo é garantir que a ULA e a Unidade de Branch recebam operandos de 32 bits válidos. O processo avalia o <code>opcode</code> da instrução e reconstrói o imediato consoante o seu formato:</p>
+<h3 id="11-formatos-de-instrucoes">1.1. Formatos de Instruções</h3>
+<p>Para acomodar diferentes necessidades (operações matemáticas, acessos à memória e saltos), as instruções são divididas em 6 formatos básicos:</p>
 <ul>
-<li><strong>Formato I (Load, I-Type, JALR):</strong> O imediato é extraído diretamente dos bits da instrução. O sinal é estendido matematicamente para 32 bits.</li>
-<li><strong>Formato S (Store):</strong> O imediato encontra-se fragmentado. O módulo reorganiza os bits superiores e os bits <code>[11:7]</code> para formar o valor de 12 bits, que é em seguida estendido para 32 bits.</li>
-<li><strong>Formato B (Branch):</strong> A reconstrução exige o mapeamento dos bits <code>[31]</code>, <code>[7]</code>, e <code>[11:8]</code>, forçando sempre um bit '0' na posição menos significativa (LSB) para garantir o alinhamento de 2 bytes. O valor resultante de 13 bits é assinalado e estendido para 32 bits.</li>
-<li><strong>Formato U (LUI, AUIPC):</strong> O gerador extrai os bits e preenche os 12 bits menos significativos com zeros (<code>x"000"</code>), construindo uma constante de 32 bits sem necessidade de extensão de sinal adicional.</li>
-<li><strong>Formato J (JAL):</strong> Os bits do imediato são agregados a partir das posições correspondentes com o LSB forçado a '0'. O valor de 21 bits é posteriormente estendido para o tamanho da palavra do processador.</li>
+<li>
+<p><strong>Tipo-R (Register):</strong> Usado para operações aritméticas e lógicas onde todos os operandos são registradores (ex: <code>ADD</code>, <code>SUB</code>, <code>AND</code>).</p>
+</li>
+<li>
+<p><strong>Tipo-I (Immediate):</strong> Usado para operações com imediatos curtos (12 bits), instruções de Load (leitura de memória) e o salto <code>JALR</code>.</p>
+</li>
+<li>
+<p><strong>Tipo-S (Store):</strong> Usado exclusivamente para escrever na memória (ex: <code>SW</code>, <code>SB</code>). O imediato de 12 bits é dividido em duas partes para manter <code>rs1</code> e <code>rs2</code> em seus lugares fixos.</p>
+</li>
+<li>
+<p><strong>Tipo-B (Branch):</strong> Usado para saltos condicionais (<code>BEQ</code>, <code>BNE</code>). Muito semelhante ao Tipo-S, mas o imediato codifica múltiplos de 2 (visto que as instruções são alinhadas na memória).</p>
+</li>
+<li>
+<p><strong>Tipo-U (Upper Immediate):</strong> Usado para carregar imediatos longos (20 bits) nos bits mais significativos de um registrador (<code>LUI</code>, <code>AUIPC</code>).</p>
+</li>
+<li>
+<p><strong>Tipo-J (Jump):</strong> Usado para saltos incondicionais longos (<code>JAL</code>).</p>
+</li>
 </ul>
-<h3 id="unidade-de-controle-principal-control-e-decoder">Unidade de Controle Principal (<code>control</code> e <code>decoder</code>)</h3>
-<p>A Unidade de Controle representa o circuito de comando do processador. No topo hierárquico, o módulo <code>control.vhd</code> extrai os campos <code>opcode</code>, <code>funct3</code> e <code>funct7</code> e delega a decodificação primária ao submódulo <code>decoder.vhd</code>.</p>
-<p>O decodificador atua exclusivamente sobre os 7 bits do <code>opcode</code> (sinal <code>Opcode_i</code>) para gerar os sinais de controle de alto nível, agrupados no registo <code>t_decoder</code>:</p>
-<ul>
-<li><strong><code>reg_write</code>:</strong> Sinal lógico que habilita a escrita no banco de registradores. Fica ativo (<code>'1'</code>) em instruções do Formato R, Formato I, Load, JAL, JALR e Formato U.</li>
-<li><strong><code>alu_src_a</code> e <code>alu_src_b</code>:</strong> Selecionam as fontes dos operandos que alimentam a ULA. Por exemplo, no Formato R, <code>alu_src_b</code> é <code>'0'</code> para receber dados do registrador. Em instruções que usam imediatos (Load, Store, Formato I), <code>alu_src_b</code> assume o valor <code>'1'</code>.</li>
-<li><strong><code>mem_write</code>:</strong> Habilita a escrita na memória, sendo exclusivamente ativo (<code>'1'</code>) para operações de Store (<code>0100011</code>).</li>
-<li><strong><code>wb_src</code>:</strong> Define qual a origem do dado que será escrito de volta no registrador de destino (Write-Back). Pode ser proveniente da ULA (<code>"00"</code>), da memória (<code>"01"</code> para Loads) ou registar o valor do PC + 4 (<code>"10"</code> para JAL e JALR).</li>
-<li><strong><code>alu_op</code>:</strong> Código interno de 2 bits que categoriza a classe da operação aritmética para a ULA. A unidade emite <code>"00"</code> para operações que requerem soma implícita (cálculo de endereços de Load/Store, Formato U), <code>"01"</code> para comparações de desvio (Branch), <code>"10"</code> para o Formato R e <code>"11"</code> para o Formato I aritmético.</li>
-</ul>
-<blockquote>
-<p><strong>Nota:</strong> Estes sinais de controle base ditam o comportamento de todo o caminho de dados (Datapath), assegurando que os multiplexadores encaminham corretamente os dados e a memória efetua as leituras e escritas exigidas pela instrução em curso.</p>
-</blockquote>
-<h3 id="exemplo-pratico-rastreio-da-instrucao-lw-load-word">💡 <strong>Exemplo Prático: Rastreio da Instrução <code>lw</code> (Load Word)</strong></h3>
-<p>Para ilustrar como a etapa de decodificação e controle funciona na prática, vamos acompanhar o ciclo de uma instrução clássica de leitura de memória: <code>lw x5, 12(x10)</code>.</p>
-<p>Esta instrução dita ao processador: <em>"Vá ao endereço de memória resultante da soma do valor do registrador <code>x10</code> com o deslocamento <code>12</code>, leia a palavra (32 bits) contida lá e guarde-a no registrador <code>x5</code>."</em></p>
-<hr />
-<h3 id="1-a-instrucao-em-binario">1. A Instrução em Binário</h3>
-<p>A instrução assembly é traduzida pelo compilador para uma palavra de 32 bits. Quando ela chega à porta <code>Instruction_i</code> dos nossos módulos, o seu formato binário é fatiado da seguinte forma:</p>
-<table>
-<thead>
-<tr>
-<th style="text-align: left;">Campo</th>
-<th style="text-align: left;">Bits</th>
-<th style="text-align: left;">Binário</th>
-<th style="text-align: left;">Descrição</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align: left;"><strong><code>imm[11:0]</code></strong></td>
-<td style="text-align: left;">31:20</td>
-<td style="text-align: left;"><code>000000001100</code></td>
-<td style="text-align: left;">Valor imediato (12 em decimal)</td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong><code>rs1</code></strong></td>
-<td style="text-align: left;">19:15</td>
-<td style="text-align: left;"><code>01010</code></td>
-<td style="text-align: left;">Registrador base (<code>x10</code>)</td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong><code>funct3</code></strong></td>
-<td style="text-align: left;">14:12</td>
-<td style="text-align: left;"><code>010</code></td>
-<td style="text-align: left;">Código da função para Load Word</td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong><code>rd</code></strong></td>
-<td style="text-align: left;">11:7</td>
-<td style="text-align: left;"><code>00101</code></td>
-<td style="text-align: left;">Registrador de destino (<code>x5</code>)</td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong><code>opcode</code></strong></td>
-<td style="text-align: left;">6:0</td>
-<td style="text-align: left;"><code>0000011</code></td>
-<td style="text-align: left;">Código para a categoria LOAD</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Instrução completa recebida:</strong> <code>000000001100_01010_010_00101_0000011</code></p>
-<h3 id="2-o-processamento-no-imm_gen">2. O Processamento no <code>imm_gen</code></h3>
-<p>O gerador de imediatos inspeciona o <code>opcode</code> e identifica a instrução como um Formato I (Load). Ele extrai diretamente os bits da instrução (<code>000000001100</code>) e aplica a extensão de sinal para 32 bits. O sinal de saída <code>Immediate_o</code> emite o valor <code>0x0000000C</code> (12 em decimal), que ficará disponível para ser utilizado pela ULA no cálculo do endereço.</p>
-<h3 id="3-o-processamento-no-decoder">3. O Processamento no <code>decoder</code></h3>
-<p>Em paralelo, a unidade de decodificação principal lê o <code>opcode</code> (<code>0000011</code>). Através da sua lógica combinacional, ativa os seguintes sinais para preparar o Datapath:</p>
-<ul>
-<li><strong><code>reg_write &lt;= '1'</code></strong>: Autoriza a escrita no banco de registradores (pois o resultado final será salvo em <code>x5</code>).</li>
-<li><strong><code>alu_src_b &lt;= '1'</code></strong>: Configura o multiplexador da ULA para rejeitar o segundo registrador e aceitar o valor imediato (o 12 gerado pelo <code>imm_gen</code>).</li>
-<li><strong><code>wb_src &lt;= "01"</code></strong>: Configura o multiplexador de Write-Back para rotear o dado vindo da Memória (e não o resultado matemático da ULA) para o registrador de destino.</li>
-<li><strong><code>alu_op &lt;= "00"</code></strong>: Informa ao controlador da ULA que a operação exigida é uma soma (para calcular endereço base + deslocamento).</li>
-</ul>
-<h3 id="4-a-sintese-no-control">4. A Síntese no <code>control</code></h3>
-<p>O módulo de topo desta etapa encapsula tudo. Ele confirma que a instrução não é de salto (<code>branch = '0'</code> e <code>jump = '0'</code>), mantendo o seletor do PC (<code>pcsrc</code>) em <code>"00"</code> (PC + 4). Todos os sinais gerados pelo <code>decoder</code> e pelo <code>alu_control</code> são empacotados no barramento <code>Control_o</code>.</p>
-<blockquote>
-<p><strong>Conclusão:</strong> Neste momento, a Anatomia da Instrução está concluída. O processador "entendeu" o que deve ser feito, e os sinais de controle viajam para o hardware de execução (Datapath) para configurar fisicamente as rotas dos dados.</p>
-</blockquote>
-<h2 id="2-o-caminho-de-dados-datapath">2. O Caminho de Dados (Datapath)</h2>
-<p>Enquanto a Unidade de Controle atua como o "cérebro" do processador, o Caminho de Dados (Datapath) representa os "músculos". É neste bloco que os dados transitam, são armazenados e transformados. No núcleo de ciclo único (Single-Cycle), o datapath garante que a leitura dos operandos, a execução da operação e a escrita do resultado ocorram dentro de um único ciclo de relógio (clock).</p>
-<h3 id="banco-de-registradores-reg_file">Banco de Registradores (<code>reg_file</code>)</h3>
+<p><img alt="Formatos de Instruções" class="hero-img" src="../../assets/instruction_format.png" /></p>
+<h2 id="2-o-gerador-de-imediatos-immgen">2. O Gerador de Imediatos (ImmGen)</h2>
+<p>Ao olhar para os formatos acima, você pode notar que os imediatos (valores constantes embutidos na instrução) nos formatos S, B e J parecem estar "embaralhados". Isso não é um erro; é uma escolha de design intencional.</p>
+<div class="admonition info">
+<p class="admonition-title">Por que embaralhar os bits?</p>
+<p>Se o RISC-V mantivesse o imediato contínuo no formato S, os bits referentes ao registrador <code>rs2</code> teriam que mudar de lugar. Ao manter <code>rs1</code> e <code>rs2</code> fixos, o hardware pode começar a ler os registradores do Register File no exato instante em que a instrução chega, sem ter que esperar a Unidade de Controle descobrir qual é o formato da instrução. Isso economiza tempo precioso de hardware!</p>
+</div>
+<p>O ImmGen (Gerador de Imediatos) é o componente de hardware responsável por desembaralhar esses bits e reconstruir o número original de 32 bits. Ele faz isso em duas etapas:</p>
+<ol>
+<li>
+<p><strong>Extração e Reconstrução:</strong> Lendo o <code>opcode</code>, o ImmGen sabe qual é o formato da instrução e reconecta os fios (bits) na ordem correta.</p>
+</li>
+<li>
+<p><strong>Extensão de Sinal:</strong> Como a maioria das operações precisa de 32 bits, o ImmGen copia o bit mais significativo do imediato original (que sempre fica no bit 31 da instrução) para preencher os bits restantes à esquerda, preservando o sinal (positivo ou negativo) em complemento de 2.</p>
+</li>
+</ol>
+<h2 id="3-o-caminho-de-dados-datapath">3. O Caminho de Dados (Datapath)</h2>
+<p>O Datapath é o "músculo" do processador. É o circuito de potência responsável por rotear os dados, realizar os cálculos e interagir com a memória. Em um processador monociclo, o fluxo de dados atravessa cinco fases lógicas sequenciais dentro do mesmo pulso de clock:</p>
+<p><img alt="Single-Cycle Datapath" class="hero-img" src="../../assets/single_cycle_datapath.png" /></p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:5"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><input id="__tabbed_1_4" name="__tabbed_1" type="radio" /><input id="__tabbed_1_5" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Fetch (Busca)</label><label for="__tabbed_1_2">Decode (Decodificação)</label><label for="__tabbed_1_3">Execute (Execução)</label><label for="__tabbed_1_4">Memory (Acesso à Memória)</label><label for="__tabbed_1_5">Write-Back (Escrita)</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>O endereço atual da instrução, armazenado no <strong>Program Counter (PC)</strong>, é enviado para a Memória de Instruções (IMEM). A memória retorna a instrução de 32 bits a ser executada. Ao mesmo tempo, um somador paralelo calcula <code>PC + 4</code> para apontar para a próxima instrução sequencial.</p>
+</div>
+<div class="tabbed-block">
+<p>A instrução é fatiada. Os campos <code>rs1</code> e <code>rs2</code> são enviados ao <strong>Register File</strong> (Banco de Registradores) para ler os operandos. Simultaneamente, o <strong>Gerador de Imediatos (ImmGen)</strong> extrai e estende o sinal de qualquer valor imediato embutido na instrução, formatando-o para 32 bits.</p>
+</div>
+<div class="tabbed-block">
+<p>A <strong>Unidade Lógica e Aritmética (ALU)</strong> entra em ação. Dependendo da instrução, ela pode calcular operações matemáticas (soma, subtração, lógica AND/OR), calcular endereços de memória para operações de <em>Load/Store</em>, ou realizar comparações para instruções de desvio (Branch).</p>
+</div>
+<div class="tabbed-block">
+<p>Se a instrução for um <code>Load</code> ou <code>Store</code>, o resultado gerado pela ALU é utilizado como endereço para acessar a <strong>Memória de Dados (DMEM)</strong>. Dados são lidos ou escritos neste estágio. Para outras instruções, esta fase é ignorada.</p>
+</div>
+<div class="tabbed-block">
+<p>O resultado final — seja proveniente da ALU, da Memória de Dados ou do cálculo de um salto — é roteado de volta e escrito no registrador de destino (<code>rd</code>) dentro do Register File.</p>
+</div>
+</div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tempo de Propagação</p>
+<p>Na arquitetura monociclo (<em>single-cycle</em>), toda instrução deve atravessar o <em>datapath</em> completo dentro de um único ciclo de clock. Assim, o período mínimo de clock é determinado pelo maior tempo de propagação combinacional ao longo do circuito — o chamado <strong>caminho crítico</strong>. Consequentemente, a frequência máxima do processador fica limitada por esse atraso. Mais adiante será discutido o uso de <em>pipeline</em>, que divide o <em>datapath</em> em estágios menores para reduzir o comprimento do caminho crítico e permitir frequências de operação mais altas.</p>
+</div>
+<h3 id="31-banco-de-registradores">3.1. Banco de Registradores</h3>
 <p>O banco de registradores (Register File) é a estrutura de memória interna mais rápida do processador, composto por 32 registradores de 32 bits, definidos em hardware através do tipo <code>t_reg_array</code>. A sua implementação técnica divide-se em abordagens distintas para leitura e escrita:</p>
 <ul>
 <li><strong>Leitura Assíncrona:</strong> O módulo possui duas portas de leitura independentes (<code>rs1</code> e <code>rs2</code>) que funcionam de forma puramente combinacional. Assim que os endereços <code>ReadAddr1_i</code> ou <code>ReadAddr2_i</code> são alterados, os dados correspondentes surgem quase instantaneamente nas saídas <code>ReadData1_o</code> e <code>ReadData2_o</code>, sem aguardar pelo pulso de clock.</li>
 <li><strong>Escrita Síncrona:</strong> Diferente da leitura, a atualização de um registrador exige sincronização. A escrita apenas ocorre na transição positiva do sinal de clock (<code>rising_edge(clk_i)</code>), e exclusivamente se o sinal de controle <code>RegWrite_i</code> estiver ativo (<code>'1'</code>).</li>
-<li><strong>Proteção de Hardware do Registo <code>x0</code>:</strong> A convenção da arquitetura RISC-V dita que o registrador <code>x0</code> deve conter sempre o valor constante zero. O hardware garante esta regra forçando a saída <code>x"00000000"</code> sempre que o endereço de leitura for <code>"00000"</code>. Paralelamente, no processo de escrita, existe uma barreira lógica (<code>WriteAddr_i /= "00000"</code>) que ignora silenciosamente qualquer tentativa de alteração do registrador zero.</li>
+<li><strong>Proteção de Hardware do Registro <code>x0</code>:</strong> A convenção da arquitetura RISC-V dita que o registrador <code>x0</code> deve conter sempre o valor constante zero. O hardware garante esta regra forçando a saída <code>x"00000000"</code> sempre que o endereço de leitura for <code>"00000"</code>. Paralelamente, no processo de escrita, existe uma barreira lógica (<code>WriteAddr_i /= "00000"</code>) que ignora silenciosamente qualquer tentativa de alteração do registrador zero.</li>
 </ul>
-<hr />
-<h3 id="unidade-logica-e-aritmetica-alu-e-alu_control">Unidade Lógica e Aritmética (<code>alu</code> e <code>alu_control</code>)</h3>
+<h3 id="32-unidade-logica-e-aritmetica">3.2. Unidade Lógica e Aritmética</h3>
 <p>A Unidade Lógica e Aritmética (ULA, ou ALU em inglês) é o motor computacional do processador, operando em conjunto com o seu controlador dedicado.</p>
-<p><strong>O Controlador da ULA (<code>alu_control</code>)</strong>
-A Unidade de Controle Principal delega a decisão exata da operação matemática ao <code>alu_control</code>. Este módulo secundário avalia o sinal <code>ALUOp_i</code> de 2 bits (que indica a categoria da instrução) cruzando-o com os campos <code>Funct3_i</code> e <code>Funct7_i</code>. O resultado é a geração de um sinal de controle otimizado de 4 bits (<code>ALUControl_o</code>). Por exemplo, para operações R-Type (<code>ALUOp_i = "10"</code>), o módulo verifica o bit 5 do <code>Funct7_i</code> para alternar entre uma soma e uma subtração, ou entre deslocamentos lógicos e aritméticos.</p>
-<p><strong>A Unidade de Execução (<code>alu</code>)</strong>
-O módulo <code>alu.vhd</code> é um bloco puramente combinacional que reage imediatamente a qualquer mudança nos operandos <code>A_i</code>, <code>B_i</code> ou no comando <code>ALUControl_i</code>. Suporta um vasto leque de operações, incluindo:</p>
+<ul>
+<li>
+<p><strong>O Controlador da ULA (<code>alu_control</code>):</strong> a Unidade de Controle Principal delega a decisão exata da operação matemática ao <code>alu_control</code>. Este módulo secundário avalia o sinal <code>ALUOp_i</code> de 2 bits (que indica a categoria da instrução) cruzando-o com os campos <code>Funct3_i</code> e <code>Funct7_i</code>. O resultado é a geração de um sinal de controle otimizado de 4 bits (<code>ALUControl_o</code>). Por exemplo, para operações R-Type (<code>ALUOp_i = "10"</code>), o módulo verifica o bit 5 do <code>Funct7_i</code> para alternar entre uma soma e uma subtração, ou entre deslocamentos lógicos e aritméticos.</p>
+</li>
+<li>
+<p><strong>A Unidade de Execução (<code>alu</code>):</strong> o módulo <code>alu.vhd</code> é um bloco puramente combinacional que reage imediatamente a qualquer mudança nos operandos <code>A_i</code>, <code>B_i</code> ou no comando <code>ALUControl_i</code>. Suporta um vasto leque de operações, incluindo:</p>
 <ul>
 <li><strong>Aritméticas:</strong> Soma e subtração nativas (com tratamento de sinais).</li>
 <li><strong>Comparações:</strong> Avaliações de "menor que" com e sem sinal (SLT e SLTU).</li>
 <li><strong>Lógicas:</strong> Operações bit-a-bit XOR, OR e AND.</li>
 <li><strong>Deslocamentos (Shifts):</strong> Deslocamentos à esquerda (SLL), à direita lógicos (SRL) e à direita aritméticos (SRA).</li>
 </ul>
-<blockquote>
-<p><strong>Nota:</strong> A par do resultado de 32 bits, a ULA gera continuamente uma flag fundamental: o sinal <code>Zero_o</code>. Esta flag assume o valor <code>'1'</code> estritamente quando o resultado numérico de toda a operação de 32 bits for igual a zero (<code>x"00000000"</code>).</p>
-</blockquote>
+</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Flag Zero</p>
+<p>A par do resultado de 32 bits, a ALU gera continuamente uma flag fundamental: o sinal <code>Zero_o</code>. Esta flag assume o valor <code>'1'</code> estritamente quando o resultado numérico de toda a operação de 32 bits for igual a zero (<code>x"00000000"</code>).</p>
+</div>
 <hr />
-<h3 id="unidade-de-branch-branch_unit">Unidade de Branch (<code>branch_unit</code>)</h3>
+<h3 id="33-unidade-de-branch">3.3. Unidade de Branch</h3>
 <p>Em muitas arquiteturas clássicas, o cálculo do desvio condicional é fundido na Unidade de Controle Principal. No entanto, este núcleo RISC-V foi desenhado isolando esta responsabilidade na <code>branch_unit</code>, tornando o código mais modular e coeso.</p>
 <p>Para decidir se o processador deve saltar para um novo endereço de memória, a <code>branch_unit</code> correlaciona três sinais de entrada: o sinal que confirma que a instrução é um desvio (<code>Branch_i</code>), a flag matemática gerada pela ULA (<code>ALU_Zero_i</code>) e o campo <code>Funct3_i</code> que dita a regra de salto. </p>
 <p>Com base nisto, a unidade emite o sinal <code>BranchTaken_o</code>:</p>
 <ul>
 <li><strong>BEQ (Branch if Equal):</strong> Requer que os operandos sejam iguais (A - B = 0). O desvio é tomado se <code>ALU_Zero_i = '1'</code>.</li>
 <li><strong>BNE (Branch if Not Equal):</strong> O desvio avança se a subtração gerar um valor diferente de zero (<code>ALU_Zero_i = '0'</code>).</li>
-<li><strong>Outras avaliações:</strong> O módulo aplica lógicas análogas para BLT, BGE, BLTU e BGEU, combinando a flag Zero resultante de operações SLT/SLTU executadas pela ULA.</li>
+<li><strong>Outras avaliações:</strong> O módulo aplica lógicas análogas para <code>BLT</code>, <code>BGE</code>, <code>BLTU</code> e <code>BGEU</code>, combinando a flag zero resultante de operações <code>SLT</code>/<code>SLTU</code> executadas pela ALU.</li>
 </ul>
-<h2 id="3-integracao-top-level">3. Integração (Top-Level)</h2>
-<p>A construção de um processador funcional exige que a inteligência da Unidade de Controlo e a força bruta do Caminho de Dados sejam interligadas de forma harmoniosa. Neste projeto, a arquitetura foi refatorada e dividida logicamente para isolar responsabilidades, culminando na união destas entidades no módulo de topo (<code>processor_top.vhd</code>).</p>
-<h3 id="o-caminho-de-dados-datapathvhd">O Caminho de Dados (<code>datapath.vhd</code>)</h3>
-<p>O módulo <code>datapath.vhd</code> atua como o "circuito de potência" do processador RISC-V. A sua função é estritamente operacional: ele não toma decisões, limitando-se a executar as operações comandadas pelos sinais da Unidade de Controlo.</p>
-<p>Este arquivo abriga todos os componentes estruturais responsáveis por armazenar, transportar e processar os dados, incluindo o Contador de Programa (PC), o Banco de Registradores, a ULA e o Gerador de Imediatos. Embora o processador seja de ciclo único, o código do Datapath está didaticamente organizado de forma a espelhar os cinco estágios clássicos de processamento:</p>
+<h2 id="4-a-unidade-de-controle-control-path">4. A Unidade de Controle (Control Path)</h2>
+<p>Se o Datapath é o músculo, a Unidade de Controle é o cérebro. O seu papel é observar o <code>opcode</code>, o <code>funct3</code> e o <code>funct7</code> da instrução e <strong>emitir os sinais de comando</strong> que configuram os multiplexadores, habilitam as memórias e dizem à ALU o que fazer.</p>
+<p>Em vez de declarar dezenas de sinais soltos, o nosso projeto em VHDL utiliza uma abordagem estruturada e elegante através de um <code>record</code> VHDL (<code>t_control</code>). O pacote <code>s_ctrl</code> encapsula todos os sinais diretivos:</p>
 <ul>
-<li><strong>Busca (FETCH):</strong> Onde o PC atual é registado e utilizado para buscar a instrução na memória (<code>IMem_data_i</code>).</li>
-<li><strong>Decodificação (DECODE):</strong> Onde os geradores de imediatos (<code>imm_gen</code>) e o banco de registradores (<code>reg_file</code>) extraem os operandos da instrução lida.</li>
-<li><strong>Execução (EXECUTE):</strong> Onde os multiplexadores selecionam as entradas corretas (registradores ou imediatos) para a ULA calcular resultados aritméticos ou endereços.</li>
-<li><strong>Memória (MEMORY):</strong> Onde a <em>Load Store Unit</em> (LSU) assume o interface com a Memória de Dados (DMEM), tratando do alinhamento e extensão de sinal exigidos por instruções como <code>lw</code> ou <code>sb</code>.</li>
-<li><strong>Escrita de Volta (WRITE-BACK):</strong> Onde o multiplexador final decide se o banco de registradores vai receber um dado da ULA, da Memória ou o endereço PC + 4 (no caso de saltos JAL/JALR).</li>
+<li>
+<p><code>Branch</code> / <code>Jump</code>: Determinam se o próximo PC será <code>PC+4</code> ou um endereço de salto calculado pela ALU.</p>
+</li>
+<li>
+<p><code>MemRead</code> / <code>MemWrite</code>: Habilitam a leitura ou escrita na Memória de Dados.</p>
+</li>
+<li>
+<p><code>ALUSrc</code>: Um seletor de multiplexador que decide se a ALU vai operar com o registrador <code>rs2</code> ou com um Imediato estendido.</p>
+</li>
+<li>
+<p><code>RegWrite</code>: Habilita a gravação do resultado final no Register File.</p>
+</li>
+<li>
+<p><code>ResultSrc</code>: Decide qual dado vai para a fase de Write-Back (resultado da ALU, dado da memória, ou <code>PC+4</code>).</p>
+</li>
 </ul>
-<blockquote>
-<p><strong>Nota de Fluxo:</strong> Além disto, o Datapath calcula o próximo valor do PC, utilizando um multiplexador de prioridade que dá precedência a saltos incondicionais (Jumps) e condicionais (Branches) sobre o incremento padrão de PC + 4.</p>
-</blockquote>
-<hr />
-<h3 id="a-integracao-no-top-level-processor_topvhd">A Integração no Top-Level (<code>processor_top.vhd</code>)</h3>
-<p>O arquivo <code>processor_top.vhd</code> representa a cápsula mais externa do núcleo RISC-V. Este módulo implementa uma <strong>Arquitetura de Harvard Modificada</strong>, expondo barramentos separados para a Memória de Instruções (IMEM) e para a Memória de Dados (DMEM). Esta topologia permite que a CPU busque a próxima instrução em simultâneo com a leitura ou escrita de dados na memória, otimizando o ciclo de processamento.</p>
-<p>É neste arquivo que ocorre a conexão estrutural entre os dois grandes blocos do sistema:</p>
-<ul>
-<li><strong>A Comunicação Ascendente (Feedback):</strong> O Datapath (circuito de potência) envia para o Control Path (circuito de comando) a instrução de 32 bits recém-buscada na IMEM (<code>s_instruction</code>) e a flag matemática de zero (<code>s_alu_zero</code>).</li>
-<li><strong>A Comunicação Descendente (Comando):</strong> A Unidade de Controlo analisa a instrução e emite um pacote completo de diretrizes. Em vez de declarar dezenas de sinais soltos, o projeto utiliza uma abordagem elegante através de um <em>record</em> VHDL (<code>t_control</code>). O pacote <code>s_ctrl</code> encapsula todos os sinais (como <code>reg_write</code>, seletores de multiplexadores e código da ULA) e é injetado de volta no Datapath para orquestrar o ciclo.</li>
-</ul>
-<p><strong>Conclusão da Arquitetura:</strong>
-A união entre o <code>U_CONTROLPATH</code> e o <code>U_DATAPATH</code> conclui o processador de ciclo único, onde cada instrução da arquitetura RV32I é buscada, decodificada e executada num único, e complexo, pulso de clock.</p>
+<div class="admonition info">
+<p class="admonition-title">ALU Control</p>
+<p>A Unidade de Controle é frequentemente dividida em duas. A Unidade Principal (Main Control) lê o <code>opcode</code> e emite um sinal genérico chamado <code>ALUOp</code>. Um decodificador secundário (ALU Control) cruza esse <code>ALUOp</code> com o <code>funct3</code> e <code>funct7</code> para gerar o sinal de seleção final da operação da ALU, otimizando o tamanho do hardware gerado.</p>
+</div>
+<h3 id="41-sinais-de-controle">4.1. Sinais de Controle</h3>
+<table>
+<thead>
+<tr>
+<th>Instrução</th>
+<th><code>Opcode</code></th>
+<th><code>RegWrite</code></th>
+<th><code>ALUSrc</code></th>
+<th><code>MemtoReg</code></th>
+<th><code>MemRead</code></th>
+<th><code>MemWrite</code></th>
+<th><code>Branch</code></th>
+<th><code>Jump</code></th>
+<th><code>ALUOp</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>R-TYPE</code> (<strong>add</strong>, <strong>sub</strong>)</td>
+<td><code>0110011</code></td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td><code>10</code></td>
+</tr>
+<tr>
+<td><code>LOAD</code> (<strong>lw</strong>)</td>
+<td><code>0000011</code></td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td><code>00</code></td>
+</tr>
+<tr>
+<td><code>STORE</code> (<strong>sw</strong>)</td>
+<td><code>0100011</code></td>
+<td>0</td>
+<td>1</td>
+<td>X</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td><code>00</code></td>
+</tr>
+<tr>
+<td><code>BRANCH</code> (<strong>beq</strong>)</td>
+<td><code>1100011</code></td>
+<td>0</td>
+<td>0</td>
+<td>X</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td><code>01</code></td>
+</tr>
+<tr>
+<td><code>I-TYPE</code> (<strong>addi</strong>)</td>
+<td><code>0010011</code></td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td><code>00</code></td>
+</tr>
+<tr>
+<td><code>JAL</code> (<strong>jal</strong>)</td>
+<td><code>1101111</code></td>
+<td>1</td>
+<td>X</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td><code>XX</code></td>
+</tr>
+<tr>
+<td><code>JALR</code> (<strong>jalr</strong>)</td>
+<td><code>1100111</code></td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td><code>00</code></td>
+</tr>
+<tr>
+<td><code>LUI</code> (<strong>lui</strong>)</td>
+<td><code>0110111</code></td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td><code>00</code></td>
+</tr>
+<tr>
+<td><code>AUIPC</code> (<strong>auipc</strong>)</td>
+<td><code>0010111</code></td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td><code>00</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="42-operacao-da-alu">4.2. Operação da ALU</h3>
+<table>
+<thead>
+<tr>
+<th><code>ALUOp_i</code> (Entrada)</th>
+<th><code>funct7</code> (Entrada)</th>
+<th><code>funct3</code> (Entrada)</th>
+<th><code>ALUControl_o</code> (Saída)</th>
+<th>Operação da ULA</th>
+<th>Motivo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>"00"</code></td>
+<td><strong>X (ignorado)</strong></td>
+<td><strong>X (ignorado)</strong></td>
+<td><code>"0000"</code></td>
+<td><strong>ADD</strong></td>
+<td>Para LW/SW/ADDI, a ULA sempre soma.</td>
+</tr>
+<tr>
+<td><code>"01"</code></td>
+<td><strong>X (ignorado)</strong></td>
+<td><strong>X (ignorado)</strong></td>
+<td><code>"1000"</code></td>
+<td><strong>SUB</strong></td>
+<td>Para Branch, a ULA sempre subtrai para comparar.</td>
+</tr>
+<tr>
+<td><code>"10"</code></td>
+<td><code>0000000</code></td>
+<td><code>000</code></td>
+<td><code>"0000"</code></td>
+<td><strong>ADD</strong></td>
+<td>Instrução R-Type: ADD</td>
+</tr>
+<tr>
+<td><code>"10"</code></td>
+<td><code>0100000</code></td>
+<td><code>000</code></td>
+<td><code>"1000"</code></td>
+<td><strong>SUB</strong></td>
+<td>Instrução R-Type: SUB</td>
+</tr>
+<tr>
+<td><code>"10"</code></td>
+<td><code>0000000</code></td>
+<td><code>001</code></td>
+<td><code>"0001"</code></td>
+<td><strong>SLL</strong></td>
+<td>Instrução R-Type: SLL</td>
+</tr>
+<tr>
+<td><code>"10"</code></td>
+<td><code>0000000</code></td>
+<td><code>010</code></td>
+<td><code>"0010"</code></td>
+<td><strong>SLT</strong></td>
+<td>Instrução R-Type: SLT</td>
+</tr>
+<tr>
+<td><code>"10"</code></td>
+<td><code>0000000</code></td>
+<td><code>011</code></td>
+<td><code>"0011"</code></td>
+<td><strong>SLTU</strong></td>
+<td>Instrução R-Type: SLTU</td>
+</tr>
+<tr>
+<td><code>"10"</code></td>
+<td><code>0000000</code></td>
+<td><code>100</code></td>
+<td><code>"0100"</code></td>
+<td><strong>XOR</strong></td>
+<td>Instrução R-Type: XOR</td>
+</tr>
+<tr>
+<td><code>"10"</code></td>
+<td><code>0000000</code></td>
+<td><code>101</code></td>
+<td><code>"0101"</code></td>
+<td><strong>SRL</strong></td>
+<td>Instrução R-Type: SRL</td>
+</tr>
+<tr>
+<td><code>"10"</code></td>
+<td><code>0100000</code></td>
+<td><code>101</code></td>
+<td><code>"1101"</code></td>
+<td><strong>SRA</strong></td>
+<td>Instrução R-Type: SRA</td>
+</tr>
+<tr>
+<td><code>"10"</code></td>
+<td><code>0000000</code></td>
+<td><code>110</code></td>
+<td><code>"0110"</code></td>
+<td><strong>OR</strong></td>
+<td>Instrução R-Type: OR</td>
+</tr>
+<tr>
+<td><code>"10"</code></td>
+<td><code>0000000</code></td>
+<td><code>111</code></td>
+<td><code>"0111"</code></td>
+<td><strong>AND</strong></td>
+<td>Instrução R-Type: AND</td>
+</tr>
+<tr>
+<td><code>"11"</code></td>
+<td><strong>X (ignorado)</strong></td>
+<td><strong>X (ignorado)</strong></td>
+<td><code>"XXXX"</code></td>
+<td><strong>Indefinido</strong></td>
+<td>Combinação de ALUOp não utilizada.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="5-integracao-no-top-level">5. Integração no Top-Level</h2>
+<p>O arquivo <code>processor_top.vhd</code> representa a cápsula mais externa do núcleo RISC-V. Este módulo implementa uma <strong>Arquitetura de Harvard Modificada</strong>, expondo barramentos separados para a Memória de Instruções (IMEM) e para a Memória de Dados (DMEM). Esta topologia permite que a CPU busque a próxima instrução em simultâneo com a leitura ou escrita de dados na memória.</p>
+<div class="admonition tip">
+<p class="admonition-title">Pipelined</p>
+<p>A existência de dois barramentos separados - um para instruções e outro para dados - é necessário para viabilizar uma microarquitetura <strong>pipelined</strong>. Apesar de, na <strong>multiciclo</strong>, não apresentar nenhum ganho real.</p>
+</div>
+<p>É neste arquivo que ocorre a união estrutural entre os dois grandes blocos do sistema:</p>
+<ol>
+<li>
+<p><strong>A Comunicação Ascendente (Feedback):</strong> O Datapath (circuito de potência) envia para o Control Path (circuito de comando) a instrução de 32 bits recém-buscada na IMEM (<code>s_instruction</code>) e flags cruciais, como a flag matemática de zero (<code>s_alu_zero</code>), essencial para resolver os saltos condicionais (<em>Branches</em>).</p>
+</li>
+<li>
+<p><strong>A Comunicação Descendente (Comando):</strong> A Unidade de Controle analisa a instrução e emite o pacote completo de diretrizes através do record <code>t_control</code>. Este sinal é injetado de volta no Datapath para orquestrar o ciclo completo.</p>
+</li>
+</ol>
+<p>A união entre o <code>U_CONTROLPATH</code> e o <code>U_DATAPATH</code> conclui o processador de ciclo único, formando um núcleo coeso capaz de executar o conjunto de instruções RV32I.</p>
 
 
 
@@ -1477,7 +1643,7 @@ A união entre o <code>U_CONTROLPATH</code> e o <code>U_DATAPATH</code> conclui 
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="March 7, 2026 14:18:40 UTC">March 7, 2026 14:18:40</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="March 14, 2026 05:23:49 UTC">March 14, 2026 05:23:49</span>
   </span>
 
     
@@ -1530,6 +1696,22 @@ A união entre o <code>U_CONTROLPATH</code> e o <code>U_DATAPATH</code> conclui 
             </div>
           </a>
         
+        
+          
+          <a href="../multi-cycle/" class="md-footer__link md-footer__link--next" aria-label="Next: Microarquitetura Multiciclo">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Microarquitetura Multiciclo
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
         
       </nav>
     
