@@ -10,25 +10,31 @@
       
       
       
+        <link rel="canonical" href="https://RISC-V-Azedinha.github.io/RISC-V/intro/setup/">
       
+      
+        <link rel="prev" href="../..">
+      
+      
+        <link rel="next" href="../../hardware/single-cycle/">
       
       
         
       
       
-      <link rel="icon" href="/RISC-V/assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.3">
     
     
       
-        <title>RISC-V SOC</title>
+        <title>Requisitos e Setup - RISC-V SOC</title>
       
     
     
-      <link rel="stylesheet" href="/RISC-V/assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="/RISC-V/assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -47,9 +53,9 @@
       
     
     
-      <link rel="stylesheet" href="/RISC-V/stylesheets/extra.css">
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
     
-    <script>__md_scope=new URL("/RISC-V/",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -73,6 +79,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#requisitos-e-setup" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -83,7 +94,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="/RISC-V/." title="RISC-V SOC" class="md-header__button md-logo" aria-label="RISC-V SOC" data-md-component="logo">
+    <a href="../.." title="RISC-V SOC" class="md-header__button md-logo" aria-label="RISC-V SOC" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 17H7V7h10m4 4V9h-2V7a2 2 0 0 0-2-2h-2V3h-2v2h-2V3H9v2H7c-1.11 0-2 .89-2 2v2H3v2h2v2H3v2h2v2a2 2 0 0 0 2 2h2v2h2v-2h2v2h2v-2h2a2 2 0 0 0 2-2v-2h2v-2h-2v-2m-6 2h-2v-2h2m2-2H9v6h6z"/></svg>
@@ -103,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              
+              Requisitos e Setup
             
           </span>
         </div>
@@ -200,11 +211,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="/RISC-V/." class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../.." class="md-tabs__link">
           
   
   
@@ -224,7 +237,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/RISC-V/hardware/single-cycle/" class="md-tabs__link">
+        <a href="../../hardware/single-cycle/" class="md-tabs__link">
           
   
   
@@ -244,7 +257,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/RISC-V/dev/simulation.md" class="md-tabs__link">
+        <a href="../../dev/simulation.md" class="md-tabs__link">
           
   
   
@@ -264,7 +277,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/RISC-V/apps/pong.md" class="md-tabs__link">
+        <a href="../../apps/pong.md" class="md-tabs__link">
           
   
   
@@ -298,7 +311,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="/RISC-V/." title="RISC-V SOC" class="md-nav__button md-logo" aria-label="RISC-V SOC" data-md-component="logo">
+    <a href="../.." title="RISC-V SOC" class="md-nav__button md-logo" aria-label="RISC-V SOC" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 17H7V7h10m4 4V9h-2V7a2 2 0 0 0-2-2h-2V3h-2v2h-2V3H9v2H7c-1.11 0-2 .89-2 2v2H3v2h2v2H3v2h2v2a2 2 0 0 0 2 2h2v2h2v-2h2v2h2v-2h2a2 2 0 0 0 2-2v-2h2v-2h-2v-2m-6 2h-2v-2h2m2-2H9v6h6z"/></svg>
@@ -325,24 +338,29 @@
       
   
   
+    
   
   
+  
     
     
     
     
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" checked>
         
           
-          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="">
             
   
   
@@ -360,7 +378,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_1">
             <span class="md-nav__icon md-icon"></span>
             
@@ -378,7 +396,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -403,10 +421,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="/RISC-V/intro/setup/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Requisitos e Setup
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -422,6 +467,81 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#automacao-via-makefile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Automação via Makefile
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#limpeza-do-projeto" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Limpeza do Projeto
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#compilacao-de-software" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compilação de Software
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#simulacao-com-cocotb" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Simulação com Cocotb
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#atalhos-e-comandos-uteis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Atalhos e Comandos Úteis
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -434,7 +554,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/intro/quickstart.md" class="md-nav__link">
+      <a href="../quickstart.md" class="md-nav__link">
         
   
   
@@ -519,7 +639,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/hardware/single-cycle/" class="md-nav__link">
+      <a href="../../hardware/single-cycle/" class="md-nav__link">
         
   
   
@@ -604,7 +724,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/dev/simulation.md" class="md-nav__link">
+      <a href="../../dev/simulation.md" class="md-nav__link">
         
   
   
@@ -632,7 +752,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/dev/fpga_build.md" class="md-nav__link">
+      <a href="../../dev/fpga_build.md" class="md-nav__link">
         
   
   
@@ -717,7 +837,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/apps/pong.md" class="md-nav__link">
+      <a href="../../apps/pong.md" class="md-nav__link">
         
   
   
@@ -745,7 +865,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/apps/fractal.md" class="md-nav__link">
+      <a href="../../apps/fractal.md" class="md-nav__link">
         
   
   
@@ -790,6 +910,71 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#automacao-via-makefile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Automação via Makefile
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#limpeza-do-projeto" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Limpeza do Projeto
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#compilacao-de-software" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compilação de Software
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#simulacao-com-cocotb" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Simulação com Cocotb
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#atalhos-e-comandos-uteis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Atalhos e Comandos Úteis
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -802,8 +987,90 @@
               
               <article class="md-content__inner md-typeset">
                 
-  <h1>404 - Not found</h1>
+                  
 
+
+  
+  
+
+
+<h1 id="requisitos-e-setup">Requisitos e Setup</h1>
+<div class="admonition warning">
+<p class="admonition-title">Dependências do Sistema</p>
+<p>Para compilar, simular e interagir com este projeto, instale as seguintes ferramentas e certifique-se de que elas estão no seu PATH:</p>
+</div>
+<ul>
+<li><strong>GHDL</strong>: Simulador VHDL open-source.</li>
+<li><strong>GTKWave</strong>: Visualizador de formas de onda.</li>
+<li><strong>RISC-V GCC Toolchain</strong>: Necessário para compilar os softwares C/Assembly nativamente para a arquitetura (<code>riscv64-unknown-elf-gcc</code>).</li>
+<li><strong>COCOTB</strong>: Framework Python para testbenches baseados em corrotinas.</li>
+<li><strong>Python 3.10+</strong>: Necessário para rodar o Cocotb, utilitários de build e drivers de host.</li>
+<li><strong>Xilinx Vivado</strong>: Opcional. Apenas se for realizar a síntese e gravação na placa FPGA (Nexys 4 DDR).</li>
+</ul>
+<h2 id="automacao-via-makefile">Automação via Makefile</h2>
+<p>Todos os comandos devem ser executados a partir da raiz do repositório. O Makefile automatiza completamente o fluxo de simulação, compilação de software, visualização e síntese.</p>
+<p>O sistema de build foi projetado para ser multiplataforma, detectando automaticamente se você está operando em um ambiente Linux nativo ou WSL (Windows Subsystem for Linux), ajustando as chamadas de executáveis (como vivado.exe ou python.exe) conforme necessário.</p>
+<h2 id="limpeza-do-projeto">Limpeza do Projeto</h2>
+<p>Remove todos os artefatos de build gerados (arquivos HEX, BIN, formas de onda e diretórios temporários):</p>
+<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>make<span class="w"> </span>clean
+</span></code></pre></div>
+<h2 id="compilacao-de-software">Compilação de Software</h2>
+<p>Compile um programa escrito em C ou Assembly (localizado no diretório sw/apps/) para uso na simulação ou FPGA:</p>
+<div class="highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>make<span class="w"> </span>sw<span class="w"> </span><span class="nv">SW</span><span class="o">=</span>&lt;program_name&gt;
+</span></code></pre></div>
+<h2 id="simulacao-com-cocotb">Simulação com Cocotb</h2>
+<p>Rode testes automatizados informando o nome do testbench (TEST) e da entidade de topo (TOP). Opcionalmente, você pode especificar qual microarquitetura testar (CORE) e injetar um software na memória durante a inicialização (SW):</p>
+<div class="highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>make<span class="w"> </span>cocotb<span class="w"> </span><span class="o">[</span><span class="nv">CORE</span><span class="o">=</span>&lt;core&gt;<span class="o">]</span><span class="w"> </span><span class="nv">TEST</span><span class="o">=</span>&lt;testbench_name&gt;<span class="w"> </span><span class="nv">TOP</span><span class="o">=</span>&lt;top_level&gt;<span class="w"> </span><span class="o">[</span><span class="nv">SW</span><span class="o">=</span>&lt;program_name&gt;<span class="o">]</span>
+</span></code></pre></div>
+<div class="admonition example">
+<p class="admonition-title">Visualização de Ondas</p>
+<p>Para abrir a última simulação gerada no GTKWave e analisar os sinais lógicos em detalhes, execute:</p>
+<div class="highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>make<span class="w"> </span>view<span class="w"> </span><span class="o">[</span><span class="nv">CORE</span><span class="o">=</span>&lt;core&gt;<span class="o">]</span><span class="w"> </span><span class="nv">TEST</span><span class="o">=</span>&lt;testbench_name&gt;
+</span></code></pre></div>
+</div>
+<h2 id="atalhos-e-comandos-uteis">Atalhos e Comandos Úteis</h2>
+<p>Já existem atalhos configurados no Makefile para facilitar a listagem de arquivos e execução de tarefas comuns:</p>
+<ul>
+<li><code>make info</code>: Mostra as configurações do sistema, paths e detecção de ferramentas instaladas.</li>
+<li><code>make list-apps</code>: Lista todos os programas em C/Assembly disponíveis para compilação.</li>
+<li><code>make list-tests</code>: Lista todos os testbenches prontos para serem simulados (separados por integração, unidade e periféricos).</li>
+<li><code>make fpga</code>: Sintetiza o hardware, implementa e gera o bitstream utilizando os scripts Tcl do Vivado.</li>
+<li><code>make upload SW=&lt;program_name&gt;</code>: Envia o software compilado diretamente para a memória do processador na FPGA através da comunicação serial UART.</li>
+</ul>
+
+
+
+
+
+
+
+  
+    
+  
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Last update">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="March 14, 2026 04:22:30 UTC">March 14, 2026 04:22:30</span>
+  </span>
+
+    
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
               </article>
             </div>
           
@@ -823,6 +1090,44 @@
       
         <footer class="md-footer">
   
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../.." class="md-footer__link md-footer__link--prev" aria-label="Previous: Visão Geral">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Visão Geral
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../../hardware/single-cycle/" class="md-footer__link md-footer__link--next" aria-label="Next: Processador Single-Cycle">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Processador Single-Cycle
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
     
   
   <div class="md-footer-meta md-typeset">
@@ -850,12 +1155,12 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "/RISC-V/", "features": ["navigation.instant", "navigation.tabs", "navigation.footer", "navigation.tracking", "navigation.top", "toc.follow", "content.code.copy", "content.tabs.link", "search.highlight", "search.suggest", "content.tooltips"], "search": "/RISC-V/assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tabs", "navigation.footer", "navigation.tracking", "navigation.top", "toc.follow", "content.code.copy", "content.tabs.link", "search.highlight", "search.suggest", "content.tooltips"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="/RISC-V/assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
-        <script src="/RISC-V/javascripts/mathjax.js"></script>
+        <script src="../../javascripts/mathjax.js"></script>
       
         <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
       
