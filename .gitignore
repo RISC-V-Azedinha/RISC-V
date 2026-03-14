@@ -15,6 +15,12 @@
 # Ignorar pycache do Python
 __pycache__/
 
+# Ignorar .venv
+.venv
+
+# Documentação
+site/
+
 # Ignorar arquivos VIVADO (Xilinx)
 .Xil
 *.txt

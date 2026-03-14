@@ -1,0 +1,85 @@
+site_name: RISC-V SOC
+site_description: Arquitetura, Drivers e Aplicações do SoC RISC-V
+site_url: https://RISC-V-Azedinha.github.io/RISC-V/
+repo_url: https://github.com/RISC-V-Azedinha/RISC-V
+repo_name: RISC-V-Azedinha/RISC-V
+
+theme:
+  name: material
+  
+  # Logo no canto superior esquerdo (usando vetor embutido)
+  icon:
+    logo: material/memory
+    
+  # Favicon da aba do navegador. 
+  # IMPORTANTE: Crie a pasta docs/assets, coloque um arquivo favicon.png lá e descomente a linha abaixo!
+  # favicon: assets/favicon.png 
+
+  features:
+    - navigation.instant
+    - navigation.tabs
+    - navigation.footer
+    - navigation.tracking
+    - navigation.top
+    - toc.follow
+    - content.code.copy
+    - content.tabs.link
+    - search.highlight
+    - search.suggest
+    - content.tooltips
+
+  palette:
+    # Apenas Modo Escuro para forçar o estilo da imagem que você mandou
+    - scheme: slate
+      primary: black 
+      accent: indigo
+
+  font:
+    text: Inter
+    code: JetBrains Mono
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.arithmatex:
+      generic: true
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - tables
+  - attr_list
+
+# Estrutura do Menu Lateral (Ajuste conforme seus arquivos)
+nav:
+  - Introdução:
+      - Visão Geral: index.md
+      - Requisitos e Setup: intro/setup.md
+      - Primeiros Passos: intro/quickstart.md
+  - Arquitetura de Hardware:
+      - Processador Single-Cycle: hardware/single-cycle.md
+  - Simulação e Verificação:
+      - Ambiente de Testes (Cocotb): dev/simulation.md     # Baseado nos ficheiros em sim/
+      - Fluxo de Síntese (FPGA): dev/fpga_build.md         # Baseado em fpga/scripts/
+  - Aplicações:
+      - Jogo Pong: apps/pong.md
+      - Renderização de Fractal: apps/fractal.md
+
+extra_css:
+  - stylesheets/extra.css
+
+plugins:
+  - search
+  - git-revision-date-localized:
+      type: datetime
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
