@@ -34,7 +34,9 @@ A arquitetura multiciclo introduz estágios dedicados para acesso à memória. O
 
 ## 2. O Novo Caminho de Dados (Datapath Multiciclo)
 
-A principal diferença visual entre o datapath monociclo e multiciclo é a presença de **registradores de estágio** (pipeline registers) que separam logicamente cada fase da execução.
+A principal diferença visual entre o datapath monociclo e multiciclo é a presença de **registradores de estágio** (pipeline registers) que separam logicamente cada fase da execução:
+
+![Multi-Cycle Datapath](../assets/multi_cycle_datapath.svg){ .hero-img }
 
 ### 2.1. Registradores de Estágio
 
@@ -106,7 +108,9 @@ s_alu_in_b <= r_RS2 when Control_i.alu_src_b = '0' else s_immediate;
 
 ### 3.1. A Máquina de Estados Finita (FSM)
 
-Na arquitetura multiciclo, a Unidade de Controle é implementada como uma **FSM de Moore** — uma máquina de estados finitos onde as saídas dependem exclusivamente do estado atual. O arquivo `main_fsm.vhd` implementa esta FSM, organizada em estados que correspondem às fases lógicas de execução.
+Na arquitetura multiciclo, a Unidade de Controle é implementada como uma **FSM de Moore** — uma máquina de estados finitos onde as saídas dependem exclusivamente do estado atual. O arquivo `main_fsm.vhd` implementa esta FSM, organizada em estados que correspondem às fases lógicas de execução:
+
+![Multi-Cycle FSM](../assets/fsm_multi_cycle.svg){ .hero-img }
 
 #### Estados da FSM
 
@@ -145,9 +149,87 @@ type t_state is (
 5. **S_WB_\* (Write-Back):**
    - Resultado é escrito no registrador de destino
 
+Em uma **FSM do tipo Moore**, os sinais de saída dependem exclusivamente do **estado atual**, e não diretamente das entradas, o que torna o comportamento do controle mais estável e alinhado à divisão do processamento em ciclos bem definidos.
+
+**Tabela Completa de Transição de Estado**
+
+| Estado Atual | Condição   | Próximo Estado | Descrição do Estado                                    | 
+| :----------: | :--------: | :------------: | :----------------------------------------------------: | 
+| IF           | -          | ID             | Busca instrução e incrementa PC (PC+4)                 | 
+| ID           | Tipo-R/I   | EX_ALU         | Decodifica instruções aritméticas/lógicas              | 
+| ID           | Load/Store | EX_ADDR        | Decodifica acesso à memória                            | 
+| ID           | Branch     | EX_BR          | Decodifica desvio condicional                          | 
+| ID           | JAL        | EX_JAL         | Decodifica salto incondicional imediato                | 
+| ID           | JALR       | EX_JALR        | Decodifica salto incondicional via registrador         | 
+| ID           | LUI        | EX_LUI         | Decodifica carregamento imediato superior              | 
+| ID           | AUIPC      | EX_AUIPC       | Decodifica adição de imediato ao PC                    | 
+| EX_ALU       | -          | WB_REG         | Operação da ALU concluída. Vai escrever no RegFile     | 
+| EX_ADDR      | Load       | MEM_RD         | Endereço calculado. Vai ler da memória                 | 
+| EX_ADDR      | Store      | MEM_WR         | Endereço calculado. Vai escrever na memória            | 
+| EX_BR        | -          | IF             | Avalia condição (`Zero`) e atualiza PC se necessário   | 
+| EX_JAL       | -          | WB_JAL         | Calcula alvo (`OldPC+IMM`) imediatamente               | 
+| EX_JALR      | -          | WB_JALR        | Calcula alvo (`rs1+IMM`) e salva em ALUResult          | 
+| EX_LUI       | -          | WB_REG         | Soma `0+IMM`. Vai para write-back                      | 
+| EX_AUIPC     | -          | WB_REG         | Soma `PC+IMM`. Vai para write-back                     | 
+| MEM_RD       | -          | WB_REG         | Lê `DMem[ALUResult]` e atualiza MDR                    | 
+| MEM_WR       | -          | IF             | Escreve RS2 em `DMem[ALUResult]`                       | 
+| WB_REG       | -          | IF             | Escrita do resultado em `rd`                           | 
+| WB_JAL       | -          | IF             | Escreve retorno (`PC+4`) em `rd`. PC já foi atualizado | 
+| WB_JALR      | -          | IF             | Escreve retorno (`PC+4`) em `rd`. PC é atualizado      | 
+
+**Tabela Completa de Sinais de Controle**
+
+| Sinal  | Descrição do Sinal de Controle|
+| :-: | :-- |
+| `PCWrite` | Habilita escrita no `PC`. Permite que o PC seja atualizado apenas em estados específicos (como Fetch ou ao realizar um salto - branch/jump) |
+| `OPCWrite` | Atualiza o `OldPC`. Guarda o valor atual do PC no registrador `r_OldPC`. É usado para salvar o endereço da instrução corrente - usando-o para cálculos relativos - atualizado normalmente no estado de Fetch |
+| `PCSrc` | Seletor da fonte do próximo `PC`. Controla o multiplexador que define o novo valor do PC. Oppções são: `00` (`PC + 4`); `01` (Branch/JAL); `10` (JALR) |
+| `IRWrite` | Habilita a escrita no `IR`. Permite carregar uma nova instrução apenas durante o estado de Fetch. | 
+| `MemWrite` | Habilita a escrita na memória. Sinal enviado para a unidade de armazenamento e carga (LSU) para efetuar a gravação de um dado. |
+| `ALUSrcA` | Seletor do Operando A da ALU. Opções: `00` (rs1); `01` (PC atual); `10` (zero) |
+| `ALUSrcB` | Seletor do Operando B da ALU. Opções: `0` (rs2); `1` (imediato) |
+| `ALUControl` | Seletor para a operação da ALU. Define qual operação a ALU deve executar (ADD, SUB, AND etc.) |
+| `RegWrite` | Habilita a escrita no banco de registradores. Permite gravar no registrador `rd` durante o estágio de write-back (WB) |
+| `WBSel` | Seletor do dado de write-back. Opções: `00` (resultado da ALU); `01` (MDR); `10` (próximo PC) |
+| `RS1Write` | Habilita a atualização do regisitrador de RS1. Controla a capatura do valor lido de `rs1` do banco de registradores |
+| `RS2Write` | Habilita a atualização do regisitrador de RS2. Controla a capatura do valor lido de `rs2` do banco de registradores |
+| `ALUrWrite` | Habilita a atualização do ALUResult. Controla a captura do resultado da ALU |
+| `MDRWrite` | Habilita a escrita no MDR. Captura o dado carregado da memória | 
+
+**Tabela Completa de Sinais por Estado**
+
+**Legenda de Sinais**
+
+* **ALUSrcA:** `00`=rs1; `01`=OldPC; `10`=Zero
+* **ALUSrcB:** `0`=rs2; `1`=Imediato
+* **PCSrc:** `00`=PC+4; `01`=Branch/JAL (Somador Dedicado); `10`=JALR (ALUResult)
+* **WBSel:** `00`=ALUResult; `01`=MDR; `10`=PC+4 (Retorno)
+* **Cond:** Habilitado apenas se a condição de Branch for satisfeita (Zero flag)
+* **ALUControl:** `ADD` (Força Soma); `Funct` (Tipo-R/I); `Branch` (Resolve SUB/SLT/SLTU via funct3)
+
+| Estado  | `PCWrite` | `OPCWrite` | `PCSrc`       | `IRWrite` | `MemWrite` | `ALUSrcA`      | `ALUSrcB`      | `ALUControl` | `RegWrite` | `WBSel`        | `RS1Write` | `RS2Write` | `ALUrWrite` | `MDRWrite` |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **IF** | 1 | 1 | 00 | 1 | 0 | X | X | X | 0 | X | 0 | 0 | 0 | 0 |
+| **ID** | 0 | 0 | X | 0 | 0 | X | X | X | 0 | X | 1 | 1 | 0 | 0 |
+| **EX_ALU** | 0 | 0 | X | 0 | 0 | 00 | **0/1** | **Funct** | 0 | X | 0 | 0 | 1 | 0 |
+| **EX_ADDR**| 0 | 0 | X | 0 | 0 | 00 | 1 | **ADD** | 0 | X | 0 | 0 | 1 | 0 |
+| **EX_BR** | **Cond** | 0 | 01 | 0 | 0 | 00 | 0 | **Branch** | 0 | X | 0 | 0 | 0 | 0 |
+| **EX_JAL** | 0 | 0 | X | 0 | 0 | X | X | X | 0 | X | 0 | 0 | 0 | 0 |
+| **EX_JALR**| 0 | 0 | X | 0 | 0 | 00 | 1 | **ADD** | 0 | X | 0 | 0 | 1 | 0 |
+| **EX_LUI** | 0 | 0 | X | 0 | 0 | 10 | 1 | **ADD** | 0 | X | 0 | 0 | 1 | 0 |
+| **EX_AUIPC**| 0 | 0 | X | 0 | 0 | 01 | 1 | **ADD** | 0 | X | 0 | 0 | 1 | 0 |
+| **MEM_RD** | 0 | 0 | X | 0 | 0 | X | X | X | 0 | X | 0 | 0 | 0 | 1 |
+| **MEM_WR** | 0 | 0 | X | 0 | 1 | X | X | X | 0 | X | 0 | 0 | 0 | 0 |
+| **WB_REG** | 0 | 0 | X | 0 | 0 | X | X | X | 1 | **00/01** | 0 | 0 | 0 | 0 |
+| **WB_JAL** | 1 | 0 | 01 | 0 | 0 | X | X | X | 1 | 10 | 0 | 0 | 0 | 0 |
+| **WB_JALR**| 1 | 0 | 10 | 0 | 0 | X | X | X | 1 | 10 | 0 | 0 | 0 | 0 |
+
 ### 3.2. Protocolo de Sincronização (Handshake Ready/Valid)
 
-Para tolerar memórias com latência variável, o processador implementa um protocolo de handshake `ready`/`valid` nas interfaces de memória:
+Para tolerar memórias com latência variável, o processador implementa um protocolo de handshake `ready`/`valid` nas interfaces de memória.
+
+!!! note "Hierarquia de Memória"
+    O contraste entre BRAM e Memória Distribuída é definido pela latência: a BRAM economiza lógica mas "atrasa" o dado em 1-2 ciclos, enquanto a distribuída (registradores) é instantânea, mas cara em área. O protocolo Ready/Valid amarra essa hierarquia, servindo como o controle de tráfego que impede que a latência de acesso da memória cause perda de dados ou quebre o fluxo do pipeline (throughput) em altas frequências.
 
 #### Interface de Handshake
 
@@ -158,6 +240,8 @@ IMem_vld_o  : out std_logic;
 DMem_rdy_i  : in  std_logic;
 DMem_vld_o  : out std_logic;
 ```
+
+![Ready-Valid-Handshake](../assets/axi_ready_valid_handshake_featured.webp){ .hero-img }
 
 #### FSM e Handshake
 
@@ -266,3 +350,8 @@ A arquitetura de Harvard Modificada é mantida, com barramentos separados para I
 A microarquitetura multiciclo representa um compromisso entre simplicidade de controle (herdada do monociclo) e desempenho (proporcional à frequência de operação). Ao dividir a execução em múltiplos ciclos e reutilizar recursos de hardware no tempo, o processador pode atingir frequencies significativamente mais altas que o monociclo, mantendo uma complexidade controlável.
 
 A implementação do protocolo handshake ready/valid garante que o processador pode funcionar corretamente com memórias reais de latência variável, algo impossível no modelo monociclo.
+
+## Referências
+
+* JENSEN, J. J. How the AXI-style ready/valid handshake works. Disponível em: <https://vhdlwhiz.com/how-the-axi-style-ready-valid-handshake-works/>.
+* AMD Technical Information Portal. 7 Series FPGAs Memory Resources. Disponível em: <https://docs.amd.com/v/u/en-US/ug473_7Series_Memory_Resources>.
