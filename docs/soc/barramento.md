@@ -1,3 +1,6 @@
+!!! warning Atualizar referência do link para documentação do protocolo ready/valid.
+
+
 # Barramento: Mestres e Escravos 
 
 Em um SoC (System on Chip), o barramento é a infraestrutura de comunicação que permite que diferentes blocos funcionais troquem informações. Imagine-o como uma rodovia com regras de trânsito bem definidas (o protocolo).
@@ -89,8 +92,10 @@ O protocolo de handshake é fundamental para a operação correta do barramento,
 ### Funcionamento Básico do Handshake
 
 O protocolo utiliza dois sinais fundamentais:
-- **`vld` (Valid)**: Sinalizado pelo mestre para indicar que os dados/endereço no barramento são válidos
-- **`rdy` (Ready)**: Sinalizado pelo escravo para indicar que completou o processamento da transação
+- **`vld` (Valid)**: Sinalizado pelo mestre para indicar que os dados/endereço no barramento são válidos.
+- **`rdy` (Ready)**: Sinalizado pelo escravo para indicar que completou o processamento da transação.
+
+!!! info Mais informações do protocolo em [Ready/Valid](https://url.com).
 
 ### Fluxo de Sinais na Transação
 
