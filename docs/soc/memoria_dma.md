@@ -29,46 +29,7 @@ A tabela abaixo apresenta o mapa de endereçamento completo do SoC, detalhando c
 
 #### 1.1.1 Representação Visual do Mapa de Memória
 
-```
-0x0000_0000 ┌─────────────────────┐
-            │      Boot ROM        │  4 KB
-            │    (0x0000_0000)     │
-0x0000_0FFF ├─────────────────────┤
-            │                     │
-            │     Reservado       │  ~128 MB
-            │                     │
-0x0FFF_FFFF ├─────────────────────┤
-            │       UART         │  64 KB
-            │    (0x1000_0000)    │
-0x1000_FFFF ├─────────────────────┤
-            │       GPIO         │  64 KB
-            │    (0x2000_0000)    │
-0x2000_FFFF ├─────────────────────┤
-            │       VGA          │  128 KB
-            │    (0x3000_0000)    │
-0x3001_FFFF ├─────────────────────┤
-            │       DMA          │  64 KB
-            │    (0x4000_0000)    │
-0x4000_FFFF ├─────────────────────┤
-            │      CLINT         │  64 KB
-            │    (0x5000_0000)    │
-0x5000_FFFF ├─────────────────────┤
-            │       PLIC         │  256 KB
-            │    (0x6000_0000)    │
-0x6003_FFFF ├─────────────────────┤
-            │     Reservado       │  256 MB
-            │                     │
-0x7FFF_FFFF ├─────────────────────┤
-            │       RAM          │  256 KB
-            │    (0x8000_0000)    │
-0x8003_FFFF ├─────────────────────┤
-            │     Reservado       │  ~255 MB
-            │                     │
-0x8FFF_FFFF ├─────────────────────┤
-            │       NPU          │  256 MB
-            │    (0x9000_0000)    │
-0x9FFF_FFFF └─────────────────────┘
-```
+![Descrição do Ícone](../assets/mapa.svg)
 
 ### 1.2 Decodificação de Endereços
 
@@ -212,161 +173,75 @@ end loop;
 
 ---
 
-## 3. Registradores de Controle e Status (CSRs)
+## 3. Registradores de Periféricos via MMIO
 
-### 3.1 Conceito e Propósito
+### 3.1 Conceito: MMIO vs CSRs Internos do Core
 
-Os **Control and Status Registers (CSRs)** são registradores especiais definidos na especificação **RISC-V Privileged Architecture** que permitem a comunicação entre o software e o hardware do processador. Diferentemente dos registradores gerais (x0-x31), os CSRs são acessados através de instruções dedicadas (CSRRC, CSRRCI, CSRRM, CSRRS, CSRRSI, CSRRW, CSRRWI) e ocupam um espaço de endereçamento separado de 12 bits (permitindo até 4096 registradores).
+Existem **duas formas distintas** de comunicação entre software e hardware neste SoC:
 
-Os CSRs servem para três propósitos principais:
+#### CSRs Internos do Core (RISC-V Privileged)
 
-- **Controle de Interrupções:** Habilitar/desabilitar interrupções e configurar handlers
-- **Monitoramento de Status:** Indicar condições de erro e estado do processador
-- **Configuração de Ambiente:** Definir o modo de operação e contexto de execução
+São registradores **dentro do núcleo processador** que controlam interrupções, traps e modo de execução. São acessados via instruções CSR dedicadas (`csrrw`, `csrrs`, `csrrc`) e ocupam um espaço de endereçamento separado de 12 bits (endereços `0x300`-`0x344`). Esses registradores fazem parte da arquitetura RISC-V Privileged e são implementados no módulo `csr_file.vhd`.
 
-### 3.2 CSRs Implementados (Machine Mode)
+#### Registradores de Periféricos via MMIO
 
-O SoC implementa um subconjunto mínimo de CSRs necessários para operação em Machine Mode, conforme especificado na arquitetura RISC-V Privileged:
+São registradores **fora do núcleo**, mapeados no espaço de memória endereçável. Cada periférico expõe seus registradores de controle e dados em endereços específicos dentro do mapa de memória. O software acessa esses registradores usando instruções normais de `load` e `store`.
 
-| Endereço | Nome | Acesso | Descrição |
-|----------|------|--------|-----------|
-| `0x300` | `mstatus` | RW | Status global do processador (bit MIE = Machine Interrupt Enable) |
-| `0x304` | `mie` | RW | Máscara de habilitação de interrupções individuais |
-| `0x305` | `mtvec` | RW | Endereço base para vetores de trap |
-| `0x340` | `mscratch` | RW | Registro auxiliar para uso do kernel |
-| `0x341` | `mepc` | RW | Machine Exception Program Counter (endereço de retorno após trap) |
-| `0x342` | `mcause` | RW | Machine Cause Register (código numérico da causa do trap) |
-| `0x344` | `mip` | RO | Machine Interrupt Pending (reflete interrupções pendentes em hardware) |
+**Esta seção documenta os registradores MMIO dos periféricos.** Para os CSRs internos do core, consulte a [Seção 6: CSRs Internos do Core RISC-V](#6-csrs-internos-do-core-risc-v).
 
-### 3.3 Descrição Detalhada dos CSRs
+### 3.2 Arquitetura de Acesso a Periféricos
 
-#### mstatus (Machine Status Register - 0x300)
+No SoC, periféricos são acessados como posições de memória através de **Memory-Mapped I/O (MMIO)**:
 
-Este registrador mantém o estado global de interrupção do processador. Após reset, apenas os bits MPIE (Machine Previous Interrupt Enable) e MPP (Machine Previous Privilege) são configurados:
+| Intervalo de Endereço | Descrição / Periférico |
+| :--- | :--- |
+| `0x0000_0000` - `0x0FFF_FFFF` | Memórias (ROM) e Reservado |
+| `0x1000_0000` | UART |
+| `0x2000_0000` | GPIO |
+| `0x3000_0000` | VGA |
+| `0x4000_0000` | DMA |
+| `0x5000_0000` | CLINT |
+| `0x6000_0000` | PLIC |
+| `0x8000_0000` | RAM |
+| `0x9000_0000` | NPU |
 
-- **Bit 3 (MIE):** Quando em 1, interrupções habilitadas globalmente
-- **Bit 7 (MPIE):** Armazena o valor de MIE antes da entrada em trap
-- **Bits 12-11 (MPP):** Modo de privilégio anterior (11 = Machine Mode)
+A CPU configura e lê periféricos usando instruções normais de memória:
 
-```vhdl
--- Configuração após reset
-r_mstatus <= (others => '0'); 
-r_mstatus(c_MPIE_BIT) <= '1';      -- MPIE = 1
-r_mstatus(12 downto 11) <= "11";  -- MPP = 11 (Machine Mode)
+```c
+// Escrita: configurar source address do DMA
+DMA_SRC_ADDR = (uint32_t)buffer_src;  // sw do compilador: store
+
+// Leitura: verificar status da UART
+status = UART_CTRL;                    // sw do compilador: load
 ```
 
-#### mie (Machine Interrupt Enable - 0x304)
+### 3.3 BSP: Macros de Acesso
 
-Máscara individual para cada fonte de interrupção:
-
-| Bit | Nome | Descrição |
-|-----|------|-----------|
-| 11 | MEIE | Machine External Interrupt Enable |
-| 7 | MTIE | Machine Timer Interrupt Enable |
-| 3 | MSIE | Machine Software Interrupt Enable |
-
-#### mip (Machine Interrupt Pending - 0x344)
-
-Este registrador é **read-only** e reflete o estado atual das linhas de interrupção em tempo real:
-
-```vhdl
-s_mip_comb <= (
-    11 => Irq_Ext_i,   -- MEIP
-    7  => Irq_Timer_i, -- MTIP
-    3  => Irq_Soft_i,  -- MSIP
-    others => '0'
-);
-```
-
-### 3.4 Operações Atômicas
-
-As instruções CSR suportam três operações atômicas, implementadas via campo Funct3[1:0]:
-
-| Opcode | Instrução | Operação | Descrição |
-|--------|-----------|----------|-----------|
-| `01` | CSRRW | Read/Write | Lê o valor antigo, escreve novo valor |
-| `10` | CSRRS | Read/Set | Lê o valor antigo, seta bits (OR com máscara) |
-| `11` | CSRRC | Read/Clear | Lê o valor antigo, limpa bits (AND NOT máscara) |
-
-A atomicidade é garantida porque a leitura e modificação ocorrem no mesmo ciclo de clock:
-
-```vhdl
-case Csr_Op_i is
-    when "01" => -- CSRRW
-        s_write_val   <= Csr_WData_i;
-        s_we_internal <= '1';
-    
-    when "10" => -- CSRRS
-        s_write_val   <= s_curr_val OR Csr_WData_i;
-        if unsigned(Csr_WData_i) /= 0 then
-            s_we_internal <= '1';
-        end if;
-
-    when "11" => -- CSRRC
-        s_write_val   <= s_curr_val AND (NOT Csr_WData_i);
-        if unsigned(Csr_WData_i) /= 0 then
-            s_we_internal <= '1';
-        end if;
-    
-    when others => null;
-end case;
-```
-
-### 3.5 Tratamento de Traps
-
-Quando uma exceção ou interrupção ocorre, o hardware salva automaticamente o contexto:
-
-```vhdl
-if Trap_Enter_i = '1' then
-    r_mepc   <= Trap_PC_i;      -- Salva PC atual para retorno
-    r_mcause <= Trap_Cause_i;    -- Salva motivo do trap
-    
-    -- Salva contexto de interrupção
-    r_mstatus(c_MPIE_BIT) <= r_mstatus(c_MIE_BIT); -- Backup MIE
-    r_mstatus(c_MIE_BIT)  <= '0';                    -- Desabilita interrupções
-```
-
-O retorno do trap (instrução MRET) restaura o contexto:
-
-```vhdl
-elsif Trap_Return_i = '1' then
-    r_mstatus(c_MIE_BIT)  <= r_mstatus(c_MPIE_BIT);
-    r_mstatus(c_MPIE_BIT) <= '1';
-```
-
----
-
-## 4. Memory-Mapped I/O (MMIO)
-
-### 4.1 Conceito
-
-**Memory-Mapped I/O (MMIO)** é uma técnica de comunicação onde os periféricos de hardware são acessados como se fossem posições de memória comum. Esta abordagem simplifica a programação, permitindo que instruções normais de load/store acessem registradores de controle e buffers de dados dos periféricos.
-
-No contexto do SoC, cada periférico possui um conjunto de registradores mapeados em endereços específicos dentro do espaço de endereçamento.
-
-### 4.2 Acesso em Software (BSP)
-
-O Board Support Package (BSP) fornece macros para acesso volátil a registradores MMIO:
+O Board Support Package (BSP) fornece macros para acesso volátil:
 
 ```c
 #define MMIO32(addr) (*(volatile uint32_t *)(addr))
 #define MMIO8(addr)  (*(volatile uint8_t  *)(addr))
 ```
 
-A palavra-chave `volatile` garante que o compilador não otimize away acessos consecutivos ao mesmo endereço, essencial para registradores de status.
+A palavra-chave `volatile` garante que o compilador não otimize away acessos consecutivos ao mesmo endereço, essencial para registradores de status que mudam de valor.
 
-### 4.3 Registradores MMIO por Periférico
+### 3.4 Tabela Consolidada de Registradores MMIO
+
+A seguir, todos os registradores mapeados em memória de cada periférico do SoC.
+
+---
 
 #### UART (`0x1000_0000`)
 
-O controlador UART (Universal Asynchronous Receiver-Transmitter) gerencia a comunicação serial com o computador host.
+Controlador de comunicação serial UART.
 
 | Offset | Nome | Acesso | Descrição |
 |--------|------|--------|-----------|
 | `0x00` | `DATA` | RW | Registrador de dados TX/RX |
 | `0x04` | `CTRL` | RW | Registrador de controle e status |
 
-Definições de bits do registrador de controle:
+**Definições de bits do registrador CTRL:**
 
 ```c
 #define UART_STATUS_TX_BUSY  (1 << 0)   // Transmissor ocupado
@@ -375,9 +250,32 @@ Definições de bits do registrador de controle:
 #define UART_CMD_RX_FLUSH    (1 << 2)   // Comando: limpar buffer
 ```
 
+---
+
+#### GPIO (`0x2000_0000`)
+
+Controlador de pinos de entrada/saída de propósito geral.
+
+| Offset | Nome | Acesso | Descrição |
+|--------|------|--------|-----------|
+| `0x00` | `DATA` | RW | Leituras de chaves (switches) e escritas nos LEDs |
+
+---
+
+#### VGA (`0x3000_0000`)
+
+Controlador de vídeo VGA com frame buffer de 320x240 pixels.
+
+| Offset | Nome | Acesso | Descrição |
+|--------|------|--------|-----------|
+| `0x00000` - `0x1FFFC` | `FRAME_BUFFER` | RW | Pixels do frame buffer (24 bits/pixel) |
+| `0x1FFFE` | `VSYNC` | RW | Registrador de sincronização vertical |
+
+---
+
 #### CLINT (`0x5000_0000`)
 
-O **Core Local Interrupt Controller** gerencia interrupções de timer e software localmente ao núcleo, funcionando em conjunto com o PLIC para interrupções externas.
+**Core Local Interrupt Controller** - Gerencia interrupções de timer e software localmente.
 
 | Offset | Nome | Acesso | Descrição |
 |--------|------|--------|-----------|
@@ -389,9 +287,11 @@ O **Core Local Interrupt Controller** gerencia interrupções de timer e softwar
 
 O timer de 64 bits é implementado como dois registradores de 32 bits, permitindo contagens superiores a 4 segundos a 100 MHz.
 
+---
+
 #### PLIC (`0x6000_0000`)
 
-O **Platform-Level Interrupt Controller** gerencia prioridades e roteamento de interrupções de múltiplas fontes para o núcleo.
+**Platform-Level Interrupt Controller** - Gerencia prioridades e roteamento de interrupções externas.
 
 | Offset | Nome | Acesso | Descrição |
 |--------|------|--------|-----------|
@@ -401,9 +301,32 @@ O **Platform-Level Interrupt Controller** gerencia prioridades e roteamento de i
 | `0x200000` | `THRESHOLD` | RW | Limiar de prioridade (interrupções abaixo são ignoradas) |
 | `0x200004` | `CLAIM` | RW | Claim: lê fonte; Complete: marca como tratada |
 
+---
+
+#### DMA (`0x4000_0000`)
+
+**Direct Memory Access Controller** - Transferência de dados autônoma entre memória e periféricos.
+
+| Offset | Nome | Acesso | Descrição |
+|--------|------|--------|-----------|
+| `0x00` | `SRC_ADDR` | RW | Endereço de origem (RAM) |
+| `0x04` | `DST_ADDR` | RW | Endereço de destino (RAM ou periférico) |
+| `0x08` | `COUNT` | RW | Número de palavras de 32 bits a transferir |
+| `0x0C` | `CONTROL` | RW | Bits de controle e status |
+
+**Bits do registrador CONTROL:**
+
+| Bit | Nome | Acesso | Descrição |
+|-----|------|--------|-----------|
+| 0 | START | RW | Escreve 1 para iniciar transferência; hardware limpa ao completar |
+| 1 | FIXED_DST | RW | 1 = destino fixo (FIFO mode), 0 = incremento automático |
+| 2 | BUSY | RO | 1 = transferência em andamento |
+
+---
+
 #### NPU (`0x9000_0000`)
 
-A **Neural Processing Unit** é um acelerador de hardware para operações de redes neurais (multiplicação de matrizes).
+**Neural Processing Unit** - Acelerador de hardware para operações de redes neurais.
 
 | Offset | Nome | Acesso | Descrição |
 |--------|------|--------|-----------|
@@ -418,7 +341,7 @@ A **Neural Processing Unit** é um acelerador de hardware para operações de re
 | `0x48` | `FLAGS` | RW | Flags de controle (ReLU) |
 | `0x80` | `BIAS_BASE` | RW | Endereço base do vetor de bias |
 
-Bits de status:
+**Bits de status (STATUS):**
 
 ```c
 #define NPU_STATUS_BUSY     (1 << 0)  // Operação em andamento
@@ -426,7 +349,7 @@ Bits de status:
 #define NPU_STATUS_OUT_VLD  (1 << 3)  // Saída válida disponível
 ```
 
-Bits de comando:
+**Bits de comando (CMD):**
 
 ```c
 #define NPU_CMD_RST_PTRS     (1 << 0)  // Reseta ponteiros internos
@@ -435,26 +358,9 @@ Bits de comando:
 #define NPU_CMD_ACC_NO_DRAIN (1 << 3)  // Mantém resultado no array (tiling)
 ```
 
-#### GPIO (`0x2000_0000`)
-
-Controlador de pinos de entrada/saída de propósito geral.
-
-| Offset | Nome | Acesso | Descrição |
-|--------|------|--------|-----------|
-| `0x00` | `DATA` | RW | Leituras de chaves e escritas nos LEDs |
-
-#### VGA (`0x3000_0000`)
-
-Controlador de vídeo VGA com buffer de frame de 320x240 pixels.
-
-| Offset | Nome | Acesso | Descrição |
-|--------|------|--------|-----------|
-| `0x00000` - `0x1FFFC` | `FRAME_BUFFER` | RW | Pixels do frame buffer (24 bits/pixel) |
-| `0x1FFFE` | `VSYNC` | RW | Registrador de sincronização vertical |
-
 ---
 
-## 5. Controlador DMA
+## 4. Controlador DMA
 
 ### 5.1 Gargalo de Desempenho: Transferência por Polling/Busy-Wait
 
@@ -509,39 +415,11 @@ O DMA possui uma arquitetura **dual-interface**:
 - **Interface Slave (cfg_*)**: Utilizada pela CPU para configurar registradores de controle
 - **Interface Master (m_*)**: Utilizada para acessar o barramento de memória de forma autônoma
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    DMA CONTROLLER                        │
-│                                                         │
-│  ┌───────────────┐         ┌───────────────────────┐  │
-│  │   Interface   │         │    Máquina de          │  │
-│  │   Slave       │         │    Estados (FSM)       │  │
-│  │  (Config)     │         │                        │  │
-│  │               │         │  IDLE → READ_REQ →     │  │
-│  │  cfg_addr     │         │  READ_WAIT → WRITE_REQ │  │
-│  │  cfg_data     │         │  → CHECK_DONE          │  │
-│  │  cfg_we       │         │                        │  │
-│  └───────────────┘         └───────────┬───────────┘  │
-│                                        │              │
-│  ┌───────────────┐                     │              │
-│  │   Interface   │◄────────────────────┘              │
-│  │   Master      │                                     │
-│  │  (Barramento) │                                     │
-│  │               │         ┌───────────────────────┐  │
-│  │  m_addr       │────────►│      Bus Arbiter      │  │
-│  │  m_data       │         └───────────────────────┘  │
-│  │  m_we         │                                     │
-│  │  m_vld        │                                     │
-│  │  m_rdy        │                                     │
-│  └───────────────┘                                     │
-│                                                         │
-│  irq_done_o ──────────────────────────────────────────►│
-└─────────────────────────────────────────────────────────┘
-```
+![Descrição do Ícone](../assets/dma.svg)
 
-### 5.3 Registradores de Configuração
+### 5.4 Registradores de Configuração
 
-O DMA expõe quatro registradores mapeados em seu espaço de endereço:
+Estes registradores estão documentados na [Seção 3.4](#34-tabela-consolidada-de-registradores-mmio). Resumo:
 
 | Offset | Nome | Tamanho | Descrição |
 |--------|------|--------|-----------|
@@ -558,7 +436,7 @@ O DMA expõe quatro registradores mapeados em seu espaço de endereço:
 | 1 | FIXED_DST | RW | 1 = destino fixo (FIFO mode), 0 = incremento automático |
 | 2 | BUSY | RO | 1 = transferência em andamento |
 
-### 5.4 Máquina de Estados
+### 5.5 Máquina de Estados
 
 O DMA implementa uma FSM (Finite State Machine) com os seguintes estados:
 
@@ -574,31 +452,7 @@ type state_type is (
 
 #### Diagrama de Estados
 
-```
-                    ┌───────────────────────────────────────────────┐
-                    │                                               │
-                    ▼                                               │
-┌───────┐   busy=1    ┌─────────┐   m_rdy=1   ┌───────────┐         │
-│ IDLE  │────────────►│READ_REQ │────────────►│READ_WAIT  │         │
-└───┬───┘             └────┬────┘             └─────┬─────┘         │
-    ▲                       │                        │               │
-    │                       │ m_rdy=1                ▼               │
-    │                       │              ┌─────────────┐           │
-    │                       └─────────────►│ WRITE_REQ   │───────────┤
-    │                                ┌───►└──────┬──────┘           │
-    │                                │          │                  │
-    │                                │          ▼                  │
-    │                                │    ┌───────────┐             │
-    │                                │    │CHECK_DONE │             │
-    │                                │    └─────┬─────┘             │
-    │                                │          │                   │
-    │                                │  count<=1?┘                 │
-    │                                │    │         \              │
-    │                                │    │          │              │
-    │(count<=1)──── irq_done=1       │    ▼          ▼              │
-    └────────────────────────────────┴───┐IDLE      │READ_REQ      │
-                                          │(termina)  └──────────────┘
-```
+![Descrição do Ícone](../assets/estados.svg)
 
 #### Descrição dos Estados
 
@@ -616,7 +470,7 @@ type state_type is (
 
 Se `r_count` atingir 1 ou 0, a transferência está completa: transita para IDLE e_assert `irq_done_o`. Caso contrário, retorna para `READ_REQ`.
 
-### 5.5 Modo Destino Fixo (FIFO Mode)
+### 5.6 Modo Destino Fixo (FIFO Mode)
 
 Quando o bit `FIXED_DST` está setado, o endereço de destino permanece constante durante toda a transferência. Este modo é essencial para periféricos com interface FIFO, como a NPU:
 
@@ -628,7 +482,7 @@ else
 end if;
 ```
 
-### 5.6 Exemplo de Uso em Software
+### 5.7 Exemplo de Uso em Software
 
 #### Transferência Memória-para-Memória
 
@@ -659,7 +513,7 @@ while (DMA_CONTROL & 0x04);  // Aguarda BUSY=0
 NPU_CMD = NPU_CMD_START;
 ```
 
-### 5.7 Interação com o Bus Arbiter
+### 5.8 Interação com o Bus Arbiter
 
 O DMA compartilha o barramento de dados com a CPU através de um **bus_arbiter**. Este componente implementa uma política de prioridade onde:
 
@@ -667,7 +521,7 @@ O DMA compartilha o barramento de dados com a CPU através de um **bus_arbiter**
 2. O DMA pode ser pausado a qualquer momento pela CPU, pois não há garantia de acesso contínuo
 3. O estado `READ_WAIT` foi introduzido especificamente para resolver um problema de handshaking onde o arbiter ficava travado entre requisições de leitura e escrita
 
-### 5.8 Eficiência do Sistema: Liberação do Núcleo RISC-V
+### 5.9 Eficiência do Sistema: Liberação do Núcleo RISC-V
 
 #### Análise Comparativa de Ciclos
 
@@ -728,9 +582,9 @@ RESULTADO: CPU livre para executar outras ~400.000+ instruções
 
 ---
 
-## 6. Arquitetura do Sistema de Barramentos
+## 5. Arquitetura do Sistema de Barramentos
 
-### 6.1 Visão Geral da Interconexão
+### 5.1 Visão Geral da Interconexão
 
 O SoC implementa uma arquitetura de barramentos hierárquica com três canais distintos:
 
@@ -740,64 +594,11 @@ O SoC implementa uma arquitetura de barramentos hierárquica com três canais di
 
 Esta separação permite que fetch de instruções e acessos a dados ocorram simultaneamente, aumentando o throughput do sistema.
 
-### 6.2 Topologia de Barramentos
+### 5.2 Topologia de Barramentos
 
-```
-                         ┌─────────────────────────────────────────┐
-                         │            PROCESSOR_TOP                │
-                         │                                         │
-                         │  ┌───────────────────────────────────┐  │
-                         │  │         Datapath (Pipeline)       │  │
-                         │  │                                   │  │
-                         │  │  IMem ──────► Fetch/Decode/Exec   │  │
-                         │  │  DMem ──────► Load/Store          │  │
-                         │  │  CSRs ──────► Control/Status      │  │
-                         │  │                                   │  │
-                         │  └───────────────────────────────────┘  │
-                         └─────────────────┬───────────────────────┘
-                                           │
-              ┌────────────────────────────┼────────────────────────────┐
-              │                            │                            │
-    ┌─────────▼─────────┐        ┌─────────▼─────────┐                  │
-    │   Canal IMem      │        │   Canal DMem       │                  │
-    │  (Fetch Only)      │        │  (Load/Store)       │                  │
-    │                   │        │                  │                  │
-    │  ┌─────────────┐  │        │  ┌───────────┐    │                  │
-    │  │ Bus         │  │        │  │ Bus       │    │                  │
-    │  │ Interconnect│◄─┼────────┼─►│ Arbiter   │    │                  │
-    │  │ (Decodif.) │  │        │  │ (CPU+DMA) │    │                  │
-    │  └─────────────┘  │        │  └─────┬─────┘    │                  │
-    │        │          │        │        │          │                  │
-    │        ▼          │        │        ▼          │                  │
-    │  ┌───────────┐    │        │  ┌───────────┐    │                  │
-    │  │ Boot ROM  │    │        │  │ Bus       │    │                  │
-    │  │   RAM     │    │        │  │ Interconnect    │                  │
-    │  └───────────┘    │        │  │ (Decodif.) │    │                  │
-    └────────────────────┘        │  └─────┬─────┘    │                  │
-                                  │        │          │                  │
-                                  │        ▼          │                  │
-                                  │  ┌───────────┐    │                  │
-                                  │  │  Perif.   │    │                  │
-                                  │  │  UART     │    │                  │
-                                  │  │  GPIO     │    │                  │
-                                  │  │  VGA      │    │                  │
-                                  │  │  CLINT    │    │                  │
-                                  │  │  PLIC     │    │                  │
-                                  │  │  NPU      │    │                  │
-                                  │  │  DMA      │    │                  │
-                                  │  └───────────┘    │                  │
-                                  └──────────────────┘                  │
-                                                                   │
-                         ┌─────────────────────────────────────────┼─┐
-                         │         DMA Controller                  │ │
-                         │                                          │ │
-                         │  CPU configura via DMem                 │◄┘
-                         │  DMA acessa memória via m_*              
-                         │  Gera interrupção ao concluir            
-                         └─────────────────────────────────────────┘
-```
+![Descrição do Ícone](../assets/canais.svg)
 
-### 6.3 Bus Arbiter
+### 5.3 Bus Arbiter
 
 O **bus_arbiter** resolve conflitos entre CPU e DMA no canal de dados, implementando arbitragem baseada em prioridades fixas. Quando ambos os mestres solicitam acesso simultâneo:
 
@@ -805,7 +606,7 @@ O **bus_arbiter** resolve conflitos entre CPU e DMA no canal de dados, implement
 2. DMA aguarda até que a CPU libere o barramento
 3. Requisições de DMA são empacotadas e servidas em ordem
 
-### 6.4 Bus Interconnect
+### 5.4 Bus Interconnect
 
 O **bus_interconnect** realiza a decodificação de endereços e roteamento de dados. Para cada requisição:
 
@@ -815,6 +616,139 @@ O **bus_interconnect** realiza a decodificação de endereços e roteamento de d
 4. Multiplexa o dado de resposta ao master
 
 !!! info Mais informações sobre o barramento em [Barramento: Mestres e Escravos ](https://url.com).
+
 ---
+
+## 6. CSRs Internos do Core RISC-V
+
+### 6.1 Conceito
+
+Os **Control and Status Registers (CSRs)** internos do core são registradores **dentro do núcleo processador** que controlam interrupções, traps e modo de execução. Diferentemente dos registradores MMIO dos periféricos (Seção 3), os CSRs internos **não estão mapeados no espaço de memória endereçável** — são acessados através de instruções CSR dedicadas definidas na especificação **RISC-V Privileged Architecture**.
+
+Os CSRs internos são implementados no módulo `rtl/core/common/csr_file.vhd` e servem para:
+
+- **Controle de Interrupções:** Habilitar/desabilitar interrupções e configurar handlers
+- **Monitoramento de Status:** Indicar condições de erro e estado do processador
+- **Configuração de Ambiente:** Definir o modo de operação e contexto de execução
+
+### 6.2 CSRs Implementados (Machine Mode)
+
+O SoC implementa um subconjunto mínimo de CSRs necessários para operação em Machine Mode, conforme especificado na arquitetura RISC-V Privileged:
+
+| Endereço | Nome | Acesso | Descrição |
+|----------|------|--------|-----------|
+| `0x300` | `mstatus` | RW | Status global do processador (bit MIE = Machine Interrupt Enable) |
+| `0x304` | `mie` | RW | Máscara de habilitação de interrupções individuais |
+| `0x305` | `mtvec` | RW | Endereço base para vetores de trap |
+| `0x341` | `mepc` | RW | Machine Exception Program Counter (endereço de retorno após trap) |
+| `0x342` | `mcause` | RW | Machine Cause Register (código numérico da causa do trap) |
+| `0x344` | `mip` | RO | Machine Interrupt Pending (reflete interrupções pendentes em hardware) |
+
+### 6.3 Descrição Detalhada dos CSRs
+
+#### mstatus (Machine Status Register - 0x300)
+
+Este registrador mantém o estado global de interrupção do processador. Após reset, apenas os bits MPIE (Machine Previous Interrupt Enable) e MPP (Machine Previous Privilege) são configurados:
+
+- **Bit 3 (MIE):** Quando em 1, interrupções habilitadas globalmente
+- **Bit 7 (MPIE):** Armazena o valor de MIE antes da entrada em trap
+- **Bits 12-11 (MPP):** Modo de privilégio anterior (11 = Machine Mode)
+
+```vhdl
+-- Configuração após reset
+r_mstatus <= (others => '0');
+r_mstatus(c_MPIE_BIT) <= '1';      -- MPIE = 1
+r_mstatus(12 downto 11) <= "11";  -- MPP = 11 (Machine Mode)
+```
+
+#### mie (Machine Interrupt Enable - 0x304)
+
+Máscara individual para cada fonte de interrupção:
+
+| Bit | Nome | Descrição |
+|-----|------|-----------|
+| 11 | MEIE | Machine External Interrupt Enable |
+| 7 | MTIE | Machine Timer Interrupt Enable |
+| 3 | MSIE | Machine Software Interrupt Enable |
+
+#### mip (Machine Interrupt Pending - 0x344)
+
+Este registrador é **read-only** e reflete o estado atual das linhas de interrupção em tempo real:
+
+```vhdl
+s_mip_comb <= (
+    11 => Irq_Ext_i,   -- MEIP
+    7  => Irq_Timer_i, -- MTIP
+    3  => Irq_Soft_i,  -- MSIP
+    others => '0'
+);
+```
+
+### 6.4 Operações Atômicas
+
+As instruções CSR suportam três operações atômicas, implementadas via campo Funct3[1:0]:
+
+| Opcode | Instrução | Operação | Descrição |
+|--------|-----------|----------|-----------|
+| `01` | CSRRW | Read/Write | Lê o valor antigo, escreve novo valor |
+| `10` | CSRRS | Read/Set | Lê o valor antigo, seta bits (OR com máscara) |
+| `11` | CSRRC | Read/Clear | Lê o valor antigo, limpa bits (AND NOT máscara) |
+
+A atomicidade é garantida porque a leitura e modificação ocorrem no mesmo ciclo de clock:
+
+```vhdl
+case Csr_Op_i is
+    when "01" => -- CSRRW
+        s_write_val   <= Csr_WData_i;
+        s_we_internal <= '1';
+
+    when "10" => -- CSRRS
+        s_write_val   <= s_curr_val OR Csr_WData_i;
+        if unsigned(Csr_WData_i) /= 0 then
+            s_we_internal <= '1';
+        end if;
+
+    when "11" => -- CSRRC
+        s_write_val   <= s_curr_val AND (NOT Csr_WData_i);
+        if unsigned(Csr_WData_i) /= 0 then
+            s_we_internal <= '1';
+        end if;
+
+    when others => null;
+end case;
+```
+
+### 6.5 Tratamento de Traps
+
+Quando uma exceção ou interrupção ocorre, o hardware salva automaticamente o contexto:
+
+```vhdl
+if Trap_Enter_i = '1' then
+    r_mepc   <= Trap_PC_i;      -- Salva PC atual para retorno
+    r_mcause <= Trap_Cause_i;    -- Salva motivo do trap
+
+    -- Salva contexto de interrupção
+    r_mstatus(c_MPIE_BIT) <= r_mstatus(c_MIE_BIT); -- Backup MIE
+    r_mstatus(c_MIE_BIT)  <= '0';                    -- Desabilita interrupções
+```
+
+O retorno do trap (instrução MRET) restaura o contexto:
+
+```vhdl
+elsif Trap_Return_i = '1' then
+    r_mstatus(c_MIE_BIT)  <= r_mstatus(c_MPIE_BIT);
+    r_mstatus(c_MPIE_BIT) <= '1';
+```
+
+### 6.6 Resumo: Diferença entre CSRs Internos e MMIO
+
+| Aspecto | CSRs Internos do Core | Registradores MMIO (Periféricos) |
+|---------|----------------------|----------------------------------|
+| **Localização** | Dentro do núcleo RISC-V | Fora do núcleo (periféricos) |
+| **Endereçamento** | Espaço CSR separado (12 bits) | Espaço de memória (32 bits) |
+| **Acesso (SW)** | Instruções CSR (csrrw, csrrs, csrrc) | Instruções load/store (lw, sw) |
+| **Implementação** | `csr_file.vhd` | Cada periférico tem seus registradores |
+| **Exemplos** | mstatus, mie, mtvec, mepc, mcause, mip | DATA, CTRL (UART), SRC_ADDR (DMA) |
+| **Propósito** | Controle do processador e interrupções | Configuração e comunicação com periféricos |
 
 
