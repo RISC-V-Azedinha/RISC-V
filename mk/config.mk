@@ -44,10 +44,11 @@ SIM_COMMON_DIR     = $(SIM_DIR)/common
 
 # --- Scripts e Constraints ---
 
-FPGA_CONSTRAINTS   = fpga/constraints
-FPGA_SCRIPTS       = fpga/scripts
-FPGA_SCRIPTS_BUILD = $(FPGA_SCRIPTS)/build.tcl
-FPGA_SCRIPTS_PROG  = $(FPGA_SCRIPTS)/program.tcl
+FPGA_CONSTRAINTS    = fpga/constraints
+FPGA_SCRIPTS        = fpga/scripts
+FPGA_SCRIPTS_BUILD  = $(FPGA_SCRIPTS)/build.tcl
+FPGA_SCRIPTS_FLASH  = $(FPGA_SCRIPTS)/flash.tcl
+FPGA_SCRIPTS_PROG   = $(FPGA_SCRIPTS)/program.tcl
 
 # =============================================================================
 #  DIRETÓRIOS DE SAÍDA (Build Output)

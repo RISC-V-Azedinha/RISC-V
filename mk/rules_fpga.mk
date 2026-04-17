@@ -15,10 +15,11 @@
 # --- VARIÁVEIS LOCAIS --------------------------------------------------------
 
 BITSTREAM      = $(BUILD_FPGA_BIT)/soc_top.bit
+MCS			   = $(BUILD_FPGA_BIT)/soc_top.mcs
 BOOT_HEX       = $(BUILD_FPGA_BOOT)/bootloader.hex
 COM            ?= $(DEFAULT_COM)
 
-.PHONY: fpga upload
+.PHONY: fpga upload flash
 
 # =============================================================================
 #  BUILD: Síntese e Implementação
@@ -70,5 +71,19 @@ upload:
 	@$(MAKE) -s sw-fpga SW=$(SW)
 	@echo ">>> 🚀 Enviando $(SW) para a FPGA via porta $(COM)..."
 	@$(PYTHON_BIN) fpga/upload.py -p $(COM) -f $(BUILD_FPGA_BIN)/$(SW).bin
+
+# =============================================================================
+#  FPGA: Gravação Não-Volátil (Flash)
+# =============================================================================
+
+flash: $(BITSTREAM)
+	@echo ">>> ⚡ Gravando design na memória Flash da FPGA..."
+	@mkdir -p $(BUILD_FPGA_LOGS)
+	@$(VIVADO_BIN) -mode batch -notrace -source $(FPGA_SCRIPTS_FLASH) \
+		-log $(BUILD_FPGA_LOGS)/flash.log \
+		-journal $(BUILD_FPGA_LOGS)/flash.jou
+	@rm -rf .Xil
+	@rm -f $(BUILD_FPGA_LOGS)/*.backup*
+	@echo ">>> ✅ Memória Flash programada. O circuito será mantido após reiniciar."
 
 # =============================================================================
