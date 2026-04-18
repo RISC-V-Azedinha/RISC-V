@@ -17,6 +17,7 @@ __pycache__/
 
 # Ignorar .venv
 .venv
+venv
 
 # Documentação
 site/

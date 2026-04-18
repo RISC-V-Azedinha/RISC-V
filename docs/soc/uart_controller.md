@@ -1,10 +1,5 @@
 # UART Controller - Microarquitetura
 
-**Módulo:** `uart_controller.vhd`  
-**Autor:** André Maiolini  
-**Data:** 01/01/2026  
-**Versão:** 1.0
-
 ---
 
 ## 1. Visão Geral
@@ -28,30 +23,9 @@ O **UART Controller** é um periférico de comunicação serial assíncrona que 
 
 ### 2.1 Estrutura do Frame UART
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                        FRAME UART (8N1)                                     │
-├─────────────────────────────────────────────────────────────────────────────┤
-│   IDLE (High)                                                               │
-│   │                                                                         │
-│   ▼                                                                         │
-│   ┌───────┬─────────┬─────────┬─────────┬─────────┬─────────┬─────────┬───┐ │
-│   │ START │   D0    │   D1    │   D2    │   D3    │   D4    │   D5    │...│ │
-│   │  BIT  │ (LSB)   │         │         │         │         │         │   │ │
-│   │  '0'  │         │         │         │         │         │         │   │ │
-│   └───────┴─────────┴─────────┴─────────┴─────────┴─────────┴─────────┴───┘ │
-│       │                                                                         │
-│       ▼                                                                         │
-│   Start Bit (sempre '0')                                                     │
-│       │                                                                         │
-│       └──┬─────────┬──┬────────┬──┴──┐                                       │
-│          └─────────┘  └────────┘    │                                       │
-│                                     ▼                                        │
-│                              Stop Bit (sempre '1')                           │
-│                                                                             │
-│   IDLE (High) ◄────────────────────────────────────────────────────────────│
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+![Estrutura do Frame UART](../images/UART/UART-Estrutura_do_Frame.svg)
+
+---
 
 ### 2.2 Componentes do Frame
 
@@ -75,59 +49,7 @@ Tempo por bit = 1 / 115.200 = 8,68 µs/bit
 
 ## 3. Diagrama de Blocos
 
-```
-┌──────────────────────────────────────────────────────────────────────────────────────┐
-│                              UART CONTROLLER                                         │
-├──────────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                      │
-│   BARRAMENTO DO SOC                              PINOS EXTERNOS                      │
-│   ┌──────────────────┐                           ┌────────────────────┐              │
-│   │    addr_i[3:0]  │─────────────────────────▶│                    │              │
-│   │    data_i[31:0] │─────────────────────────▶│                    │              │
-│   │    we_i, vld_i  │─────────────────────────▶│   LOGICA DE        │              │
-│   │                  │                           │   CONTROLE         │              │
-│   │    data_o[31:0] │◀──────────────────────────│                    │              │
-│   │    rdy_o, irq_o │◀──────────────────────────│                    │              │
-│   └──────────────────┘                           └────────┬───────────┘              │
-│                                                          │                          │
-│                                                          ▼                          │
-│   ┌───────────────────────────────────────────────────────────────────────────────┐ │
-│   │                         ARQUITETURA INTERNA                                   │ │
-│   │                                                                               │ │
-│   │   ┌─────────────────┐              ┌─────────────────┐                       │ │
-│   │   │   TX FSM        │              │   RX FSM        │                       │ │
-│   │   │  TX_IDLE/START/│   uart_tx     │  RX_IDLE/START/ │   uart_rx             │ │
-│   │   │  DATA/STOP     │──────┐        │  DATA/STOP      │◀──────┐              │ │
-│   │   └─────────────────┘      │       └───────┬───────┘      │              │ │
-│   │           │                │               │              │              │ │
-│   │           │ shift register│               │ shift register│              │ │
-│   │           ▼                │               ▼              │              │ │
-│   │   ┌─────────────────┐      │       ┌─────────────────┐    │              │ │
-│   │   │  tx_shifter[7:0]│      │       │  rx_shifter[7:0]│    │              │ │
-│   │   └────────┬────────┘      │       └────────┬────────┘    │              │ │
-│   │            │               │                │              │              │ │
-│   │            └────────────────┼────────────────┘              │              │ │
-│   │                             │                               │              │ │
-│   │                    ┌────────┴────────┐                      │              │ │
-│   │                    │                 │                      │              │ │
-│   │                    ▼                 ▼                      │              │ │
-│   │            ┌──────────────┐  ┌──────────────┐              │              │ │
-│   │            │  TX_DATA_REG │  │     FIFO     │              │              │ │
-│   │            │  (latch)     │  │   (buffer)   │              │              │ │
-│   │            └──────────────┘  └──────┬───────┘              │              │ │
-│   │                                      │                      │              │ │
-│   │                                      ▼                      │              │ │
-│   │                               ┌──────────────┐               │              │ │
-│   │                               │  FIFO_MEM    │               │              │ │
-│   │                               │  [0:63][7:0] │               │              │ │
-│   │                               └──────────────┘               │              │ │
-│   │                                                          │              │ │
-│   └──────────────────────────────────────────────────────────┴─────────────────┘ │
-│                                                                                 │ │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                                                                 
-                    UART RX PIN ◀────────────────────────────────────────────────
-```
+![Diagrama de Blocos](../images/UART/UART-Diagrama_de_Blocos.svg)
 
 ---
 
@@ -204,118 +126,19 @@ Período de 1 bit (ns)     = c_bit_period × (1 / CLK_FREQ)
 
 ### 6.1 Arquitetura do TX
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     TRANSMITTER (TX)                           │
-├─────────────────────────────────────────────────────────────────┤
-│   ┌─────────────┐     ┌─────────────┐     ┌─────────────┐      │
-│   │ TX_DATA    │     │   TX FSM    │     │   SHIFT     │      │
-│   │ LATCH      │────▶│  (Control)  │────▶│  REGISTER   │─────▶│
-│   │            │     │             │     │ [7:0]       │      │
-│   └─────────────┘     └──────┬──────┘     └─────────────┘      │
-│                              │                                   │
-│                              │ timer_en                          │
-│                              ▼                                   │
-│                    ┌─────────────────┐                         │
-│                    │   BIT TIMER     │◀── c_bit_period          │
-│                    │   [0..868]      │                          │
-│                    └─────────────────┘                         │
-└─────────────────────────────────────────────────────────────────┘
-```
+O transmissor UART é composto por três elementos principais que trabalham em conjunto para realizar a serialização dos dados. O **TX Data Latch** é um registrador de entrada que armazena temporariamente o byte a ser transmitido quando a CPU escreve no registrador de dados. Este latch mantém o dado estável enquanto a máquina de estados inicia o processo de transmissão. O **TX FSM (Finite State Machine)** é a unidade de controle que gerencia todo o fluxo de transmissão, transitando entre os estados IDLE, START, DATA e STOP. A FSM controla o temporizador de bits e o registrador de deslocamento, garantindo que cada bit seja transmitido com a duração correta. O **Shift Register (tx_shifter[7:0])** é um registrador de deslocamento de 8 bits que contém o byte a ser transmitido. A cada período de bit, a FSM desloca o registrador para a direita, alimentando o pino uart_tx_pin com o bit menos significativo (LSB first). O shift register é carregado com o byte do TX Data Latch no início da transmissão e é deslocado bit a bit até que todos os 8 dados sejam transmitidos, seguido pelo stop bit.
 
 ### 6.2 Máquina de Estados TX
 
-```
-              ┌──────────────────┐    tx_start_pulse=1         │
-              │                  │◀─────────────────────────────┐│
-              │    TX_IDLE       │                              ││
-              │  uart_tx_pin='1' │                              ││
-              │  tx_busy_flag='0'│                              ││
-              └────────┬─────────┘                              ││
-                       │                                         │
-                       │ timer=0                                 │
-                       ▼                                         │
-              ┌──────────────────┐    timer = c_bit_period - 1  ││
-              │                  │──────────────────────────────┐│
-              │    TX_START       │                               ││
-              │  uart_tx_pin='0' │                               ││
-              └────────┬─────────┘                               ││
-                       │                                         │
-                       │ timer=0, bit_idx=0                      │
-                       ▼                                         │
-              ┌──────────────────┐    bit_idx=7                  ││
-              │                  │──────────────────────────────┐│
-              │    TX_DATA       │                               ││
-              │  uart_tx_pin =   │                               ││
-              │  tx_shifter[n]   │                               ││
-              └────────┬─────────┘                               ││
-                       │                                         │
-                       │ timer=0                                 │
-                       ▼                                         │
-              ┌──────────────────┐    timer = c_bit_period - 1    │
-              │                  │──────────────────────────────┘│
-              │    TX_STOP       │                               │
-              │  uart_tx_pin='1' │                               │
-              └────────┬─────────┘                               │
-                       │                                         │
-                       ▼                                         │
-              ┌──────────────────┐                              │
-              │    TX_IDLE       │                              │
-              └──────────────────┘                              │
-```
+A máquina de estados do transmissor opera em quatro estados distintos:
 
-### 6.3 Implementação VHDL
+- **TX_IDLE**: Estado de repouso. O pino uart_tx_pin permanece em nível alto (idle) e a flag tx_busy_flag é desativada. O hardware aguarda a escrita de um novo byte no registrador de dados para transitar para TX_START.
 
-```vhdl
-type t_tx_state is (TX_IDLE, TX_START, TX_DATA, TX_STOP);
+- **TX_START**: Início do frame. O pino uart_tx_pin é forçado para nível baixo (espaço). O temporizador de bits é carregado com c_bit_period - 1 e inicia a contagem. A duração deste estado é de exatamente um período de bit.
 
-process(clk)
-begin
-    if rising_edge(clk) then
-        case tx_state is
-            when TX_IDLE =>
-                uart_tx_pin <= '1';
-                if tx_start_pulse = '1' then
-                    tx_shifter   <= r_tx_data_latch;
-                    tx_state     <= TX_START;
-                    tx_busy_flag <= '1';
-                end if;
-                tx_timer <= 0;
+- **TX_DATA**: Transmissão de dados. Os 8 bits são serializados individualmente. A FSM mantém este estado por 8 períodos de bit. Ao final de cada período, o registrador de deslocamento atualiza o pino de saída e incrementa o índice bit_idx até atingir 7, transitando então para TX_STOP.
 
-            when TX_START =>
-                uart_tx_pin <= '0';
-                if tx_timer < c_bit_period - 1 then
-                    tx_timer <= tx_timer + 1;
-                else
-                    tx_timer <= 0;
-                    tx_state <= TX_DATA;
-                    tx_bit_idx <= 0;
-                end if;
-
-            when TX_DATA =>
-                uart_tx_pin <= tx_shifter(tx_bit_idx);
-                if tx_timer < c_bit_period - 1 then
-                    tx_timer <= tx_timer + 1;
-                else
-                    tx_timer <= 0;
-                    if tx_bit_idx < 7 then
-                        tx_bit_idx <= tx_bit_idx + 1;
-                    else
-                        tx_state <= TX_STOP;
-                    end if;
-                end if;
-
-            when TX_STOP =>
-                uart_tx_pin <= '1';
-                if tx_timer < c_bit_period - 1 then
-                    tx_timer <= tx_timer + 1;
-                else
-                    tx_state <= TX_IDLE;
-                end if;
-        end case;
-    end if;
-end process;
-```
+- **TX_STOP**: Fim do frame. O pino uart_tx_pin retorna ao nível alto (marcador). A duração é de um período de bit. Após a conclusão, a FSM retorna a TX_IDLE, liberando o transmissor para um novo ciclo.
 
 ---
 
@@ -323,70 +146,28 @@ end process;
 
 ### 7.1 Desafios da Recepção Assíncrona
 
-1. **Cross-Domain Crossing (CDC):** O sinal `uart_rx_pin` vem de fora do domínio de clock
+1. **Clock Domain Crossing (CDC):** O sinal `uart_rx_pin` vem de fora do domínio de clock
 2. **Sincronização de Tempo:** O receptor deve amostrar os bits **no centro** de cada período
 
 ### 7.2 Sincronizador Cross-Domain (2-FF)
 
-```vhdl
-signal rx_pin_sync : std_logic_vector(1 downto 0);
+O receptor UART enfrenta um desafio fundamental de design relacionado ao cruzamento de domínios de clock (CDC - Clock Domain Crossing). O pino de entrada uart_rx_pin é um sinal assíncrono que vem de fora do SoC, potencialmente gerado por outro dispositivo com seu próprio domínio de clock. A conexão direta desse sinal aos flip-flops do domínio de clock do receptor pode causar metastabilidade, um fenômeno em que o flip-flop pode entrar em um estado indefinido quando a transição do sinal de entrada ocorre muito próximo à borda de clock.
 
-process(clk)
-begin
-    if rising_edge(clk) then
-        rx_pin_sync <= rx_pin_sync(0) & uart_rx_pin;
-    end if;
-end process;
+A solução implementada utiliza um sincronizador de dois flip-flops (2-FF synchronizer). Este circuito consiste em dois flip-flops em cascata que funcionam como um registrador de dois estágios. O primeiro flip-flop (FF1) captura o sinal assíncrono na borda de clock, mas pode potencialmente entrar em estado metastável se a transição coincidir com a borda de clock. O segundo flip-flop (FF2) captura a saída do primeiro flip-flop na próxima borda de clock, período suficiente para que qualquer metastabilidade no primeiro flip-flop se resolva para um estado válido. A saída do segundo flip-flop (rx_pin_sync(1) ou rx_bit_val) é então um sinal sincronizado que pode ser usado com segurança dentro do domínio de clock do receptor.
 
-rx_bit_val <= rx_pin_sync(1);
-```
-
-**Diagrama:**
-```
-uart_rx_pin (assíncrono) ──┬──▶ FF1 ──▶ FF2 ──▶ rx_pin_sync(0)
-                           │       (async) (sync)
-                           └──▶ FF2 ──▶ FF3 ──▶ rx_pin_sync(1) = rx_bit_val
-```
+A implementação em VHDL utiliza um registrador de deslocamento de 2 bits que é atualizado a cada borda de clock: rx_pin_sync <= rx_pin_sync(0) & uart_rx_pin. O bit mais significativo (rx_pin_sync(1)) representa o valor sincronizado do pino de entrada, que é então utilizado pela máquina de estados do receptor.
 
 ### 7.3 Máquina de Estados RX
 
-```
-              ┌──────────────────┐                              │
-              │    RX_IDLE       │                              │
-              │  rx_bit_val='1'  │                              │
-              └────────┬─────────┘                              │
-                       │ rx_bit_val='0'                         │
-                       ▼                                        │
-              ┌──────────────────┐    timer = c_bit_period/2   │
-              │                  │    AND rx_bit_val='1'         ││
-              │   RX_START       │──────────────────────────────┐│
-              │  (validação)     │                              ││
-              │  Timer: 0→433    │    timer = c_bit_period/2   ││
-              │  (meio período)  │    AND rx_bit_val='0'        ││
-              │                  │    (start bit confirmado)     ││
-              └────────┬─────────┘                              ││
-                       │                                        │
-                       ▼                                        │
-              ┌──────────────────┐    bit_idx=7                  ││
-              │                  │──────────────────────────────┐│
-              │   RX_DATA        │                               ││
-              │  Amostra bits    │                               ││
-              │  no CENTRO       │                               ││
-              │  rx_shifter[n]=  │                               ││
-              │    rx_bit_val    │                               ││
-              └────────┬─────────┘                               ││
-                       │                                        │
-                       ▼                                        │
-              ┌──────────────────┐    timer = c_bit_period - 1   │
-              │                  │──────────────────────────────┘│
-              │   RX_STOP        │                               │
-              │  w_wr_en <= '1'  │                               │
-              └────────┬─────────┘                               │
-                       ▼                                         │
-              ┌──────────────────┐                               │
-              │    RX_IDLE       │                               │
-              └──────────────────┘                               │
-```
+A máquina de estados do receptor opera em quatro estados, com uma lógica adicional para evitar leituras falsas causadas por ruído:
+
+- **RX_IDLE**: Estado de repouso. O receptor monitora o pino sincronizado rx_bit_val. A detecção de uma transição de alto para baixo (rx_bit_val = '0') aciona a transição para RX_START.
+
+- **RX_START**: Validação do start bit. A FSM aguarda metade de um período de bit (c_bit_period / 2) para amostrar novamente o pino. Se o sinal retornar para alto, assume-se ruído e a FSM volta a RX_IDLE. Se continuar em baixo, o start bit é confirmado e a FSM avança para RX_DATA.
+
+- **RX_DATA**: Recepção de dados. A FSM processa a captura ao longo de 8 períodos de bit. Ao final de cada período de bit no receptor (que se alinha com o centro do bit do transmissor), o valor de rx_bit_val é inserido no registrador rx_shifter através de deslocamento à esquerda.
+
+- **RX_STOP**: Fim da recepção. Após um período de bit completo desde o último dado, o pino é amostrado. O nível alto confirma a presença do stop bit e aciona o sinal de escrita na FIFO (w_wr_en = '1'). Independentemente da amostra, a FSM retorna imediatamente para RX_IDLE visando capturar o próximo frame.
 
 ---
 
@@ -401,26 +182,11 @@ Sinais UART estão sujeitos a:
 
 ### 8.2 A Solução: Amostragem no Centro
 
-A estratégia é amostrar cada bit **no meio de seu período**, onde o sinal está mais estável:
+A estratégia de amostragem no centro do bit é fundamental para a robustez do receptor UART. A fundamentação teórica baseia-se na observação de que, durante a transmissão de um bit, as bordas de transição (início e fim do período) são regiões onde o sinal está mais suscetível a ruído, distorção e incertezas de temporização. O centro do período de bit é onde o sinal está mais estável, pois já houve tempo suficiente para o transceptor remoto completar sua transição e ainda não começou a transição para o próximo bit.
 
-```
-                INÍCIO DO BIT (borda)          CENTRO DO BIT          FIM DO BIT
-                     │                              │                         │
-                     ▼                              ▼                         ▼
-                 ┌───────────────────────────────────────────────────────────────────┐
-TX/RX Pin        │                                   │                                   │
-                 ├───────────────────────────────────┼───────────────────────────────────┤
-                 │                                   │          ┌──────────┐              │
-                 │                                   │          │ AMOSTRA  │              │
-                 │                                   │          │ SEGURA   │              │
-                 │                                   │          └──────────┘              │
-                 │                                   │                                   │
-                 └───────────────────────────────────┴───────────────────────────────────┘
-                                      ▲                    ▲
-                                      │                    │
-                                 BORDAS               CENTRO DO BIT
-                                 (instável)            (amostragem ideal)
-```
+Na prática, o receptor utiliza o timer de bits para determinar o momento exato de amostragem. O timer incrementa a cada ciclo de clock e, quando atinge o valor zero (indicando o fim de um período de bit), o valor do pino sincronizado é amostrado e deslocado para dentro do registrador de deslocamento. Esta abordagem resulta em amostragem no final de cada período de bit, que corresponde ao centro do período de bit seguinte (da perspectiva do transmissor), garantindo a posição ideal de amostragem.
+
+Para o start bit especial, a lógica é ajustada: em vez de esperar o final do período, o receptor amostra após metade do período (c_bit_period / 2). Esta amostragem antecipada permite validar se o start bit é genuíno (permanece em baixo) ou é ruído (retorna a alto rapidamente).
 
 ### 8.3 Cálculo do Ponto de Amostragem
 
@@ -439,126 +205,26 @@ Código VHDL:
     end if;
 ```
 
-### 8.4 Análise de Robustez
-
-```
-Margem até borda esquerda = 434 ciclos = 4.340 ns
-Margem até borda direita  = 868 - 434 = 434 ciclos = 4.340 ns
-
-Margem de ruído = ±50% do período do bit!
-```
-
 ---
 
-## 9. Implementação VHDL Completa do RX
+## 9. FIFO de Recepção
 
-```vhdl
-type t_rx_state is (RX_IDLE, RX_START, RX_DATA, RX_STOP);
-signal rx_state    : t_rx_state;
-signal rx_timer    : integer range 0 to c_bit_period;
-signal rx_bit_idx  : integer range 0 to 7;
-signal rx_shifter  : std_logic_vector(7 downto 0);
+### 9.1 Arquitetura
 
-process(clk)
-begin
-    if rising_edge(clk) then
-        if rst = '1' then
-            rx_state <= RX_IDLE;
-            rx_timer <= 0;
-            rx_bit_idx <= 0;
-            rx_shifter <= (others => '0');
-            w_wr_en <= '0';
-        else
-            w_wr_en <= '0';
+A FIFO de recepção é uma estrutura de buffer circular que desacopla a taxa de recepção dos dados da taxa de consumo pela CPU, eliminando a necessidade de polls constante e permitindo a recepção de dados em rajadas. A arquitetura implementa um buffer circular com apontadores de cabeça (write pointer - r_head) e cauda (read pointer - r_tail), ambos como índices de 6 bits para uma FIFO de 64 posições.
 
-            case rx_state is
-                when RX_IDLE =>
-                    rx_timer <= 0;
-                    rx_bit_idx <= 0;
-                    if rx_bit_val = '0' then
-                        rx_state <= RX_START;
-                    end if;
+O **write pointer (r_head)** aponta para a próxima posição vazia onde um novo byte recebido será armazenado. Quando um byte chega do receptor (w_wr_en = '1'), ele é escrito na posição atual do r_head, e então o apontador é incrementado módulo 64. O **read pointer (r_tail)** aponta para o próximo byte a ser lido pela CPU. Quando a CPU lê o registrador de dados (operação de peek), o byte em r_tail é apresentado na saída sem modificar o apontador. Somente quando a CPU escreve no registrador de status com o comando de pop (bit 0), o r_tail é incrementado, efetivamente removendo o byte da fila.
 
-                when RX_START =>
-                    if rx_timer < (c_bit_period / 2) - 1 then
-                        rx_timer <= rx_timer + 1;
-                    else
-                        rx_timer <= 0;
-                        if rx_bit_val = '0' then
-                            rx_state <= RX_DATA;
-                        else
-                            rx_state <= RX_IDLE;
-                        end if;
-                    end if;
+A **contagem de itens (r_count)** mantém o número atual de bytes válidos na FIFO. Este contador é incrementado em uma escrita (se a FIFO não estiver cheia) e decrementado em um pop (se a FIFO não estiver vazia). As flags de status w_fifo_full e w_fifo_empty são derivadas diretamente deste contador para indicar as condições de buffer cheio e buffer vazio, respectivamente.
 
-                when RX_DATA =>
-                    if rx_timer < c_bit_period - 1 then
-                        rx_timer <= rx_timer + 1;
-                    else
-                        rx_timer <= 0;
-                        rx_shifter(rx_bit_idx) <= rx_bit_val;
-                        if rx_bit_idx < 7 then
-                            rx_bit_idx <= rx_bit_idx + 1;
-                        else
-                            rx_state <= RX_STOP;
-                        end if;
-                    end if;
-
-                when RX_STOP =>
-                    if rx_timer < c_bit_period - 1 then
-                        rx_timer <= rx_timer + 1;
-                    else
-                        w_wr_en <= '1';
-                        rx_state <= RX_IDLE;
-                    end if;
-            end case;
-        end if;
-    end if;
-end process;
-```
-
----
-
-## 10. FIFO de Recepção
-
-### 10.1 Arquitetura
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                            FIFO BUFFER                                  │
-│                      (64 × 8 bits)                                      │
-├─────────────────────────────────────────────────────────────────────────┤
-│   ┌────────┐     ┌────────────────────────────────────────────┐         │
-│   │        │     │                                            │         │
-│   │  r_head│────▶│   w_wr_en='1'                              │         │
-│   │  (ptr) │     │   r_fifo(r_head) <= rx_shifter            │         │
-│   │        │     │                                            │         │
-│   │   0    │     │   [0] [1] [2] ... [62] [63]              │         │
-│   │        │     │   ┌────┬────┬────┬────┬───┬────┬────┐     │         │
-│   │        │     │   │ 0x7B│ 0x41│ 0x00│    │    │    │     │         │
-│   │        │     │   └────┴────┴────┴────┴───┴────┴────┘     │         │
-│   │        │     │     ▲                               │       │         │
-│   │        │     │     │                               │       │         │
-│   │        │     │     │ r_head++                     │       │         │
-│   │        │     │     │                               ▼       │         │
-│   │        │     │   ┌────┐  r_tail (read ptr)                    │         │
-│   │        │     │   │    │───────────────────────────────────────┼──────▶ data_o
-│   │        │     │   │ 0  │  r_fifo(r_tail)                       │         │
-│   │        │     │   └────┘                                      │         │
-│   └────────┘     └────────────────────────────────────────────────────┘         │
-│                                                                          │
-│   r_count = número de itens na FIFO                                     │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-### 10.2 Flags de Status
+### 9.2 Flags de Status
 
 ```vhdl
 w_fifo_full  <= '1' when r_count = FIFO_DEPTH else '0';
 w_fifo_empty <= '1' when r_count = 0 else '0';
 ```
 
-### 10.3 Contador de Itens
+### 9.3 Contador de Itens
 
 ```vhdl
 if w_wr_en = '1' and w_rd_en = '0' and w_fifo_full = '0' then
@@ -570,24 +236,13 @@ end if;
 
 ---
 
-## 11. Interface de Barramento
+## 10. Interface de Barramento
 
-### 11.1 Protocolo de Handshake
+### 10.1 Protocolo de Handshake
 
-```
-CPU                                 UART Controller
-───                                 ───────────────
-1. vld_i='1'                       3. Detecta vld_i='1'
-   + we_i, addr_i, data_i             (no clock edge)
-                                     │
-                                     ▼
-                           4. rdy_o <= '1' (T+1)
-                                     │
-                                     ▼
-2. Aguarda rdy_o='1' ◀───────────────┘
-```
+A interface de barramento implementa um protocolo de handshake simples com sinais de válido (vld_i) e pronto (rdy_o). O fluxo de operação é o seguinte: quando a CPU deseja escrever ou ler do UART, ela configura os sinais de endereço (addr_i), dados (data_i), write enable (we_i) e configura vld_i para nível alto. Na próxima borda de clock, a lógica de controle do UART detecta vld_i = '1', executa a operação solicitada (escrita no registrador de dados, escrita no registrador de comandos ou leitura de registrador) e, no ciclo seguinte, asserta rdy_o = '1' para indicar conclusão. A CPU então detecta rdy_o = '1', pode remover vld_i e proceder com a próxima operação. Este protocolo garante que a CPU e o periférico estejam sincronizados, evitando condições de corrida e garantindo que cada operação seja completada antes que uma nova seja iniciada.
 
-### 11.2 Mapeamento de Operações
+### 10.2 Mapeamento de Operações
 
 | addr_i | we_i | Operação | Ação |
 |--------|------|----------|------|
@@ -596,7 +251,7 @@ CPU                                 UART Controller
 | 0x4 | 1 | WRITE CMD | `data_i(0)=1`: pop; `data_i(2)=1`: flush |
 | 0x4 | 0 | READ STATUS | `data_o(0)<=TX_BUSY`, `data_o(1)<=RX_VALID` |
 
-### 11.3 Interrupção
+### 10.3 Interrupção
 
 ```vhdl
 irq_o <= not w_fifo_empty;  -- Level-triggered quando há dados
@@ -604,52 +259,7 @@ irq_o <= not w_fifo_empty;  -- Level-triggered quando há dados
 
 ---
 
-## 12. Temporização TX
-
-```
-Ciclos:     IDLE    START    D0      D1      D2      D3      D4      D5      D6      D7      STOP
-            │       │       │       │       │       │       │       │       │       │       │       │
-       ─────┴───────┴───────┴───────┴───────┴───────┴───────┴───────┴───────┴───────┴───────┴───────┴──────
-TX Pin      1       0       1       0       0       0       0       0       1       0       1       1
-            │       │       │       │       │       │       │       │       │       │       │       │
-       Idle │ Start │  LSB  │       │       │       │       │       │       │  MSB  │ Stop  │ Idle
-             │       │       │       │       │       │       │       │       │       │       │
-       ◄──────────────────────────────────────────────────────────────────────────────────────────────►
-                                          868 ciclos por bit (8,68 µs)
-```
-
----
-
-## 13. Temporização RX
-
-```
-uart_rx:    1       0       1       1       1       1       1       0       1       1       1       1
-            │       │       │       │       │       │       │       │       │       │       │       │
-        IDLE│ START │  D0   │  D1   │  D2   │  D3   │  D4   │  D5   │  D6   │  D7   │ STOP  │IDLE
-             │       │       │       │       │       │       │       │       │       │       │
-        ▼───┴───┬───┴───┬───┴───┬───┴───┬───┴───┬───┴───┬───┴───┬───┴───┬───┴───┬───┴───┴───┴───
-               │       │       │       │       │       │       │       │       │       │
-rx_state:  IDLE│ START │ DATA  │ DATA  │ DATA  │ DATA  │ DATA  │ DATA  │ DATA  │ DATA  │ STOP  │IDLE
-             │   │       │       │       │       │       │       │       │       │       │
-rx_timer:   0  │ 0-433 │ 0-868 │ 0-868 │ 0-868 │ 0-868 │ 0-868 │ 0-868 │ 0-868 │ 0-868 │ 0-868│
-             │   │(valida)      │       │       │       │       │       │       │       │
-             │   │       │       │       │       │       │       │       │       │       │
-rx_shifter: ───│ 0     │ 1     │ 11    │ 111   │ 1111  │11111  │111110 │1111101│11111011│      │
-             │   │       │       │       │       │       │       │       │       │       │
-w_wr_en:    0  │ 0     │ 0     │ 0     │ 0     │ 0     │ 0     │ 0     │ 0     │ 0     │  1   │ 0
-                 │       │       │       │       │       │       │       │       │       │
-            ◄───────┼───────┼───────┼───────┼───────┼───────┼───────┼───────┼───────┼───────┼──────►
-                    │       │       │       │       │       │       │       │       │       │
-               Amostragem do start bit
-               (centro = 433 ciclos)
-                              │       │       │       │       │       │       │       │
-                         Amostragem de cada bit
-                         (no final do período = centro do próximo)
-```
-
----
-
-## 14. Referências
+## 11. Referências
 
 - **RTL Source:** `rtl/perips/uart/uart_controller.vhd`
 - **Testbench:** `sim/perips/test_uart_controller.py`
@@ -657,8 +267,3 @@ w_wr_en:    0  │ 0     │ 0     │ 0     │ 0     │ 0     │ 0     │ 0
 
 ---
 
-## 15. Histórico de Versões
-
-| Versão | Data       | Autor          | Descrição      |
-|--------|------------|----------------|----------------|
-| 1.0    | 01/01/2026 | André Maiolini | Versão inicial |

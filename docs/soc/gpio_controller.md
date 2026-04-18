@@ -1,10 +1,5 @@
 # GPIO Controller - Microarquitetura
 
-**Módulo:** `gpio_controller.vhd`  
-**Autor:** André Maiolini  
-**Data:** 31/12/2025  
-**Versão:** 1.0
-
 ---
 
 ## 1. Visão Geral
@@ -20,41 +15,7 @@ A arquitetura utiliza um protocolo de handshake para comunicação síncrona com
 
 ## 2. Diagrama de Blocos
 
-```
-                           ┌─────────────────────────────────────┐
-                           │         GPIO CONTROLLER              │
-                           │         (gpio_controller)            │
-                           └─────────────────────────────────────┘
-                                    
-  Barramento do SoC                              Pinos Externos
-  ┌──────────────────┐                     ┌─────────────────────┐
-  │   addr_i[3:0]    │────────────────────▶│                     │
-  │   data_i[31:0]   │────────────────────▶│                     │
-  │   we_i          │────────────────────▶│   Lógica de         │
-  │   vld_i         │────────────────────▶│   Decodificação     │
-  │                  │                     │   e Controle        │
-  │   data_o[31:0]   │◀────────────────────│                     │
-  │   rdy_o         │◀────────────────────│                     │
-  └──────────────────┘                     │                     │
-                                          │                     │
-                                          │  ┌───────────────┐  │
-                                          │  │  Registrador  │  │
-                                          │  │  r_leds[15:0] │──┼───▶ gpio_leds[15:0]
-                                          │  └───────────────┘  │
-                                          │                     │
-                                          │  ┌───────────────┐  │
-                                          │  │  gpio_sw      │◀─┼──── gpio_sw[15:0]
-                                          │  │  [15:0]       │  │
-                                          │  └───────────────┘  │
-                                          └─────────────────────┘
-                                                 ▲
-                                                 │ clk, rst
-                                                 │
-                                          ┌──────┴──────┐
-                                          │   CLOCK     │
-                                          │   RESET     │
-                                          └─────────────┘
-```
+![Diagrama de Blocos](../images/GPIO/GPIO-Diagrama_de_blocos.svg)
 
 ---
 
@@ -67,29 +28,7 @@ A arquitetura utiliza um protocolo de handshake para comunicação síncrona com
 
 ### Detalhamento dos Registradores
 
-```
-Offset 0x0 - LEDS (R/W)
-┌─────────────────────────────────────────────────────────────────┐
-│  31  30  29  28  27  26  25  24  23  22  21  20  19  18  17  16 │ 15  14  13  12  11  10  09  08  07  06  05  04  03  02  01  00 │
-├─────────────────────────────────────────────────────────────────┤
-│                          Reserved (16 bits)                      │                      LED Data (16 bits)                      │
-└─────────────────────────────────────────────────────────────────┘
-                                                                  ▲
-                                                                  │
-                                                          bits ativos para
-                                                          controle dos LEDs
-
-Offset 0x4 - SWITCHES (Read-Only)
-┌─────────────────────────────────────────────────────────────────┐
-│  31  30  29  28  27  26  25  24  23  22  21  20  19  18  17  16 │ 15  14  13  12  11  10  09  08  07  06  05  04  03  02  01  00 │
-├─────────────────────────────────────────────────────────────────┤
-│                          Reserved (16 bits)                      │                    Switch State (16 bits)                   │
-└─────────────────────────────────────────────────────────────────┘
-                                                                  ▲
-                                                                  │
-                                                          reflete o estado
-                                                          físico das chaves
-```
+![Detalhamento dos Registradores](../images/GPIO/GPIO-Detalhamento_dos_Registradores.svg)
 
 ---
 
@@ -128,7 +67,7 @@ A saída `gpio_leds` é uma conexão direta (wire) do registrador, atualizando-s
 **Características:** Não é um registrador; é uma leitura direta do hardware externo  
 
 ```vhdl
-gpio_sw : in std_logic_vector(15 downto 0);  --声明在 porta
+gpio_sw : in std_logic_vector(15 downto 0);  -- declaração na porta
 ```
 
 #### Fluxo de Dados
@@ -142,29 +81,7 @@ gpio_sw (pino físico) ──────────────► data_o(15 d
 
 Este módulo implementa uma **separação fixa de direção**:
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                     ARQUITETURA DE DIREÇÃO                          │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│   Pinos de SAÍDA (LEDs)        Pinos de ENTRADA (Switches)         │
-│   ┌──────────────────┐         ┌──────────────────┐               │
-│   │   gpio_leds[15:0]│◀────────│     r_leds        │               │
-│   │   (output port)  │         │   (16-bit reg)    │               │
-│   └──────────────────┘         └──────────────────┘               │
-│          ▲                            │                            │
-│          │                            ▼                            │
-│          │                  ┌──────────────────┐                  │
-│          │                  │    data_o[15:0]   │                  │
-│          │                  │ (quando leitura)  │                  │
-│          │                  └──────────────────┘                  │
-│          │                                                     │
-│   Software escreve     Software lê              Software lê    │
-│   em r_leds para       de r_leds para           de gpio_sw     │
-│   controlar LEDs       verificar estado         para ver estado │
-│                                                     das chaves   │
-└─────────────────────────────────────────────────────────────────────┘
-```
+![Interação Direção Dados](../images/GPIO/GPIO-Arquitetura_de_Direção_de_Dados.svg)
 
 **Nota:** Este módulo **não possui** um registrador de direção (direction register) como em GPIO tradicionais. A direção é fixa:
 - Bits 15:0 dos LEDs → **sempre saída**
@@ -187,48 +104,7 @@ Este módulo implementa uma **separação fixa de direção**:
 | `data_o` | Output  | `slv(31:0)`| Dados de saída (leitura para CPU)              |
 | `rdy_o`  | Output  | `std_logic`| Ready: indica que o periférico respondeu      |
 
-### 5.2 Processo Síncrono Principal
-
-```vhdl
-process(clk)
-begin
-    if rising_edge(clk) then
-        
-        if rst = '1' then
-            r_leds <= (others => '0');
-            rdy_o  <= '0';
-            data_o <= (others => '0');
-        
-        else
-            -- Default: Ready baixa se não houver transação
-            rdy_o  <= '0';
-            data_o <= (others => '0');
-
-            if vld_i = '1' then
-                -- Handshake: Resposta no próximo ciclo (Latência 1)
-                rdy_o <= '1';
-
-                -- ESCRITA
-                if we_i = '1' then
-                    if unsigned(addr_i) = 0 then
-                        r_leds <= data_i(15 downto 0);
-                    end if;
-                
-                -- LEITURA
-                else
-                    case to_integer(unsigned(addr_i)) is
-                        when 0 => data_o(15 downto 0) <= r_leds;
-                        when 4 => data_o(15 downto 0) <= gpio_sw;
-                        when others => null;
-                    end case;
-                end if;
-            end if;
-        end if;
-    end if;
-end process;
-```
-
-### 5.3 Decodificação de Endereço
+### 5.2 Decodificação de Endereço
 
 ```
 addr_i (bits)           Seleção
@@ -238,225 +114,21 @@ addr_i (bits)           Seleção
 outros                  Nenhuma ação (null)
 ```
 
-### 5.4 Máquina de Estados Comportamental
-
-```
-                    ┌─────────────────────────────────────────────────┐
-                    │                                                 │
-                    ▼                                                 │
-    ┌─────────┐  rst   ┌─────────┐  clk, vld_i=0   ┌──────────────┐   │
-───▶│  RESET  │──────▶│  IDLE   │────────────────▶│  IDLE        │   │
-    └─────────┘        └─────────┘                 │  (nop)       │   │
-                            │                      └──────────────┘   │
-                            │ vld_i=1                                    │
-                            ▼                                            │
-              ┌───────────────────────────────────┐                      │
-              │          ACTIVE                   │                      │
-              │  rdy_o <= '1'                     │                      │
-              │  (próximo ciclo de clock)         │                      │
-              └───────────────────────────────────┘                      │
-                            │                                            │
-              ┌─────────────┴─────────────┐                              │
-              │                           │                              │
-              ▼                           ▼                              │
-     ┌──────────────────┐       ┌──────────────────┐                    │
-     │     WRITE         │       │     READ          │                    │
-     │  we_i=1, addr=0   │       │  we_i=0           │                    │
-     │  r_leds <= data_i │       │  data_o <= reg    │                    │
-     └──────────────────┘       └──────────────────┘                    │
-                                                                    loops back
-```
-
 ---
 
-## 6. Diagrama de Temporização
+## 6. Protocolo de Handshake
 
-### 6.1 Operação de Escrita (Write)
-
-```
-Ciclo:     0       1       2       3       4
-           │       │       │       │       │
-clk        ┌───────┐┌───────┐┌───────┐┌───────┐
-           │       │       │       │       │
-           └───────┘└───────┘└───────┘└───────┘
-             ▲       ▲       ▲       ▲
-             │       │       │       │
-             │       │       │       │
-vld_i        ┌───────────────┐       (volta a 0)
-             │               │
-             └───────────────┘
-             │       │
-             │       │
-we_i         ┌───────────────┐
-             │               │
-             └───────────────┘
-             │       │
-             │       │
-addr_i       ────────┬───────
-             │       │
-             │   0x0 (LED addr)
-             │
-data_i       ────────┬────────────────
-             │       │
-             │   Dado escrito
-             │
-rdy_o                    ┌───────────────┐
-                         │               │
-                         └───────────────┘
-                         │       │
-                         │   Ready no ciclo 1
-                         │
-r_leds                   ════════════════
-                         │   Dado aparece
-                         │   no registrador
-                         │
-gpio_leds                ════════════════
-                         │ (saída física)
-                         │
-                         Legenda:
-                         ═ = valor estável
-                         ▲ = borda de clock
-```
-
-**Análise:** A escrita ocorre na borda de clock do ciclo 1. `rdy_o` é asserted no ciclo 1 (resposta ao `vld_i` do ciclo 0).
-
-### 6.2 Operação de Leitura (Read LED)
-
-```
-Ciclo:     0       1       2       3
-           │       │       │       │
-clk        ┌───────┐┌───────┐┌───────┐
-           │       │       │       │
-           └───────┘└───────┘└───────┘
-             ▲       ▲       ▲
-             │       │       │
-vld_i        ┌───────────────┐
-             │               │
-             └───────────────┘
-             │       │
-we_i         0               (leitura)
-             │
-addr_i       ────────┬───────
-             │   0x0 (LED)
-             │
-data_o               ┌──────────────────────
-                     │  r_leds aparece
-                     │  neste ciclo (1)
-                     │
-rdy_o                    ┌───────────────┐
-                         │               │
-                         └───────────────┘
-```
-
-**Análise:** A CPU coloca `addr_i=0x0` e `vld_i=1` no ciclo 0. No ciclo 1, `rdy_o=1` e `data_o` contém o valor de `r_leds`.
-
-### 6.3 Operação de Leitura (Read Switch)
-
-```
-Ciclo:     0       1       2
-           │       │       │
-clk        ┌───────┐┌───────┐
-           │       │       │
-           └───────┘└───────┘
-             ▲       ▲
-vld_i        ┌───────────────┐
-             │               │
-addr_i       ────────┬───────
-             │   0x4 (SW)
-             │
-gpio_sw      ════════════════
-             (estado físico)
-             │
-data_o               ┌───────────────────
-                     │ gpio_sw é
-                     │ amostrado aqui
-                     │
-rdy_o                    ┌───────────────┐
-                         │               │
-                         └───────────────┘
-```
-
-### 6.4 Reset Síncrono
-
-```
-Ciclo:     0       1       2       3
-           │       │       │       │
-clk        ┌───────┐┌───────┐┌───────┐
-           │       │       │       │
-           └───────┘└───────┘└───────┘
-             ▲       ▲       ▲
-rst              ┌───────────┐
-             │   │   1 (ativo)
-             └───┘       └──
-                         (libera reset)
-                         
-r_leds       0       0       0       0
-             ▲
-             Reset para 0
-             (borda de clock)
-             
-rdy_o        0       0       0       0
-             (forçado a 0 durante reset)
-```
-
----
-
-## 7. Protocolo de Handshake
-
-### 7.1 Descrição
+### 6.1 Descrição
 
 O GPIO Controller implementa um protocolo **handshake com latência 1** para comunicação com o barramento do SoC:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│                  PROTOCOLO DE HANDSHAKE                      │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│   CPU                                 GPIO Controller        │
-│   ───                                 ───────────────        │
-│                                                              │
-│   1. Coloca vld_i = '1'              4. Detecta vld_i = 1   │
-│      (solicita transação)                  (no clock edge)  │
-│      + we_i, addr_i, data_i                                     │
-│                                                      │        │
-│                                                      ▼        │
-│                                            5. rdy_o <= '1'   │
-│                                               (próximo ciclo)│
-│                                                      │        │
-│                                                      ▼        │
-│   2. Aguarda rdy_o = '1' ◀─────────────────────────┘        │
-│      (no próximo ciclo)                                      │
-│                                                              │
-│   3. Processa resposta                                      │
-│      (lê data_o / confirma escrita)                         │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
-```
+![Protocolo de Handshake](../images/GPIO/GPIO-Protocolo_de_Handshake.svg)
 
-### 7.2 Diagrama de Estados do Handshake
+### 6.2 Diagrama de Estados do Handshake
 
-```
-                    ┌─────────────────┐
-                    │                 │
-                    │     IDLE         │
-                    │  vld_i = '0'     │
-                    │                 │
-                    └────────┬────────┘
-                             │
-                             │ vld_i = '1'
-                             ▼
-                    ┌─────────────────┐
-                    │                 │
-                    │    ACTIVE       │──────┐
-                    │  rdy_o = '1'    │      │
-                    │                 │      │ (retorna a
-                    └─────────────────┘      │  IDLE)
-                             ▲               │
-                             │               │
-                             └───────────────┘
-```
+![Diagrama de Estados do Handshake](../images/GPIO/GPIO-Diagrama_de_Estados_do_Handshake.svg)
 
-### 7.3 Timing do Handshake
+### 6.3 Timing do Handshake
 
 | Ciclo | `vld_i` | `we_i` | `addr_i` | `data_i` | `rdy_o` | Ação |
 |-------|---------|--------|----------|----------|---------|------|
@@ -466,7 +138,7 @@ O GPIO Controller implementa um protocolo **handshake com latência 1** para com
 
 ---
 
-## 8. Tabela de Operações Completa
+## 7. Tabela de Operações Completa
 
 | `vld_i` | `we_i` | `addr_i` | `data_i`     | `data_o`      | `rdy_o` | Ação                                    |
 |---------|--------|----------|--------------|---------------|---------|-----------------------------------------|
@@ -480,25 +152,25 @@ O GPIO Controller implementa um protocolo **handshake com latência 1** para com
 
 ---
 
-## 9. Considerações de Projeto
+## 8. Considerações de Projeto
 
-### 9.1 Domínio de Clock
+### 8.1 Domínio de Clock
 
 - **Síncrono:** Todos os registradores operam na borda de subida do `clk`
 - **Reset:** Síncrono, ativo alto, zera `r_leds` para `0x0000`
 
-### 9.2 Latência
+### 8.2 Latência
 
 - **Latência de resposta:** 1 ciclo de clock
 - A CPU deve aguardar `rdy_o = '1'` antes de considerar a transação completa
 
-### 9.3 Largura de Dados
+### 8.3 Largura de Dados
 
 - Barramento: 32 bits (`data_i`, `data_o`)
 - Dados úteis: 16 bits (LSB)
 - Bits superiores (31:16): Reservados, retornam 0 em leituras
 
-### 9.4 Limitações
+### 8.4 Limitações
 
 1. **Direção fixa:** Não há registrador de direção configurável
 2. **Sem interrupções:** O módulo não suporta geração de interrupções
@@ -506,16 +178,10 @@ O GPIO Controller implementa um protocolo **handshake com latência 1** para com
 
 ---
 
-## 10. Referências
+## 9. Referências
 
 - **RTL Source:** `rtl/perips/gpio/gpio_controller.vhd`
 - **Testbench:** `sim/perips/test_gpio_controller.py`
 - **IEEE Std 1076:** VHDL Language Reference Manual
 
 ---
-
-## 11. Histórico de Versões
-
-| Versão | Data       | Autor          | Descrição      |
-|--------|------------|----------------|----------------|
-| 1.0    | 31/12/2025 | André Maiolini | Versão inicial |
