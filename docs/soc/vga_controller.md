@@ -4,355 +4,878 @@
 
 ## 1. Visão Geral
 
-O **VGA Controller** é um periférico de saída de vídeo que implementa um framebuffer mapeado em memória (Memory-Mapped I/O) para controle de um monitor VGA padrão. O módulo converte dados de pixels armazenados em uma VRAM interna em sinais de vídeo analógicos sincronizados para resoluções de 640x480 a 60Hz.
+O **VGA Controller** é um periférico de saída de vídeo que permite ao processador RISC-V exibir gráficos em monitores VGA padrão. O sistema é composto por três módulos principais:
+
+| Módulo | Função |
+|--------|--------|
+| `vga_sync` | Gera os sinais de sincronismo horizontal e vertical |
+| `video_ram` | Armazena os dados de pixel (Dual-Port RAM) |
+| `vga_peripheral` | Integra os módulos e gerencia a comunicação com o processador |
 
 ### 1.1 Características Principais
 
 | Característica | Valor |
 |----------------|-------|
-| **Padrão** | VGA (Video Graphics Array) |
-| **Resolução Original** | 640x480 pixels |
-| **Resolução VRAM** | 320x240 pixels (escalado 2x) |
-| **Profundidade de Cor** | 8 bits/pixel (RRRGGGBB) |
+| **Resolução** | 640×480 pixels |
 | **Taxa de Atualização** | 60 Hz |
-| **Frequência de Pixel** | 25 MHz |
-| **VRAM** | 76.800 bytes (320×240) |
-| **Clock de Entrada** | 100 MHz |
+| **Profundidade de Cor** | 8 bits/pixel (RRRGGGBB) |
+| **VRAM** | 320×240 = 76.800 bytes |
+| **Clock do Sistema** | 100 MHz |
+| **Pixel Clock** | 25 MHz |
 
 ---
 
-## 2. Interface de Vídeo VGA
+## 2. Fundamentação Teórica: Padrão VGA
 
-### 2.1 Sinais de Saída
+### 2.1 Princípio da Varredura de Tela
 
-| Pino | Direção | Descrição |
-|------|---------|-----------|
-| vga_hs_o | Output | Sincronismo horizontal (horizontal sync) |
-| vga_vs_o | Output | Sincronismo vertical (vertical sync) |
-| vga_r_o[3:0] | Output | Componente vermelho (4 bits) |
-| vga_g_o[3:0] | Output | Componente verde (4 bits) |
-| vga_b_o[3:0] | Output | Componente azul (4 bits) |
-
-### 2.2 Temporização VGA (640x480 @ 60Hz)
-
-O padrão VGA utiliza sinais de sincronismo para posicionar o feixe de elétrons do monitor:
-
-| Parâmetro | Valor (pixels) |
-|-----------|----------------|
-| **Largura área ativa horizontal** | 640 |
-| **Front porch horizontal** | 16 |
-| **Sync pulse horizontal** | 96 |
-| **Back porch horizontal** | 48 |
-| **Total linha** | 800 |
-| **Largura área ativa vertical** | 480 |
-| **Front porch vertical** | 10 |
-| **Sync pulse vertical** | 2 |
-| **Back porch vertical** | 33 |
-| **Total frame** | 525 |
-
----
-
-## 3. Diagrama de Blocos
+O padrão VGA utiliza o princípio da **varredura eletrônica** (raster scan), originado dos monitores CRT (Cathode Ray Tube):
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────┐
-│                              VGA CONTROLLER                                         │
+│                         VARREDURA DE TELA (RASTER SCAN)                            │
 ├─────────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                     │
-│   BARRAMENTO DO SOC                              INTERFACE VGA                      │
-│   ┌──────────────────┐                           ┌────────────────────┐              │
-│   │    addr_i[16:0]  │──────────────────────────▶│                    │              │
-│   │    data_i[31:0]  │──────────────────────────▶│   LOGICA DE        │              │
-│   │    we_i, vld_i   │──────────────────────────▶│   CONTROLE         │              │
-│   │                  │                           │                    │              │
-│   │    data_o[31:0]  │◀──────────────────────────│                    │              │
-│   │    rdy_o         │◀──────────────────────────│                    │              │
-│   └──────────────────┘                           └────────┬───────────┘              │
-│                                                          │                          │
-│                                                          ▼                          │
+│   ← ESQUERDA                                                      DIREITA →         │
 │   ┌───────────────────────────────────────────────────────────────────────────────┐ │
-│   │                         ARQUITETURA INTERNA                                   │ │
 │   │                                                                               │ │
-│   │   ┌─────────────────────┐           ┌─────────────────────┐                 │ │
-│   │   │   LOGICA DE         │           │   ENDEREÇAMENTO     │                 │ │
-│   │   │   ALINHAMENTO       │──────────▶│   VRAM (READ)       │                 │ │
-│   │   │   (MUX 4:1)         │           │   addr_b            │                 │ │
-│   │   └────────┬────────────┘           └──────────┬──────────┘                 │ │
-│   │            │                                │                              │ │
-│   │            │                          ┌──────┴───────┐                      │ │
-│   │            │                          │              │                      │ │
-│   │            ▼                          ▼              ▼                      │ │
-│   │   ┌─────────────────┐         ┌──────────────┐  ┌──────────────┐           │ │
-│   │   │      VRAM       │         │  vga_sync   │  │  EXTRATOR    │           │ │
-│   │   │  (Dual-port)   │         │  (Timing)   │  │    COR       │           │ │
-│   │   │  320×240×8b    │◀───────▶│              │  │              │           │ │
-│   │   │                 │  addr_a │              │  │              │           │ │
-│   │   │  we_a, data_a   │         │ h_count      │  │ R[3:0]        │           │ │
-│   │   │  addr_b, data_b │         │ v_count      │  │ G[3:0]        │           │ │
-│   │   │                 │         │ h_sync       │  │ B[3:0]        │           │ │
-│   │   │                 │         │ v_sync       │  │              │           │ │
-│   │   │                 │         │ video_on     │  │              │           │ │
-│   │   └────────┬────────┘         └──────────────┘  └──────────────┘           │ │
-│   │            │                               │                              │ │
-│   └────────────┼───────────────────────────────┼──────────────────────────────┘ │
-│                │                               │                                  │
-│                │                         ┌─────┴─────┐                            │
-│                │                         │  PINOS    │                            │
-│                │                         │  VGA      │                            │
-│                │                         │  OUTPUT   │                            │
-│                │                         └───────────┘                            │
-│                │                                                                    │
-└────────────────┼─────────────────────────────────────────────────────────────────┘
-                 │
-                 ▼
-         ┌───────────────┐
-         │  MONITOR VGA  │
-         │  640x480      │
-         └───────────────┘
+│   │                                    ▲                                          │ │
+│   │                                    │                                          │ │
+│   │  ───────────────────────────────  │  ──────────────────────────────────────  │ │
+│   │                                    │                                          │ │
+│   │  Linha 0 (retraço horizontal)     │  Linha 1                                 │ │
+│   │                                    │                                          │ │
+│   │  ───────────────────────────────► │  ──────────────────────────────────────►  │ │
+│   │                                    │                                          │ │
+│   │                                    │                                          │ │
+│   │  ───────────────────────────────   │  ──────────────────────────────────────  │ │
+│   │                                    │                                          │ │
+│   │                                    │                                          │ │
+│   │  ───────────────────────────────  │  ──────────────────────────────────────  │ │
+│   │                                    │                                          │ │
+│   │  ...                               │  ...                                     │ │
+│   │                                    │                                          │ │
+│   │                                    │                                          │ │
+│   │  ───────────────────────────────  │  ──────────────────────────────────────  │ │
+│   │                                    │                                          │ │
+│   │  ───────────────────────────────► │  ──────────────────────────────────────►  │ │
+│   │                                    │                                          │ │
+│   │                                    │                                          │ │
+│   │  Retorno vertical                 │  Linha 479                               │ │
+│   │  (vertical blank)                 │                                          │ │
+│   └───────────────────────────────────────────────────────────────────────────────┘ │
+│                                                                                     │
+│       ▲                                                                             │
+│       │                                                                             │
+│       └── Feixe de elétrons varre a tela linha por linha, da esquerda para         │
+│           direita e de cima para baixo. Ao final de cada linha, retorna              │
+│           rapidamente à esquerda (retraço horizontal). Ao final da tela,            │
+│           retorna ao topo (retraço vertical).                                       │
+│                                                                                     │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 2.2 Necessidade de Porches e Sync Pulses
+
+Os monitores CRT requerem **tempo de retorno** para o feixe de elétrons reposicionar-se. Estes intervalos são implementados como:
+
+| Intervalo | Descrição |
+|-----------|-----------|
+| **Front Porch** | Espaço antes do pulso de sincronismo |
+| **Sync Pulse** | Pulso que indica quando o feixe deve reposicionar-se |
+| **Back Porch** | Espaço após o pulso de sincronismo |
+
+Estes intervalos **não são visíveis** na tela, mas são necessários para que o monitor processe corretamente o sinal.
+
+---
+
+## 3. Temporização Horizontal
+
+A temporização horizontal define o tempo necessário para varrer **uma linha** da tela.
+
+### 3.1 Diagrama de Temporização
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                        TEMPORIZAÇÃO HORIZONTAL (640×480 @ 60Hz)                              │
+├─────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                               │
+│  Ciclo:       0         640        656        752        800                              │
+│                │          │          │          │          │                                │
+│                │   ATIVA  │  BACK   │  SYNC    │  FRONT   │                                │
+│                │  (640px) │  PORCH  │  (96px)  │  PORCH   │                                │
+│                │          │  (48px) │          │  (16px)  │                                │
+│                ▼          ▼         ▼          ▼          ▼                                │
+│  ────────────────────────────────────────────────────────────────────────────────────────►   │
+│  (Tempo)                                                                                       │
+│                                                                                               │
+│  H_SYNC:       1─────────1────────0──────────0─────────1                                   │
+│                │         │         ▲          ▲         │                                   │
+│                │         │         │          │         │                                   │
+│                │         │         └── 656 ────┘         │                                   │
+│                │         │            à 752              │                                   │
+│                │         │         (96 ciclos)           │                                   │
+│                │         │                              │                                   │
+│                │         │◄────── 48 ciclos ─────────►│                                   │
+│                │         │                              │                                   │
+│                │◄────────┴──────────────────────────────┴───────────────────────────────────►│
+│                │                    640 ciclos                                                   │
+│                │                   (display ativo)                                             │
+│                │                                                                               │
+│  video_on:     1─────────1─────────0──────────0─────────0                                    │
+│                (ativo quando h_count < 640)                                                    │
+│                                                                                               │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 3.2 Equações de Temporização Horizontal
+
+```
+Período de uma linha = Display + Front Porch + Sync Pulse + Back Porch
+                      = 640 + 16 + 96 + 48
+                      = 800 ciclos de pixel
+
+Frequência de linha = Pixel Clock / Período de linha
+                     = 25 MHz / 800
+                     = 31.25 kHz
 ```
 
 ---
 
-## 4. Mapa de Memória
+## 4. Temporização Vertical
 
-### 4.1 Espaço de Endereçamento
+A temporização vertical define o tempo necessário para varrer **todas as linhas** da tela (um quadro/frame).
 
-| Endereço | Tamanho | Descrição |
-|----------|---------|-----------|
-| 0x00000 - 0x12BFF | 76.800 bytes | Framebuffer VRAM (320×240) |
-| 0x1FFFF | 4 bytes | Registrador de Status (apenas leitura) |
+### 4.1 Diagrama de Temporização
 
-### 4.2 Registrador de Status (Offset 0x1FFFF)
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                         TEMPORIZAÇÃO VERTICAL (640×480 @ 60Hz)                              │
+├─────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                               │
+│  Linha:      0         480        490        492        525                                │
+│               │          │          │          │          │                                  │
+│               │   ATIVA  │  BACK    │  VSYNC   │  FRONT   │                                  │
+│               │  (480ln) │  PORCH   │  (2ln)   │  PORCH   │                                  │
+│               │          │  (10ln)  │          │  (33ln)  │                                  │
+│               ▼          ▼          ▼          ▼          ▼                                  │
+│  V_SYNC:      1─────────1──────────0──────────0─────────1                                    │
+│               │         │          ▲          ▲         │                                    │
+│               │         │          │          │         │                                    │
+│               │         │          └── 490 ────┘         │                                    │
+│               │         │             à 492              │                                    │
+│               │         │          (2 linhas)            │                                    │
+│               │         │                              │                                    │
+│               │         │◄──── 10 linhas ────────────►│                                    │
+│               │         │                              │                                    │
+│               │◄────────┴───────────────────────────────┴────────────────────────────────────►│
+│               │                     480 linhas                                                 │
+│               │                    (display ativo)                                             │
+│               │                                                                               │
+│  video_on:    1─────────1──────────0──────────0─────────0                                    │
+│               (ativo quando v_count < 480)                                                   │
+│                                                                                               │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
+```
 
-| Bit | Nome | Descrição |
-|-----|------|-----------|
-| 0 | VSYNC | Estado atual do sincronismo vertical ('1' = ativo) |
-| 31:1 | Reserved | Reservado |
+### 4.2 Equações de Temporização Vertical
 
-### 4.3 Aceso à VRAM
+```
+Período de um frame = Linhas visíveis + V Back Porch + V Sync + V Front Porch
+                    = 480 + 10 + 2 + 33
+                    = 525 linhas
 
-A VRAM é accessed via escrita direta de 32 bits (4 bytes por transação). O hardware de alinhamento seleciona o byte correto com base nos 2 bits menos significativos do endereço:
+Frequência de frame (refresh rate) = Frequência de linha / Linhas por frame
+                                   = 31.25 kHz / 525
+                                   = 59.52 Hz ≈ 60 Hz
 
-```c
-// Endereço 0x00 -> data_i[7:0]
-// Endereço 0x01 -> data_i[15:8]
-// Endereço 0x02 -> data_i[23:16]
-// Endereço 0x03 -> data_i[31:24]
+Período de frame = 1 / 60 Hz = 16.67 ms
 ```
 
 ---
 
-## 5. Arquitetura do Módulo vga_sync
+## 5. Tabela de Cálculos Completa
 
-O módulo **vga_sync** é responsável por gerar os sinais de temporização VGA e os contadores de posição de pixel.
+### 5.1 640×480 @ 60Hz
 
-### 5.1 Divisor de Clock
+| Parâmetro | Horizontal (ciclos) | Horizontal (µs) | Vertical (linhas) | Vertical (ms) |
+|-----------|-------------------|-----------------|-------------------|---------------|
+| **Pixel Clock** | 1 | 0.04 | - | - |
+| **Display Ativo** | 640 | 25.6 | 480 | 15.36 |
+| **Front Porch** | 16 | 0.64 | 33 | 1.056 |
+| **Sync Pulse** | 96 | 3.84 | 2 | 0.064 |
+| **Back Porch** | 48 | 1.92 | 10 | 0.32 |
+| **Total por Linha/Frame** | **800** | **32.0** | **525** | **16.78** |
 
-O clock de entrada de 100MHz é dividido por 4 para obter os 25MHz necessários para a taxa de pixels:
+### 5.2 Validação dos Cálculos
 
-```vhdl
-if count_div = 3 then
-    count_div <= 0;
-    pixel_en <= '1';  -- Pulso a cada 4 ciclos (25MHz)
-else
-    count_div <= count_div + 1;
-    pixel_en <= '0';
-end if;
+```
+Pixel Clock = CLK_SISTEMA / DIVISOR
+            = 100 MHz / 4
+            = 25 MHz
+
+Tempo por pixel = 1 / 25 MHz = 40 ns
+
+Tempo por linha = 800 × 40 ns = 32 µs
+Frequência de linha = 1 / 32 µs = 31.25 kHz
+
+Tempo por frame = 525 × 32 µs = 16.8 ms
+Refresh Rate = 1 / 16.8 ms ≈ 59.52 Hz ✓ (dentro da tolerância de 60 Hz)
 ```
 
-### 5.2 Contadores de Posição
+### 5.3 Resumo de Recursos
 
-Os contadores horizontal (h_count) e vertical (v_count) avançam apenas quando pixel_en = '1', garantindo a temporização correta:
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                              RESUMO DE RECURSOS                                            │
+├─────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                             │
+│   Pixel Clock Eficaz:    25 MHz                                                            │
+│   Linhas por Frame:      525                                                              │
+│   Colunas por Linha:     800                                                              │
+│   Refresh Rate:          59.52 Hz                                                         │
+│   Pixels Totais/Frame:   525 × 800 = 420.000 pixels                                       │
+│   Taxa de Pixels:        420.000 × 59.52 ≈ 25 MHz                                        │
+│                                                                                             │
+│   Pixels Visíveis/Frame: 640 × 480 = 307.200 pixels                                      │
+│   Eficiência de Display:  307.200 / 420.000 ≈ 73.1%                                      │
+│                                                                                             │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 6. vga_sync: Gerador de Sincronismo
+
+### 6.1 Interface do Módulo
 
 ```vhdl
-if h_cnt_reg = 799 then
-    h_cnt_reg <= 0;
-    if v_cnt_reg = 524 then
-        v_cnt_reg <= 0;
-    else
-        v_cnt_reg <= v_cnt_reg + 1;
+entity vga_sync is
+    port (
+        clk      : in  std_logic;                    -- Clock: 100MHz
+        rst      : in  std_logic;                    -- Reset
+        h_count  : out integer range 0 to 799;       -- Contador horizontal
+        v_count  : out integer range 0 to 524;       -- Contador vertical
+        h_sync   : out std_logic;                    -- Sync horizontal
+        v_sync   : out std_logic;                    -- Sync vertical
+        video_on : out std_logic                     -- Área ativa
+    );
+end entity;
+```
+
+### 6.2 Arquitetura Interna
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                    vga_sync                                               │
+├─────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                             │
+│   clk ─────────┐                                                                             │
+│               │                                                                             │
+│               │    ┌───────────────────────────────────────────────────────────────────┐   │
+│               ├───▶│           DIVISOR DE FREQUÊNCIA (÷4)                           │   │
+│               │    │                                                               │   │
+│               │    │   count_div: 0 → 1 → 2 → 3 → 0 → 1 → ...                      │   │
+│               │    │   pixel_en:   0   0   0   1   0   0   ...                      │   │
+│               │    │                         ▲                                        │   │
+│               │    └───────────────────────┼───────────────────────────────────────┘   │
+│               │                            │                                              │
+│               │                            ▼                                              │
+│               │    ┌───────────────────────────────────────────────────────────────────┐   │
+│               │    │                    CONTADORES                                    │   │
+│               │    │                                                               │   │
+│               │    │   h_cnt_reg: 0 → ... → 799 → 0 → ... (incrementa com pixel_en) │   │
+│               │    │   v_cnt_reg: 0 → ... → 524 → 0 → ... (incrementa quando h=799) │   │
+│               │    │                                                               │   │
+│               │    │   ┌───────────────────────────────────────────────────────┐   │   │
+│               │    │   │ if pixel_en = '1' then                                │   │   │
+│               │    │   │   if h_cnt_reg = 799 then h_cnt_reg <= 0;           │   │   │
+│               │    │   │      if v_cnt_reg = 524 then v_cnt_reg <= 0;        │   │   │
+│               │    │   │   else v_cnt_reg <= v_cnt_reg + 1;                  │   │   │
+│               │    │   │   else h_cnt_reg <= h_cnt_reg + 1;                  │   │   │
+│               │    │   │ end if;                                              │   │   │
+│               │    │   └───────────────────────────────────────────────────────┘   │   │
+│               │    │                                                               │   │
+│               │    └───────────────────────────────────────────────────────────────────┘   │
+│               │                                                                             │
+│               │                            h_count ────────────────┐                      │
+│               │                            v_count ────────────────┤                      │
+│               │                                                 │                        │
+│               │    ┌───────────────────────────────────────────────────────────────────┐   │
+│               │    │                    LÓGICA COMBINACIONAL                           │   │
+│               │    │                                                               │   │
+│               │    │   h_sync  <= '0' when (h_count >= 656 and h_count < 752)      │   │
+│               │    │           else '1';                                           │   │
+│               │    │                                                               │   │
+│               │    │   v_sync  <= '0' when (v_count >= 490 and v_count < 492)      │   │
+│               │    │           else '1';                                           │   │
+│               │    │                                                               │   │
+│               │    │   video_on <= '1' when (h_count < 640 and v_count < 480)      │   │
+│               │    │              else '0';                                        │   │
+│               │    │                                                               │   │
+│               │    └───────────────────────────────────────────────────────────────────┘   │
+│               │                                                                             │
+│               └─── clk                                                                       │
+│                                                                                             │
+│                         h_sync ────────────────┐                                          │
+│                         v_sync ────────────────┤                                          │
+│                         video_on ──────────────┘                                          │
+│                                                                                             │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 6.3 Implementação VHDL
+
+```vhdl
+architecture rtl of vga_sync is
+    signal pixel_en   : std_logic;
+    signal count_div  : integer range 0 to 3 := 0;
+    signal h_cnt_reg  : integer range 0 to 799 := 0;
+    signal v_cnt_reg  : integer range 0 to 524 := 0;
+begin
+
+    -- Divisor de Frequência (100MHz -> 25MHz)
+    process(clk)
+    begin
+        if rising_edge(clk) then
+            if rst = '1' then
+                count_div <= 0;
+                pixel_en <= '0';
+            else
+                if count_div = 3 then
+                    count_div <= 0;
+                    pixel_en <= '1';  -- Pulso a cada 4 ciclos
+                else
+                    count_div <= count_div + 1;
+                    pixel_en <= '0';
+                end if;
+            end if;
+        end if;
+    end process;
+
+    -- Contadores Horizontal e Vertical
+    process(clk)
+    begin
+        if rising_edge(clk) then
+            if rst = '1' then
+                h_cnt_reg <= 0;
+                v_cnt_reg <= 0;
+            elsif pixel_en = '1' then
+                if h_cnt_reg = 799 then
+                    h_cnt_reg <= 0;
+                    if v_cnt_reg = 524 then
+                        v_cnt_reg <= 0;
+                    else
+                        v_cnt_reg <= v_cnt_reg + 1;
+                    end if;
+                else
+                    h_cnt_reg <= h_cnt_reg + 1;
+                end if;
+            end if;
+        end if;
+    end process;
+
+    -- Saídas
+    h_count <= h_cnt_reg;
+    v_count <= v_cnt_reg;
+
+    -- Sincronismo (Polaridade Negativa)
+    h_sync <= '0' when (h_cnt_reg >= 656 and h_cnt_reg < 752) else '1';
+    v_sync <= '0' when (v_cnt_reg >= 490 and v_cnt_reg < 492) else '1';
+
+    -- Área Ativa de Vídeo
+    video_on <= '1' when (h_cnt_reg < 640 and v_cnt_reg < 480) else '0';
+
+end architecture;
+```
+
+---
+
+## 7. Divisor de Clock
+
+### 7.1 Necessidade do Divisor
+
+```
+Clock do Sistema:  100 MHz (T = 10 ns)
+Pixel Clock:        25 MHz (T = 40 ns)
+
+Razão: 100 / 25 = 4
+```
+
+### 7.2 Implementação
+
+```vhdl
+-- Divisor por 4 (50% duty cycle)
+process(clk)
+begin
+    if rising_edge(clk) then
+        if count_div = 3 then
+            count_div <= 0;
+            pixel_en <= '1';  -- Pulso de 1 ciclo a cada 4
+        else
+            count_div <= count_div + 1;
+            pixel_en <= '0';
+        end if;
     end if;
-else
-    h_cnt_reg <= h_cnt_reg + 1;
-end if;
+end process;
 ```
 
-### 5.3 Sinais de Sincronismo
+### 7.3 Diagrama de Temporização do Divisor
 
-Os sinais de sincronismo são ativos em nível lógico baixo (polaridade negativa):
-
-```vhdl
-h_sync <= '0' when (h_cnt_reg >= 656 and h_cnt_reg < 752) else '1';
-v_sync <= '0' when (v_cnt_reg >= 490 and v_cnt_reg < 492) else '1';
 ```
+clk:        ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐
+            │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │
+            │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │
+            └───┘   └───┘   └───┘   └───┘   └───┘   └───┘   └───┘   └───┘
+            ─────► ciclos: 0     1     2     3     0     1     2     3
 
-### 5.4 Área Ativa de Vídeo
+count_div:  0     1     2     3     0     1     2     3     0     1     2     3
+            ──────────────────────────── ──────────────────────────── ────────────
+            │ 0   │ 1   │ 2   │ 3   │ 0   │ 1   │ 2   │ 3   │ 0   │ 1   │ 2   │
 
-O sinal video_on indica quando os contadores estão dentro da área visível:
-
-```vhdl
-video_on <= '1' when (h_cnt_reg < 640 and v_cnt_reg < 480) else '0';
+pixel_en:   0     0     0     1     0     0     0     1     0     0     0     1
+            ────────────────     ────────────────     ────────────────     ──────
+            │   OFF    │ ON │   │   OFF    │ ON │   │   OFF    │ ON │   │ OFF │
 ```
 
 ---
 
-## 6. Arquitetura do Módulo vga_peripheral
+## 8. video_ram: Memória de Vídeo
 
-O módulo **vga_peripheral** integra a VRAM, o gerador de sincronismo e a lógica de extração de cores.
+### 8.1 Conceito de Dual-Port RAM
 
-### 6.1 VRAM (Dual-Port Memory)
+A **Dual-Port RAM** permite acesso simultâneo de duas entidades independentes:
 
-A Video RAM é uma memória de dupla porta que permite escritas simultâneas pela CPU (porta A) e leituras pelo hardware de vídeo (porta Porta B):
-
-- **Capacidade**: 320 × 240 = 76.800 bytes
-- **Largura de dados**: 8 bits por endereço
-- **Formato de pixel**: RRRGGGBB (3 bits vermelho, 3 bits verde, 2 bits azul)
-
-### 6.2 Lógica de Alinhamento de Dados
-
-Quando a CPU escreve um dado de 32 bits, o hardware seleciona o byte correto baseado nos 2 bits menos significativos do endereço:
-
-```vhdl
-case addr_i(1 downto 0) is
-    when "00"   => s_data_aligned <= data_i(7 downto 0);
-    when "01"   => s_data_aligned <= data_i(15 downto 8);
-    when "10"   => s_data_aligned <= data_i(23 downto 16);
-    when "11"   => s_data_aligned <= data_i(31 downto 24);
-    when others => s_data_aligned <= (others => '0');
-end case;
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                              DUAL-PORT RAM (VIDEO_RAM)                                       │
+├─────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                             │
+│   ┌─────────────────────────────────────────────────────────────────────────────────────┐   │
+│   │                                                                                     │   │
+│   │                          MEMÓRIA DE VÍDEO                                           │   │
+│   │                          (Block RAM)                                                │   │
+│   │                                                                                     │   │
+│   │   ┌───────────────────────────────────────────────────────────────────────────┐   │   │
+│   │   │                                                                           │   │   │
+│   │   │   Endereço 0   │  Endereço 1   │  ...  │  Endereço 76799  │              │   │   │
+│   │   │   (7:0)       │   (7:0)       │        │   (7:0)          │              │   │   │
+│   │   │   RRRGGGBB    │   RRRGGGBB    │        │   RRRGGGBB       │              │   │   │
+│   │   │                                                                           │   │   │
+│   │   └───────────────────────────────────────────────────────────────────────────┘   │   │
+│   │                                                                                     │   │
+│   │                                                                                     │   │
+│   └─────────────────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                             │
+│                   ▲                                           ▲                             │
+│                   │                                           │                             │
+│           ┌───────┴───────┐                         ┌───────┴───────┐                     │
+│           │   PORTA A     │                         │   PORTA B     │                     │
+│           │   (Escrita)   │                         │   (Leitura)   │                     │
+│           │               │                         │               │                     │
+│           │ we_a          │                         │               │                     │
+│           │ addr_a[16:0]  │                         │ addr_b[16:0]  │                     │
+│           │ data_a[7:0]   │                         │ data_b[7:0]   │                     │
+│           │               │                         │               │                     │
+│           └───────┬───────┘                         └───────┬───────┘                     │
+│                   │                                           │                             │
+│                   ▼                                           ▼                             │
+│           ┌─────────────┐                             ┌─────────────┐                     │
+│           │    CPU      │                             │    VGA      │                     │
+│           │  (RISC-V)  │                             │  Controller │                     │
+│           │             │                             │             │                     │
+│           │  Escrita    │                             │  Leitura    │                     │
+│           │  Assíncrona │                             │  Contínua   │                     │
+│           └─────────────┘                             └─────────────┘                     │
+│                                                                                             │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 6.3 Escalonamento de Coordenadas
-
-Como a VRAM tem resolução 320×240 mas a saída VGA é 640×480, as coordenadas são escaladas por fator de 2:
+### 8.2 Interface do Módulo
 
 ```vhdl
-x_scaled <= pixel_x / 2;
-y_scaled <= pixel_y / 2;
+entity video_ram is
+    generic (
+        ADDR_WIDTH : integer := 17;  -- 2^17 = 131072 endereços (usa 76800)
+        DATA_WIDTH : integer := 8    -- 8 bits: RRRGGGBB
+    );
+    port (
+        clk      : in std_logic;
+        
+        -- Porta A: Processador (Escrita)
+        we_a     : in std_logic;
+        addr_a   : in std_logic_vector(ADDR_WIDTH-1 downto 0);
+        data_a   : in std_logic_vector(DATA_WIDTH-1 downto 0);
+        
+        -- Porta B: VGA Core (Leitura)
+        addr_b   : in std_logic_vector(ADDR_WIDTH-1 downto 0);
+        data_b   : out std_logic_vector(DATA_WIDTH-1 downto 0)
+    );
+end entity;
+```
+
+### 8.3 Implementação (Inferência de BRAM)
+
+```vhdl
+architecture rtl of video_ram is
+    type ram_type is array (0 to (2**ADDR_WIDTH)-1) 
+                   of std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal ram : ram_type := (others => (others => '0'));
+begin
+
+    process(clk)
+    begin
+        if rising_edge(clk) then
+            -- Escrita do Processador (Write-First)
+            if we_a = '1' then
+                ram(to_integer(unsigned(addr_a))) <= data_a;
+            end if;
+            
+            -- Leitura do VGA (Sempre ativa)
+            data_b <= ram(to_integer(unsigned(addr_b)));
+        end if;
+    end process;
+
+end architecture;
+```
+
+### 8.4 Formato de Dados de Pixel
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                    FORMATO DE PIXEL (8 bits)                                │
+├─────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                             │
+│   bit:    7    6    5    4    3    2    1    0                                            │
+│          ┌────┬────┬────┬────┬────┬────┬────┬────┐                                           │
+│          │ R2 │ R1 │ R0 │ G2 │ G1 │ G0 │ B1 │ B0 │                                           │
+│          ├────┴────┴────┴────┴────┴────┴────┴────┤                                           │
+│          │         Vermelho (3 bits)           │         Verde (3 bits)        │ Azul (2 bits) │
+│          └─────────────────────────────────────┴─────────────────────────────────┘              │
+│                                                                                             │
+│   Com 3 bits para R e G: 2^3 = 8 níveis cada = 256 cores possíveis                          │
+│   Com 2 bits para B: 2^2 = 4 níveis                                                                     │
+│                                                                                             │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 9. vga_peripheral: Integração
+
+### 9.1 Arquitetura Completa
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                        VGA_PERIPHERAL                                                   │
+├─────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                                         │
+│   BARRAMENTO DO SoC                              SAÍDAS VGA                                           │
+│   ┌──────────────────┐                           ┌─────────────────────────────────────────────┐       │
+│   │                  │                           │                                             │       │
+│   │  we_i            │───┐                       │   vga_r_o[3:0]  (Vermelho 4 bits)         │       │
+│   │  vld_i           │   │                       │   vga_g_o[3:0]  (Verde 4 bits)           │       │
+│   │  addr_i[16:0]    │   │   ┌───────────────┐  │   vga_b_o[3:0]  (Azul 4 bits)            │       │
+│   │  data_i[31:0]    │───┼──▶│  Alinhamento  │  │   vga_hs_o     (H_SYNC)                 │       │
+│   │                  │   │   │  de Dados     │  │   vga_vs_o     (V_SYNC)                 │       │
+│   │                  │   │   └───────┬───────┘  └─────────────────────────────────────────────┘       │
+│   │                  │   │           │                                                               │
+│   │  data_o[31:0]    │◀──┤           │                                                               │
+│   │  rdy_o           │◀──┤           │                                                               │
+│   │                  │   │           │                                                               │
+│   └──────────────────┘   │           ▼                                                               │
+│                           │   ┌───────────────┐                                                       │
+│                           │   │               │                                                       │
+│                           └──▶│    s_vram_we   │                                                       │
+│                               │   (we_i AND    │                                                       │
+│                               │    vld_i)      │                                                       │
+│                               └───────┬────────┘                                                       │
+│                                       │                                                                │
+│   ┌───────────────────────────────────┼───────────────────────────────────────────────────────────┐   │
+│   │                                   ▼                                                               │   │
+│   │   ┌─────────────────────────────────────────────────────────────────────────────────────────┐ │   │
+│   │   │                                                                                         │ │   │
+│   │   │                            DUAL-PORT VIDEO RAM                                          │ │   │
+│   │   │                            (320 × 240 = 76.800 bytes)                                   │ │   │
+│   │   │                                                                                         │ │   │
+│   │   │   ┌─────────────────────────────────────────────────────────────────────────────────┐ │ │   │
+│   │   │   │                                                                         │ │ │   │
+│   │   │   │   PORTA A (CPU)                      PORTA B (VGA)                          │ │ │   │
+│   │   │   │   ┌───────────────┐                  ┌───────────────┐                      │ │ │   │
+│   │   │   │   │               │                  │               │                      │ │ │   │
+│   │   │   │   │  s_vram_we    │                  │               │                      │ │ │   │
+│   │   │   │   │  addr_i       │                  │  vram_addr    │                      │ │ │   │
+│   │   │   │   │  s_data_align │                  │               │                      │ │ │   │
+│   │   │   │   │               │                  │  vram_data    │──────────────────────┼─┘ │   │
+│   │   │   │   └───────────────┘                  └───────────────┘                      │     │   │
+│   │   │   │                                                                                 │     │   │
+│   │   │   └─────────────────────────────────────────────────────────────────────────────────┘     │   │
+│   │   │                                                                                         │     │   │
+│   │   └───────────────────────────────────────────────────────────────────────────────────────────┘     │   │
+│   │                                                                                                         │   │
+│   └─────────────────────────────────────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                                                 │
+│   ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────┐   │
+│   │                                        VGA_SYNC                                                           │   │
+│   │   ┌────────────────────────────────────────────────────────────────────────────────────────────────┐  │   │
+│   │   │                                                                                                │  │   │
+│   │   │   100MHz ──▶ Divisor ÷4 ──▶ pixel_en ──▶ Contadores H(0-799) e V(0-524)                      │  │   │
+│   │   │                                                                                                │  │   │
+│   │   │                              ┌────────────────┐                                               │  │   │
+│   │   │                              │                │                                               │  │   │
+│   │   │   pixel_x ◀─────────────────▶│  h_count       │                                               │  │   │
+│   │   │   pixel_y ◀─────────────────▶│  v_count       │                                               │  │   │
+│   │   │   vga_hs_o ◀────────────────│  h_sync        │                                               │  │   │
+│   │   │   s_vsync ◀─────────────────│  v_sync        │                                               │  │   │
+│   │   │   video_on ◀────────────────│  video_on      │                                               │  │   │
+│   │   │                              │                │                                               │  │   │
+│   │   │                              └────────────────┘                                               │  │   │
+│   │   │                                                                                                │  │   │
+│   │   └────────────────────────────────────────────────────────────────────────────────────────────────┘  │   │
+│   │                                                                                                         │   │
+│   └─────────────────────────────────────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 9.2 Cálculo do Endereço de Memória
+
+O sistema utiliza **escalonamento 2:1** - cada pixel da VRAM (320×240) é exibido como 2×2 pixels no monitor (640×480).
+
+```vhdl
+-- Coordenadas escaladas (640x480 → 320x240)
+x_scaled <= pixel_x / 2;  -- 0-799 → 0-399
+y_scaled <= pixel_y / 2;  -- 0-524 → 0-261
+
+-- Endereço linear: Row × Width + Column
 vram_addr <= std_logic_vector(to_unsigned(y_scaled * 320 + x_scaled, 17));
 ```
 
-### 6.4 Extrator de Cores
+**Exemplo de Cálculo:**
 
-O hardware extrai os componentes de cor do byte da VRAM e os expande para 4 bits cada:
+```
+pixel_x = 100, pixel_y = 50 (coordenadas VGA)
+x_scaled = 100 / 2 = 50
+y_scaled = 50 / 2 = 25
+
+vram_addr = 25 × 320 + 50 = 8.050
+```
+
+### 9.3 Conversão de Cor
 
 ```vhdl
-vga_r_o <= vram_data(7 downto 5) & "0";  -- 3 bits -> 4 bits
-vga_g_o <= vram_data(4 downto 2) & "0";  -- 3 bits -> 4 bits
-vga_b_o <= vram_data(1 downto 0) & "00";  -- 2 bits -> 4 bits
+-- VRAM: RRRGGGBB (3-3-2 bits)
+-- VGA:  RRRR (4 bits), GGGG (4 bits), BBBB (4 bits)
+
+-- Extensão de bits:Replication do bit mais significativo
+vga_r_o <= vram_data(7 downto 5) & "0";  -- RRR → RRRR
+vga_g_o <= vram_data(4 downto 2) & "0";  -- GGG → GGGG
+vga_b_o <= vram_data(1 downto 0) & "00"; -- BB → BBBB
+```
+
+**Diagrama de Conversão:**
+
+```
+VRAM (8 bits)                          VGA (4+4+4 bits)
+┌─────────────┐                        ┌─────────────────────┐
+│ R2 R1 R0 G2 │ ─────────────────────▶│ R3 R2 R1 R0 = R2 R1 │
+│ G1 G0 B1 B0 │                        │     R0   R0        │
+└─────────────┘                        └─────────────────────┘
+                                           Vermelho 4 bits
+
+┌─────────────┐                        ┌─────────────────────┐
+│ R2 R1 R0 G2 │ ─────────────────────▶│ G3 G2 G1 G0 = G2 G1 │
+│ G1 G0 B1 B0 │                        │     G0   G0        │
+└─────────────┘                        └─────────────────────┘
+                                           Verde 4 bits
+
+┌─────────────┐                        ┌─────────────────────┐
+│ R2 R1 R0 G2 │ ─────────────────────▶│ B3 B2 B1 B0 = B1 B0 │
+│ G1 G0 B1 B0 │                        │     00   00        │
+└─────────────┘                        └─────────────────────┘
+                                           Azul 4 bits
 ```
 
 ---
 
-## 7. Interface de Barramento
+## 10. Temporização de Saída VGA
 
-### 7.1 Protocolo de Handshake
+### 10.1 Sinais de Sincronismo
 
-A interface de barramento implementa o protocolo padrão de handshake com sinais vld_i e rdy_o:
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                         TEMPORIZAÇÃO COMPLETA DE SAÍDA                                      │
+├─────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                             │
+│   Ciclo de Pixel:      0          640        656        752        800                     │
+│                        │           │          │          │          │                       │
+│                        │    ATIVA  │  SYNC    │  SYNC    │  SYNC    │                       │
+│                        │           │  HORIZ.  │  HORIZ.  │  HORIZ.  │                       │
+│                        ▼           ▼          ▼          ▼          ▼                       │
+│   H_SYNC:              1           1          0          0          1                       │
+│                        │           │          │          │          │                       │
+│                        │           │      (656-752)     │          │                       │
+│                        │           │       ativo baixo   │          │                       │
+│                        │           │          │          │          │                       │
+│                        │           │          │          │          │                       │
+│                        │           │          │          │          │                       │
+│   V_SYNC:              1           1          1          1          1                       │
+│   (linha 490)          │           │          │          │          │                       │
+│                        │           │          │          │          │                       │
+│   V_SYNC:              1           1          1          1          1                       │
+│   (linha 491)          │           │          │          │          │                       │
+│                        │           │          │          │          │                       │
+│   V_SYNC:              1           1          0          0          1                       │
+│   (linha 492)          │           │          │          │          │                       │
+│                        │           │      (490-492)     │          │                       │
+│                        │           │       ativo baixo   │          │                       │
+│                        │           │          │          │          │                       │
+│   video_on:            1           1          0          0          0                       │
+│                        │           │          │          │          │                       │
+│   vga_r/g/b_o:         cor         cor        000        000        000                     │
+│                        (dados)     (dados)    (preto)    (preto)    (preto)               │
+│                                                                                             │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
+```
 
-| Fase | CPU | VGA Controller |
-|------|-----|----------------|
-| 1 | Configura addr_i, data_i, we_i | - |
-| 2 | Asserta vld_i = '1' | - |
-| 3 | - | Detecta vld_i, processa operação |
-| 4 | - | Asserta rdy_o = '1' (próximo ciclo) |
-| 5 | Aguarda rdy_o = '1' | - |
+### 10.2 Polaridade dos Sinais
 
-### 7.2 Operações Suportadas
+| Sinal | Polaridade | Descrição |
+|-------|------------|-----------|
+| H_SYNC | **Negativa** | Pulso ativo em '0' (656-752 ciclos) |
+| V_SYNC | **Negativa** | Pulso ativo em '0' (490-492 linhas) |
 
-| addr_i | we_i | Operação | Ação |
-|--------|------|----------|------|
-| 0x00000 - 0x12BFF | 1 | WRITE | Escreve pixel na VRAM |
-| 0x00000 - 0x12BFF | 0 | READ | Lê pixel da VRAM |
-| 0x1FFFF | 0 | READ STATUS | Retorna estado do VSYNC |
+---
 
-### 7.3 Escrita na VRAM
+## 11. Contenção de Memória
 
-A escrita na VRAM é engatilhada pelo sinal combinado:
+### 11.1 O Problema
+
+Em sistemas com memória de vídeo compartilhada, pode ocorrer **contenção** quando CPU e controlador VGA tentam acessar a mesma posição de memória simultaneamente:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                              CONTENÇÃO DE MEMÓRIA                                           │
+├─────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                             │
+│   ┌─────────────────────┐              ┌─────────────────────┐                              │
+│   │       CPU          │              │   VGA Controller    │                              │
+│   │    (RISC-V)       │              │                     │                              │
+│   │                   │              │                     │                              │
+│   │  Escrita: addr=X  │              │  Leitura: addr=Y    │                              │
+│   │  data=cor         │              │  → dados pixels    │                              │
+│   └─────────┬───────────┘              └─────────┬───────────┘                              │
+│             │                                    │                                          │
+│             │         ┌─────────────────┐         │                                          │
+│             │         │                 │         │                                          │
+│             │         │   MEMÓRIA      │         │                                          │
+│             │         │   (Single-Port │         │                                          │
+│             │         │    ou False    │         │                                          │
+│             │         │    Dual-Port) │         │                                          │
+│             │         │                 │         │                                          │
+│             │         │                 │         │                                          │
+│             │         └─────────────────┘         │                                          │
+│             │                                    │                                          │
+│             └────────────────────────────────────┘                                          │
+│                           ▲                                                             │
+│                           │                                                             │
+│                    CONFLITO!                                                             │
+│                    Quem acessa primeiro?                                                  │
+│                                                                                           │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 11.2 Solução Arquitetural: Dual-Port RAM
+
+A **Dual-Port RAM** resolve o problema de contenção por design:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                         ARQUITETURA DUAL-PORT RESOLVE CONTENÇÃO                            │
+├─────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                             │
+│   ┌─────────────────────┐              ┌─────────────────────┐                              │
+│   │       CPU          │              │   VGA Controller    │                              │
+│   │    (RISC-V)       │              │                     │                              │
+│   │                   │              │                     │                              │
+│   │  Escrita:         │              │  Leitura contínua:  │                              │
+│   │  addr_a[X]        │              │  addr_b[Y]          │                              │
+│   │  data_a[cor]      │              │  data_b[pixels]     │                              │
+│   └─────────┬───────────┘              └─────────┬───────────┘                              │
+│             │                                    │                                          │
+│             │                                    │                                          │
+│             │     ┌───────────────────────────────┴───────────────────────────────┐        │
+│             │     │                                                               │        │
+│             │     │                        MEMÓRIA                               │        │
+│             │     │                                                               │        │
+│             │     │     ┌─────────────────────────────────────────────────┐      │        │
+│             │     │     │                                                 │      │        │
+│             │     │     │                                                 │      │        │
+│             │     │     │              Bloco de Memória                     │      │        │
+│             │     │     │              (BRAM FPGA)                          │      │        │
+│             │     │     │                                                 │      │        │
+│             │     │     │                                                 │      │        │
+│             │     │     └─────────────────────────────────────────────────┘      │        │
+│             │     │                                                               │        │
+│             │     └───────────────────────────────────────────────────────────────┘        │
+│             │                                                                       │
+│             │                                                                       │
+└─────────────┴───────────────────────────────────────────────────────────────────────────┘
+```
+
+### 11.3 Análise de Casos
+
+| Caso | CPU | VGA | Resultado |
+|------|-----|-----|-----------|
+| Endereços diferentes | Escrita em X | Leitura em Y | OK - Acesso simultâneo sem conflito |
+| Mesmo endereço | Escrita em X | Leitura em X | OK - Write-First retorna novo valor |
+| Ambos querem escrever | Escrita em X | Escrita em X | OK - Portas diferentes (CPU só escreve) |
+
+### 11.4 Mecanismo Write-First
+
+Quando CPU escreve no mesmo endereço que VGA está lendo:
 
 ```vhdl
-s_vram_we <= we_i and vld_i;
+-- Write-First: O dado escrito está disponível imediatamente na saída
+if we_a = '1' then
+    ram(addr_a) <= data_a;  -- Escrita
+end if;
+data_b <= ram(addr_b);       -- Leitura retorna novo valor se mesmo addr
 ```
 
-A escrita ocorre na mesma borda de clock em que a operação é válida, sem esperar o handshake de conclusão.
+**Resultado:** O VGA Controller sees immediately the new color written by CPU, sem necessidade de arbitragem ou wait states.
 
----
+### 11.5 Conclusão Arquitetural
 
-## 8. Formato de Cor
-
-### 8.1 Representação de Pixel (8 bits)
-
-| Bits | Componente | Valores |
-|------|------------|---------|
-| 7:5 | Vermelho | 0-7 (8 níveis) |
-| 4:2 | Verde | 0-7 (8 níveis) |
-| 1:0 | Azul | 0-3 (4 níveis) |
-
-### 8.2 Expansão para Saída (4 bits por canal)
-
-Cada componente é expandido para 4 bits para compatibilidade com conversores DAC VGA padrão:
-
-- Vermelho: 3 bits → 4 bits (bit mais significativo replicado)
-- Verde: 3 bits → 4 bits (bit mais significativo replicado)
-- Azul: 2 bits → 4 bits (bits mais significativos replicados)
-
----
-
-## 9. Biblioteca HAL (Software)
-
-### 9.1 Funções Disponíveis
-
-| Função | Descrição |
-|--------|-----------|
-| hal_vga_init() | Inicializa o controlador e limpa a tela |
-| hal_vga_pixel(x, y, color) | Escreve um pixel na posição (x, y) |
-| hal_vga_rect(x, y, w, h, color) | Desenha um retângulo |
-| hal_vga_vsync_wait() | Espera pelo próximo VSYNC |
-| hal_vga_clear(color) | Limpa toda a tela com uma cor |
-
-### 9.2 Constantes de Cor
-
-| Constante | Valor | Cor |
-|-----------|-------|-----|
-| VGA_BLACK | 0x00 | Preto |
-| VGA_WHITE | 0xFF | Branco |
-| VGA_RED | 0xE0 | Vermelho |
-| VGA_GREEN | 0x1C | Verde |
-| VGA_BLUE | 0x03 | Azul |
-| VGA_YELLOW | 0xFC | Amarelo |
-
----
-
-## 10. Exemplo de Uso
-
-```c
-#include "hal/hal_vga.h"
-
-void main() {
-    // Inicializa o VGA
-    hal_vga_init();
-    
-    // Desenha um retângulo vermelho no centro
-    hal_vga_rect(100, 80, 120, 80, VGA_RED);
-    
-    // Loop principal com sincronização vertical
-    while (1) {
-        hal_vga_vsync_wait();  // Espera 60Hz
-        
-        // Atualiza framebuffer
-        hal_vga_pixel(160, 120, VGA_WHITE);
-    }
-}
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                               CONCLUSÃO                                                     │
+├─────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                             │
+│   A Dual-Port RAM garante:                                                                 │
+│                                                                                             │
+│   1. OPERAÇÃO SIMULTÂNEA: CPU e VGA acessam a memória ao mesmo tempo                      │
+│                                                                                             │
+│   2. SEM ARBITRAGEM: Não há lógica de prioridade ou wait states                            │
+│                                                                                             │
+│   3. SEM PERDA DE DADOS: Leituras e escritas coexistem sem conflitos                        │
+│                                                                                             │
+│   4. PERFORMANCE MÁXIMA: VGA lê continuamente a 25 MHz sem bloquear CPU                    │
+│                                                                                             │
+│   CUSTO: Utilização de 2 portas de BRAM (comum em FPGAs modernas)                        │
+│                                                                                             │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 11. Referências
+## 12. Referências
 
-- **RTL Source:** `rtl/perips/vga/vga_sync.vhd`
-- **RTL Source:** `rtl/perips/vga/vga_peripheral.vhd`
-- **Test Software:** `fpga/sw/tests/vga_test.c`
-- **HAL Header:** `fpga/sw/hal/hal_vga.h`
-- **VGA Timing Standard:** VESA DMT Spec
+- **RTL Sources:**
+  - `rtl/perips/vga/vga_sync.vhd`
+  - `rtl/perips/vga/video_ram.vhd`
+  - `rtl/perips/vga/vga_peripheral.vhd`
+- **IEEE Std 1076:** VHDL Language Reference Manual
+- **VESA Standards:** Timing Specifications for VGA Displays
 
 ---
