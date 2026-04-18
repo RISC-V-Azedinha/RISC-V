@@ -76,7 +76,9 @@ opcionais.
 
 ### 2.2 Estrutura Geral do Pacote
 
-    [OPCODE][TAMANHO][PAYLOAD]
+```text      
+[OPCODE][TAMANHO][PAYLOAD]
+```          
 
 -   OPCODE → identifica operação\
 -   TAMANHO → inteiro de 32 bits (little-endian)\
@@ -84,9 +86,10 @@ opcionais.
 
 ### 2.3 Exemplo --- Upload de Pesos
 
-    [L][SIZE][WEIGHTS...]
-
-    4C | 00 10 00 00 | <4096 bytes>
+```text  
+[L][SIZE][WEIGHTS...]
+4C | 00 10 00 00 | <4096 bytes>
+```   
 
 Resposta:
 
@@ -117,45 +120,16 @@ end
 
 ------------------------------------------------------------------------
 
-## 3. Insights Arquiteturais
+!!! note "Resumo"
 
-### 3.1 Separação Host--Accelerator
-
--   CPU (Host): controle\
--   FPGA: execução determinística
-
-### 3.2 Quantização
-
--   Redução de memória\
--   Melhor localidade\
--   Execução eficiente
-
-### 3.3 Comunicação
-
--   Pesos enviados uma vez\
--   Inputs enviados continuamente
-
-### 3.4 Determinismo
-
--   Latência previsível\
--   Execução estável
-
-### 3.5 Co-Design
-
-Hardware e software são projetados conjuntamente.
-
-------------------------------------------------------------------------
-
-## 4. Resumo Executivo
-
-Os clientes de IA realizam treinamento no Host, convertem os dados e
-enviam para a FPGA via UART. A FPGA executa a inferência e retorna os
-resultados.
+    Os clientes de IA realizam treinamento no Host, convertem os dados e  
+    enviam para a FPGA via UART. A FPGA executa a inferência e retorna os  
+    resultados.
 
 ------------------------------------------------------------------------
 
 ## Fluxo Final
-
+``` text
     Treinamento
     ↓
     Quantização
@@ -169,3 +143,4 @@ resultados.
     Inferência
     ↓
     Resultados
+```
