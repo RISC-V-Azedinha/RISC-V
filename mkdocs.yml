@@ -66,6 +66,8 @@ nav:
   - Arquitetura de Hardware:
       - Microarquitetura Monociclo: hardware/single-cycle.md
       - Microarquitetura Multiciclo: hardware/multi-cycle.md
+  - Software:
+      - Processo de Boot: software/boot.md
   - Simulação e Verificação:
       - Ambiente de Testes (Cocotb): dev/simulation.md     # Baseado nos ficheiros em sim/
       - Fluxo de Síntese (FPGA): dev/fpga_build.md         # Baseado em fpga/scripts/
