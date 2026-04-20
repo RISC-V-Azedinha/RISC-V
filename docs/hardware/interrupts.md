@@ -23,8 +23,6 @@ Cada tipo de interrupção possui um bit dedicado no registrador **MIP** (*Machi
 
 ### 1.2. Mecânica de Desvio de Fluxo (Trap Entry)
 
-![Diagrama: Mecanismo de hardware de entrada de Trap no RISC-V mostrando PC para MEPC, causa para MCAUSE e vetor para PC](caminho/para/sua_imagem_trap_entry.png)
-
 Quando o hardware aceita uma interrupção, ele executa automaticamente uma sequência de ações determinísticas, sem a intervenção do software:
 
 1.  **Salvamento do PC de retorno:** O endereço da instrução que seria executada a seguir é salvo no registrador **MEPC** (*Machine Exception Program Counter*). Para interrupções, este é o endereço da próxima instrução sequencial.
