@@ -66,6 +66,7 @@ nav:
   - Arquitetura de Hardware:
       - Microarquitetura Monociclo: hardware/single-cycle.md
       - Microarquitetura Multiciclo: hardware/multi-cycle.md
+      - Subsistema de Interrupções: hardware/interrupts.md
       - Controlador GPIO: soc/gpio_controller.md
       - Controlador UART: soc/uart_controller.md
   - Software:
