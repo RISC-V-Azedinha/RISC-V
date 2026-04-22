@@ -20,16 +20,12 @@ A tabela abaixo apresenta o mapa de endereçamento completo do SoC, detalhando c
 | **GPIO** | `0x2000_0000` | `0x2000_FFFF` | 64 KB | Pinos de entrada/saída geral |
 | **VGA** | `0x3000_0000` | `0x3001_FFFF` | 128 KB | Controlador de vídeo (VRAM) |
 | **DMA** | `0x4000_0000` | `0x4000_FFFF` | 64 KB | Controlador DMA |
-| **CLINT** | `0x5000_0000` | `0x5000_FFFF` | 64 KB | Core Local Interrupt Controller (timers) |
+| **CLINT** | `0x5000_0000` | `0x5000_FFFF` | 64 KB | Core Local Interrupt Controller |
 | **PLIC** | `0x6000_0000` | `0x6003_FFFF` | 256 KB | Platform-Level Interrupt Controller |
 | **Reservado** | `0x7000_0000` | `0x7FFF_FFFF` | 256 MB | Espaço não utilizado |
 | **RAM** | `0x8000_0000` | `0x8003_FFFF` | 256 KB | Memória RAM principal |
 | **Reservado** | `0x8004_0000` | `0x8FFF_FFFF` | ~255 MB | Espaço não utilizado |
 | **NPU** | `0x9000_0000` | `0x9FFF_FFFF` | 256 MB | Neural Processing Unit |
-
-#### 1.1.1 Representação Visual do Mapa de Memória
-
-![Descrição do Ícone](../assets/mapa.svg)
 
 ### 1.2 Decodificação de Endereços
 
@@ -115,7 +111,16 @@ begin
 end function;
 ```
 
-A síntese em FPGA utiliza o atributo `ram_style = "block"` para inferir Block RAM, otimizando recursos.
+A síntese em FPGA utiliza atributos específicos do Vivado (Xilinx) para forçar a inferência de Block RAM:
+
+```vhdl
+attribute ram_style : string;
+attribute ram_style of rom_content : signal is "block";
+```
+
+- O atributo `ram_style` é uma sintaxe específica para síntese via Vivado da Xilinx
+- O valor `"block"` força a utilização de BRAM (Block RAM) ao invés de distribuição (LUT RAM)
+- A utilização de BRAM adiciona **latência de 1 ciclo de clock** à leitura de dados (referência: [UG473 - 7 Series Memory Resources](https://docs.amd.com/v/u/en-US/ug473_7Series_Memory_Resources))
 
 ### 2.2 RAM Principal 
 
@@ -171,6 +176,36 @@ for i in 0 to (DATA_WIDTH/8)-1 loop
 end loop;
 ```
 
+Cada bit do vetor `WE` (4 bits para dados de 32 bits) controla um byte específico, permitindo escrita em 1, 2, 3 ou 4 bytes individualmente.
+
+##### Relação com a LSU e Endianness
+
+O **Load Store Unit (LSU)** é a unidade responsável por formatar os acessos à memória de dados. Ela decodifica o campo `Funct3` das instruções para gerar os Byte Enables corretos:
+
+| Instrução | Tamanho | Byte Enables |
+|-----------|---------|---------------|
+| `SB` | 1 byte | `"0001"`, `"0010"`, `"0100"` ou `"1000"` |
+| `SH` | 2 bytes | `"0011"` (bytes 0-1) ou `"1100"` (bytes 2-3) |
+| `SW` | 4 bytes | `"1111"` |
+
+A LSU utiliza os bits menos significativos do endereço (`addr(1:0)`) para determinar qual byte escrever:
+
+```vhdl
+-- Store Byte: Seleção por endereço (little-endian)
+case s_addr_lsb is
+    when "00" => DMem_we_o <= "0001";  -- Byte 0 (bits 7:0)
+    when "01" => DMem_we_o <= "0010";  -- Byte 1 (bits 15:8)
+    when "10" => DMem_we_o <= "0100";  -- Byte 2 (bits 23:16)
+    when "11" => DMem_we_o <= "1000";  -- Byte 3 (bits 31:24)
+end case;
+```
+
+Este SoC utiliza **endianness little-endian**:
+- Endereço com LSB=`00` → byte menos significativo (bits `[7:0]`)
+- Endereço com LSB=`11` → byte mais significativo (bits `[31:24]`)
+
+Essa arquitetura permite que o software escreva bytes individuais sem afetar os demais bytes da palavra, essencial para operações de strings e comunicação com periféricos.
+
 ---
 
 ## 3. Registradores de Periféricos via MMIO
@@ -185,7 +220,7 @@ São registradores **dentro do núcleo processador** que controlam interrupçõe
 
 #### Registradores de Periféricos via MMIO
 
-São registradores **fora do núcleo**, mapeados no espaço de memória endereçável. Cada periférico expõe seus registradores de controle e dados em endereços específicos dentro do mapa de memória. O software acessa esses registradores usando instruções normais de `load` e `store`.
+São registradores **fora do núcleo**, mapeados no espaço de memória endereçável. Cada periférico expõe seus registradores de controle e dados em endereços específicos dentro do mapa de memória. O software acessa esses registradores usando instruções normais de `load` e `store`. Isso vai de encontro à filosofia básica de arquiteturas RISC.
 
 **Esta seção documenta os registradores MMIO dos periféricos.** Para os CSRs internos do core, consulte a [Seção 6: CSRs Internos do Core RISC-V](#6-csrs-internos-do-core-risc-v).
 
@@ -223,8 +258,9 @@ O Board Support Package (BSP) fornece macros para acesso volátil:
 #define MMIO32(addr) (*(volatile uint32_t *)(addr))
 #define MMIO8(addr)  (*(volatile uint8_t  *)(addr))
 ```
+!!! note
+    A palavra-chave `volatile` garante que o compilador não otimize away acessos consecutivos ao mesmo endereço, essencial para registradores de status que mudam de valor.
 
-A palavra-chave `volatile` garante que o compilador não otimize away acessos consecutivos ao mesmo endereço, essencial para registradores de status que mudam de valor.
 
 ### 3.4 Tabela Consolidada de Registradores MMIO
 
@@ -362,7 +398,7 @@ O timer de 64 bits é implementado como dois registradores de 32 bits, permitind
 
 ## 4. Controlador DMA
 
-### 5.1 Gargalo de Desempenho: Transferência por Polling/Busy-Wait
+### 4.1 Gargalo de Desempenho: Transferência por Polling/Busy-Wait
 
 #### O Problema da Cópia por Software
 
@@ -371,18 +407,27 @@ Quando o processador RISC-V executa uma cópia de memória via software (load/st
 ```
 Palavras de 32 bits em 256 KB = 262.144 / 4 = 65.536 palavras
 
-Ciclos consumidos por iteração do loop:
-├── LOAD do endereço fonte:         1 ciclo
-├── STORE no endereço destino:       1 ciclo
+Ciclos consumidos por iteração do loop (estimativa realista para multi-cycle):
+├── LOAD do endereço fonte:         ~3 ciclos (inclui wait states)
+├── STORE no endereço destino:     ~3 ciclos (inclui wait states)
 ├── Incremento de ponteiros:      ~2 ciclos
 └── Atualização de contador:      ~2 ciclos
                                       ──────────
-Total por palavra transferida:      ~6 ciclos
+Total por palavra transferida:  ~10 ciclos
 
-Total para 256 KB: 65.536 × 6 ≈ 393.216 ciclos de CPU
+Total para 256 KB: 65.536 × 10 ≈ 655.360 ciclos de CPU
 ```
+!!! note "Nota sobre Gargalo de Von Neumann (Memory Wall)"
 
-Durante esses aproximadamente **400.000 ciclos**, o processador fica **indisponível** para:
+    A arquitetura RV32I_Zicsr deste SoC é uma **FSM multi-cycle** (não pipeline), onde cada instrução consome múltiplos ciclos de clock. O **memory wall** (gargalo de von Neumann) é o fenômeno onde a velocidade da memória não acompanha a velocidade do processador, criando um limite de desempenho fundamental.
+
+    !!! note 
+
+        Para benchmarks reais de throughput de memória, consulte: [NPU Benchmark](https://risc-v-azedinha.github.io/NPU/hardware/benchmark/) e [Systolic Array](https://risc-v-azedinha.github.io/NPU/hardware/systolic_array/).
+
+Nesta estimativa, consideramos ~3 ciclos por LOAD/STORE, representando wait states típicos em acessos à memória de dados (DMem) com handshake de-ready.
+
+Durante esses aproximadamente **655.000 ciclos**, o processador fica **indisponível** para:
 
 - Processamento de interrupções UART (podendo perder dados)
 - Atualização de timers e agendamento
@@ -393,22 +438,22 @@ Durante esses aproximadamente **400.000 ciclos**, o processador fica **indispon�
 
 | Cenário | Tempo (100 MHz) | Ciclos CPU | Utilização CPU |
 |---------|-----------------|------------|----------------|
-| Cópia 256 KB via CPU (busy-wait) | 3,93 µs | 393.216 | 100% |
+| Cópia 256 KB via CPU (busy-wait) | 6,55 µs | 655.360 | 100% |
 | Cópia 256 KB via DMA | ~0,65 µs (efetivo) | ~6 | 0% (livre) |
 
-A CPU poderia utilizar esses ~393.000 ciclos economizados para:
+A CPU poderia utilizar esses ~655.000 ciclos economizados para:
 
-- Processar ~2.000 interrupções UART (200 ciclos cada)
-- Executar ~50.000 operações aritméticas inteiras
+- Processar ~3.000 interrupções UART (200 ciclos cada)
+- Executar ~80.000 operações aritméticas inteiras
 - Atender múltiplas requisições de software
 
-### 5.2 Visão Geral do DMA
+### 4.2 Visão Geral do DMA
 
 O **Direct Memory Access (DMA)** é um controlador que permite transferência de dados entre memória e periféricos **sem intervenção do núcleo de processamento**. Enquanto a CPU configura a transferência, o DMA executa a cópia de dados de forma autônoma, permitindo que o processador execute outras tarefas em paralelo.
 
 O DMA deste SoC opera em **modo 1D (linear)**, transferindo um bloco contíguo de palavras de 32 bits de uma região de memória para outra. A arquitetura dual-interface permite que o DMA seja simultaneamente **slave** (configurado pela CPU) e **master** (acesso autônomo ao barramento).
 
-### 5.3 Microarquitetura do Controlador DMA
+### 4.3 Microarquitetura do Controlador DMA
 
 O DMA possui uma arquitetura **dual-interface**:
 
@@ -417,7 +462,7 @@ O DMA possui uma arquitetura **dual-interface**:
 
 ![Descrição do Ícone](../assets/dma.svg)
 
-### 5.4 Registradores de Configuração
+### 4.4 Registradores de Configuração
 
 Estes registradores estão documentados na [Seção 3.4](#34-tabela-consolidada-de-registradores-mmio). Resumo:
 
@@ -436,7 +481,7 @@ Estes registradores estão documentados na [Seção 3.4](#34-tabela-consolidada-
 | 1 | FIXED_DST | RW | 1 = destino fixo (FIFO mode), 0 = incremento automático |
 | 2 | BUSY | RO | 1 = transferência em andamento |
 
-### 5.5 Máquina de Estados
+### 4.5 Máquina de Estados
 
 O DMA implementa uma FSM (Finite State Machine) com os seguintes estados:
 
@@ -470,7 +515,7 @@ type state_type is (
 
 Se `r_count` atingir 1 ou 0, a transferência está completa: transita para IDLE e_assert `irq_done_o`. Caso contrário, retorna para `READ_REQ`.
 
-### 5.6 Modo Destino Fixo (FIFO Mode)
+### 4.6 Modo Destino Fixo (FIFO Mode)
 
 Quando o bit `FIXED_DST` está setado, o endereço de destino permanece constante durante toda a transferência. Este modo é essencial para periféricos com interface FIFO, como a NPU:
 
@@ -482,7 +527,7 @@ else
 end if;
 ```
 
-### 5.7 Exemplo de Uso em Software
+### 4.7 Exemplo de Uso em Software
 
 #### Transferência Memória-para-Memória
 
@@ -513,48 +558,72 @@ while (DMA_CONTROL & 0x04);  // Aguarda BUSY=0
 NPU_CMD = NPU_CMD_START;
 ```
 
-### 5.8 Interação com o Bus Arbiter
+### 4.8 Interação com o Bus Arbiter
 
-O DMA compartilha o barramento de dados com a CPU através de um **bus_arbiter**. Este componente implementa uma política de prioridade onde:
+O DMA compartilha o barramento de dados com a CPU através de um **bus_arbiter**. Este componente implementa uma política de prioridade fixa onde:
 
-1. Se ambos solicitam acesso simultâneo, o arbiter concede ao primeiro que fez a requisição
-2. O DMA pode ser pausado a qualquer momento pela CPU, pois não há garantia de acesso contínuo
-3. O estado `READ_WAIT` foi introduzido especificamente para resolver um problema de handshaking onde o arbiter ficava travado entre requisições de leitura e escrita
+!!! info "Política de Arbitragem: DMA > CPU"
+    O DMA possui prioridade fixa sobre a CPU. Quando ambos os mestres solicitam acesso simultâneo, o DMA ganha automaticamente a concessão.
 
-### 5.9 Eficiência do Sistema: Liberação do Núcleo RISC-V
+1. **Prioridade DMA**: Se ambos solicitam, DMA ganha a concessão
+2. **Espera**: O DMA pode ser pausado a qualquer momento pela CPU (retorno de ready)
+3. **READ_WAIT**: Estado introduzido para resolver problema de handshaking onde o arbiter ficava travado entre requisições
+
+### 4.9 Eficiência do Sistema: Liberação do Núcleo RISC-V
 
 #### Análise Comparativa de Ciclos
+
+!!! info "Nota: Modelo Baseline Multi-cycle"
+    Esta análise usa um modelo **baseline multi-cycle** baseado na arquitetura real do RV32I_Zicsr, onde LOAD/STORE consomem ~3 ciclos cada (incluindo wait states de memória).
 
 A tabela a seguir compara os recursos consumidos pela CPU entre os dois métodos de transferência:
 
 | Método | Ciclos CPU | Ciclos Totais (DMA) | CPU Disponível |
 |--------|------------|---------------------|----------------|
-| **Busy-Wait (256 KB)** | 393.216 | 393.216 | 0% |
-| **DMA (256 KB)** | ~6 | 393.216 | 99,99% |
+| **Busy-Wait (256 KB)** | 655.360 | 655.360 | 0% |
+| **DMA (256 KB)** | ~6 | 655.360 | 99,99% |
 
 **Detalhamento dos ciclos de CPU com DMA:**
 ```
 Configuração:        4 writes × 1 ciclo    =     4 ciclos
 Poll/Interrupção:   ~2 verificações × 1   =     2 ciclos
-                                                ─────────
+                                              ─────────
 Total CPU:                                      ~6 ciclos
 ```
+
+#### Otimização do DMA vs CPU Multi-cycle
+
+!!! info "DMA vs CPU"
+    Enquanto o modelo multi-cycle da CPU requer ~10 ciclos para uma operação de LOAD seguida de STORE (incluindo overhead), a DMA realiza a mesma transferência através de sua FSM dedicada em apenas ~4 ciclos por palavra, representando uma redução de **~60%** nos ciclos de transferência.
+
+| Componente | Estados FSM | Ciclos/Palavra | Observação |
+|------------|-------------|----------------|------------|
+| **DMA** | READ_REQ → READ_WAIT → WRITE_REQ → CHECK_DONE | ~4 | Sem fetch de instruções |
+| **CPU** | LOAD + STORE + overhead | ~10 | Com fetch+execute+wb |
+
+O DMA é otimizado para transferências massivas de dados pois:
+1. Não gasta ciclos com fetch de instruções
+2. Não precisa write-back em registradores
+3. FSM dedicada com transição contínua entre palavras
 
 #### Ganho de Eficiência
 
 Para uma transferência de **256 KB**:
 
 ```
-Ciclos economizados   = 393.216 - 6 = 393.210 ciclos
-Taxa de liberação     = 393.210 / 393.216 × 100 ≈ 99,998%
+Ciclos economizados   = 655.360 - 6 = 655.354 ciclos
+Taxa de liberação     = 655.354 / 655.360 × 100 ≈ 99,999%
 ```
 
 #### Oportunidades de Paralelismo
 
+!!! info "Interrupções com e sem DMA"
+    Interrupções são mecanismos de hardware que desviam a execução para um handler especial, independente do método de transferência de dados. Com ou sem DMA, interrupções são atendidas (a menos que explicitamente desabilitadas via `mstatus.MIE`). A diferença é que, sem DMA, a CPU fica em busy-wait e não pode executar outras tarefas úteis durante a transferência.
+
 Com o DMA em operação, a CPU pode executar **concorrentemente**:
 
 1. **Processamento de dados anteriores** — já processa o bloco N-1 enquanto o bloco N é transferido
-2. **Atendimento de interrupções** — não perde eventos de UART ou timers
+2. **Execução de código útil** — não fica bloqueada em loop de cópia
 3. **Tarefas de controle** — lógica de aplicação continua executando
 
 ```
@@ -565,16 +634,16 @@ CPU:   [Config DMA][ Poll ][Processa][Processa][Processa][Processa]
 DMA:            [ ══════════════ 256KB ══════════════ ] [Done]
                 │       │                   │         │         │
                 └───────┴───────────────────┴─────────┴─────────┘
-                        ~6 ciclos               ~400.000 ciclos livres
+                        ~6 ciclos               ~655.000 ciclos livres
 
-RESULTADO: CPU livre para executar outras ~400.000+ instruções
+RESULTADO: CPU livre para executar outras ~655.000+ instruções
 ```
 
 #### Resumo: Benefícios Arquiteturais do DMA
 
 | Aspecto | Sem DMA | Com DMA |
 |---------|---------|---------|
-| **Ciclos CPU (256 KB)** | 393.216 | ~6 |
+| **Ciclos CPU (256 KB)** | 655.360 | ~6 |
 | **Disponibilidade da CPU** | 0% durante cópia | 99,99% |
 | **Latência outras tarefas** | Bloqueadas | Executam em paralelo |
 | **Throughput do barramento** | Competição impossível | Arbiter gerencia |
@@ -596,15 +665,40 @@ Esta separação permite que fetch de instruções e acessos a dados ocorram sim
 
 ### 5.2 Topologia de Barramentos
 
-![Descrição do Ícone](../assets/canais.svg)
+![Descrição do Ícone](../assets/soc_debug.svg)
 
 ### 5.3 Bus Arbiter
 
-O **bus_arbiter** resolve conflitos entre CPU e DMA no canal de dados, implementando arbitragem baseada em prioridades fixas. Quando ambos os mestres solicitam acesso simultâneo:
+O **bus_arbiter** resolve conflitos entre CPU e DMA no canal de dados, implementando arbitragem baseada em prioridades fixas:
 
-1. CPU mantém prioridade sobre DMA para operações críticas de fetch
-2. DMA aguarda até que a CPU libere o barramento
-3. Requisições de DMA são empacotadas e servidas em ordem
+!!! info "Política de Arbitragem: DMA > CPU"
+    O DMA possui **prioridade fixa sobre a CPU**. Quando ambos os mestres solicitam acesso simultâneo, o DMA ganha a concessão automaticamente.
+
+####Máquina de Estados (FSM)
+
+```
+IDLE ─────► GRANT_M1 ─────► WAIT_M1 ─────► IDLE
+   │           │              │
+   └──────────► GRANT_M0 ─────► WAIT_M0 ◄──┘
+```
+
+| Estado | Descrição |
+|--------|-----------|
+| **IDLE** | Nenhum mestre acessando. Monitora requisições. Se ambos solicitam, DMA ganha. |
+| **GRANT_M1** | Concessão para DMA. Roteia sinais do DMA para o escravo. |
+| **GRANT_M0** | Concessão para CPU. Roteia sinais da CPU para o escravo. |
+| **WAIT_M1/M0** | Espera de segurança. Aguarda o mestre baixar o sinal Valid antes de liberar. |
+
+####Algoritmo de Arbitragem
+
+```vhdl
+-- IDLE: Prioridade DMA > CPU
+if m1_vld_i = '1' then
+    next_state <= GRANT_M1;   -- DMA solicita: aloca para DMA
+elsif m0_vld_i = '1' then
+    next_state <= GRANT_M0;   -- CPU solicita: aloca para CPU
+end if;
+```
 
 ### 5.4 Bus Interconnect
 
@@ -617,138 +711,5 @@ O **bus_interconnect** realiza a decodificação de endereços e roteamento de d
 
 !!! info Mais informações sobre o barramento em [Barramento: Mestres e Escravos ](https://url.com).
 
----
-
-## 6. CSRs Internos do Core RISC-V
-
-### 6.1 Conceito
-
-Os **Control and Status Registers (CSRs)** internos do core são registradores **dentro do núcleo processador** que controlam interrupções, traps e modo de execução. Diferentemente dos registradores MMIO dos periféricos (Seção 3), os CSRs internos **não estão mapeados no espaço de memória endereçável** — são acessados através de instruções CSR dedicadas definidas na especificação **RISC-V Privileged Architecture**.
-
-Os CSRs internos são implementados no módulo `rtl/core/common/csr_file.vhd` e servem para:
-
-- **Controle de Interrupções:** Habilitar/desabilitar interrupções e configurar handlers
-- **Monitoramento de Status:** Indicar condições de erro e estado do processador
-- **Configuração de Ambiente:** Definir o modo de operação e contexto de execução
-
-### 6.2 CSRs Implementados (Machine Mode)
-
-O SoC implementa um subconjunto mínimo de CSRs necessários para operação em Machine Mode, conforme especificado na arquitetura RISC-V Privileged:
-
-| Endereço | Nome | Acesso | Descrição |
-|----------|------|--------|-----------|
-| `0x300` | `mstatus` | RW | Status global do processador (bit MIE = Machine Interrupt Enable) |
-| `0x304` | `mie` | RW | Máscara de habilitação de interrupções individuais |
-| `0x305` | `mtvec` | RW | Endereço base para vetores de trap |
-| `0x341` | `mepc` | RW | Machine Exception Program Counter (endereço de retorno após trap) |
-| `0x342` | `mcause` | RW | Machine Cause Register (código numérico da causa do trap) |
-| `0x344` | `mip` | RO | Machine Interrupt Pending (reflete interrupções pendentes em hardware) |
-
-### 6.3 Descrição Detalhada dos CSRs
-
-#### mstatus (Machine Status Register - 0x300)
-
-Este registrador mantém o estado global de interrupção do processador. Após reset, apenas os bits MPIE (Machine Previous Interrupt Enable) e MPP (Machine Previous Privilege) são configurados:
-
-- **Bit 3 (MIE):** Quando em 1, interrupções habilitadas globalmente
-- **Bit 7 (MPIE):** Armazena o valor de MIE antes da entrada em trap
-- **Bits 12-11 (MPP):** Modo de privilégio anterior (11 = Machine Mode)
-
-```vhdl
--- Configuração após reset
-r_mstatus <= (others => '0');
-r_mstatus(c_MPIE_BIT) <= '1';      -- MPIE = 1
-r_mstatus(12 downto 11) <= "11";  -- MPP = 11 (Machine Mode)
-```
-
-#### mie (Machine Interrupt Enable - 0x304)
-
-Máscara individual para cada fonte de interrupção:
-
-| Bit | Nome | Descrição |
-|-----|------|-----------|
-| 11 | MEIE | Machine External Interrupt Enable |
-| 7 | MTIE | Machine Timer Interrupt Enable |
-| 3 | MSIE | Machine Software Interrupt Enable |
-
-#### mip (Machine Interrupt Pending - 0x344)
-
-Este registrador é **read-only** e reflete o estado atual das linhas de interrupção em tempo real:
-
-```vhdl
-s_mip_comb <= (
-    11 => Irq_Ext_i,   -- MEIP
-    7  => Irq_Timer_i, -- MTIP
-    3  => Irq_Soft_i,  -- MSIP
-    others => '0'
-);
-```
-
-### 6.4 Operações Atômicas
-
-As instruções CSR suportam três operações atômicas, implementadas via campo Funct3[1:0]:
-
-| Opcode | Instrução | Operação | Descrição |
-|--------|-----------|----------|-----------|
-| `01` | CSRRW | Read/Write | Lê o valor antigo, escreve novo valor |
-| `10` | CSRRS | Read/Set | Lê o valor antigo, seta bits (OR com máscara) |
-| `11` | CSRRC | Read/Clear | Lê o valor antigo, limpa bits (AND NOT máscara) |
-
-A atomicidade é garantida porque a leitura e modificação ocorrem no mesmo ciclo de clock:
-
-```vhdl
-case Csr_Op_i is
-    when "01" => -- CSRRW
-        s_write_val   <= Csr_WData_i;
-        s_we_internal <= '1';
-
-    when "10" => -- CSRRS
-        s_write_val   <= s_curr_val OR Csr_WData_i;
-        if unsigned(Csr_WData_i) /= 0 then
-            s_we_internal <= '1';
-        end if;
-
-    when "11" => -- CSRRC
-        s_write_val   <= s_curr_val AND (NOT Csr_WData_i);
-        if unsigned(Csr_WData_i) /= 0 then
-            s_we_internal <= '1';
-        end if;
-
-    when others => null;
-end case;
-```
-
-### 6.5 Tratamento de Traps
-
-Quando uma exceção ou interrupção ocorre, o hardware salva automaticamente o contexto:
-
-```vhdl
-if Trap_Enter_i = '1' then
-    r_mepc   <= Trap_PC_i;      -- Salva PC atual para retorno
-    r_mcause <= Trap_Cause_i;    -- Salva motivo do trap
-
-    -- Salva contexto de interrupção
-    r_mstatus(c_MPIE_BIT) <= r_mstatus(c_MIE_BIT); -- Backup MIE
-    r_mstatus(c_MIE_BIT)  <= '0';                    -- Desabilita interrupções
-```
-
-O retorno do trap (instrução MRET) restaura o contexto:
-
-```vhdl
-elsif Trap_Return_i = '1' then
-    r_mstatus(c_MIE_BIT)  <= r_mstatus(c_MPIE_BIT);
-    r_mstatus(c_MPIE_BIT) <= '1';
-```
-
-### 6.6 Resumo: Diferença entre CSRs Internos e MMIO
-
-| Aspecto | CSRs Internos do Core | Registradores MMIO (Periféricos) |
-|---------|----------------------|----------------------------------|
-| **Localização** | Dentro do núcleo RISC-V | Fora do núcleo (periféricos) |
-| **Endereçamento** | Espaço CSR separado (12 bits) | Espaço de memória (32 bits) |
-| **Acesso (SW)** | Instruções CSR (csrrw, csrrs, csrrc) | Instruções load/store (lw, sw) |
-| **Implementação** | `csr_file.vhd` | Cada periférico tem seus registradores |
-| **Exemplos** | mstatus, mie, mtvec, mepc, mcause, mip | DATA, CTRL (UART), SRC_ADDR (DMA) |
-| **Propósito** | Controle do processador e interrupções | Configuração e comunicação com periféricos |
 
 
