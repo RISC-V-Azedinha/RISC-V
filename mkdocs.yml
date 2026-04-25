@@ -66,6 +66,8 @@ nav:
   - Arquitetura de Hardware:
       - Microarquitetura Monociclo: hardware/single-cycle.md
       - Microarquitetura Multiciclo: hardware/multi-cycle.md
+  - Periféricos:
+       - Controlador VGA: soc/vga_controller.md
   - Simulação e Verificação:
       - Ambiente de Testes (Cocotb): dev/simulation.md     # Baseado nos ficheiros em sim/
       - Fluxo de Síntese (FPGA): dev/fpga_build.md         # Baseado em fpga/scripts/
