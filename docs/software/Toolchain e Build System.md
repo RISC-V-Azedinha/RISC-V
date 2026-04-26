@@ -80,6 +80,17 @@ Os arquivos objeto contêm código binário parcial ainda não executável isola
 
 Nessa fase, o linker organiza seções como `.text`, `.data` e `.bss`, resolve símbolos entre módulos e posiciona o programa conforme o mapa de memória esperado pelo hardware.
 
+O **layout de memória** é uma etapa crítica do fluxo, pois define onde cada seção do programa será posicionada no espaço de endereçamento do SoC. Principalmente no caso da linkagem para o *bootloader*, a seção de código precisa ser alocada na **Boot ROM**, enquanto dados modificáveis devem ser alocados na **RAM**, já que a Boot ROM é uma região somente leitura (*read-only*).
+
+De forma conceitual:
+
+```text
+.text / código de inicialização → Boot ROM
+.data / .bss / pilha           → RAM
+```
+
+Essa separação garante que o processador inicie a execução a partir da região correta de memória, preservando a imutabilidade da ROM e permitindo que dados sejam manipulados em RAM durante a execução.
+
 #### Saída Final
 
 - arquivo executável no formato `.elf`.
@@ -105,30 +116,34 @@ Essa definição é essencial, pois qualquer divergência entre o binário gerad
 
 ---
 
-## 2. Arquitetura Modular
+## 2. Arquitetura Modular dos Makefiles
 
-### 2.1 Estrutura Geral
+O projeto adota uma arquitetura modular baseada em múltiplos arquivos `.mk`, evitando um Makefile monolítico.
 
-```mermaid
-flowchart TB
+Essa decisão não é apenas organizacional. Ela reflete uma separação de responsabilidades entre configuração, descoberta de ambiente, gerenciamento de fontes, regras de software, simulação e fluxo de FPGA.
 
-Makefile --> config.mk
-Makefile --> detect.mk
-Makefile --> sources.mk
-Makefile --> rules_sw.mk
-Makefile --> rules_sim.mk
-Makefile --> rules_fpga.mk
-```
+### 2.1 Justificativa da Modularidade
+
+A modularização evita acoplamento excessivo e permite:
+
+- manutenção independente de componentes;
+- reutilização de regras;
+- escalabilidade do sistema;
+- clareza estrutural do fluxo de build.
+
+Em termos de engenharia de software, essa organização reduz o custo de evolução do projeto e facilita a adaptação a novos *targets*, simuladores ou variações de hardware.
 
 ### 2.2 Responsabilidade dos Módulos
 
-- **makefile**: ponto de entrada e definição dos targets principais;
-- **mk/config.mk**: definição de variáveis globais, caminhos e flags de compilação;
-- **mk/detect.mk**: detecção automática do ambiente e da toolchain;
-- **mk/sources.mk**: definição e organização dos arquivos fonte;
-- **mk/rules_sw.mk**: regras de compilação do software embarcado;
-- **mk/rules_sim.mk**: execução do fluxo de simulação;
-- **mk/rules_fpga.mk**: fluxo de síntese, implementação e programação da FPGA.
+| Arquivo | Responsabilidade | Seção relacionada |
+|---|---|---|
+| `makefile` | Ponto de entrada do Build System; agrega os módulos `.mk` e expõe os principais *targets* para o usuário. | [Arquitetura Modular dos Makefiles](#2-arquitetura-modular-dos-makefiles) |
+| `mk/config.mk` | Centraliza variáveis globais, caminhos da toolchain, flags de compilação e nomes de artefatos. | [Configuração e Detecção de Ambiente](#3-configuracao-e-deteccao-de-ambiente) |
+| `mk/detect.mk` | Detecta o ambiente local, localiza ferramentas como `riscv64-unknown-elf-gcc` e ajusta variáveis dinâmicas. | [Configuração e Detecção de Ambiente](#3-configuracao-e-deteccao-de-ambiente) |
+| `mk/sources.mk` | Organiza os caminhos dos arquivos-fonte de software e hardware, evitando duplicação de listas no Makefile principal. | [Gerenciamento de Fontes](#4-gerenciamento-de-fontes-sourcesmk) |
+| `mk/rules_sw.mk` | Define as regras de compilação, montagem, linkedição e geração dos artefatos de software para o SoC. | [Regras de Software](#5-regras-de-software-rules_swmk) |
+| `mk/rules_sim.mk` | Define o fluxo de simulação, integrando binários e arquivos de memória ao ambiente de validação. | [Simulação](#7-simulacao-rules_simmk) |
+| `mk/rules_fpga.mk` | Define o fluxo de síntese, geração de bitstream, geração de arquivos de configuração de memória, programação da FPGA e upload para memória flash quando aplicável. | [Síntese e FPGA](#8-sintese-e-fpga-rules_fpgamk) |
 
 ---
 
@@ -163,6 +178,8 @@ A combinação entre `config.mk` e `detect.mk` permite que o projeto:
 - propague essas informações para as regras de compilação;
 - mantenha o build reproduzível.
 
+Essa arquitetura é especialmente importante em ambientes acadêmicos e de laboratório, nos quais diferentes máquinas podem possuir instalações distintas das ferramentas.
+
 ---
 
 ## 4. Gerenciamento de Fontes (`sources.mk`)
@@ -175,6 +192,8 @@ Funções principais:
 - definição de diretórios de entrada;
 - abstração da estrutura do projeto para o Make;
 - simplificação da expansão automática do conjunto de fontes.
+
+Ao separar essa responsabilidade, o projeto evita espalhar listas de arquivos ao longo de múltiplos módulos, o que melhora legibilidade e manutenção.
 
 ---
 
@@ -299,8 +318,14 @@ Funções:
 - síntese lógica;
 - *place-and-route*;
 - geração de bitstream;
+- geração de arquivos de configuração de memória;
 - programação da FPGA;
+- upload para memória flash, quando aplicável;
 - execução de scripts auxiliares, incluindo upload automatizado quando necessário.
+
+A geração do bitstream cria o arquivo de configuração que materializa o circuito lógico na FPGA. Além disso, o fluxo pode gerar artefatos associados à configuração de memória, permitindo que ROMs ou memórias internas sejam inicializadas corretamente durante a programação do dispositivo.
+
+Quando há programação da FPGA ou upload para memória flash, o circuito e seus conteúdos associados podem persistir no dispositivo, evitando a necessidade de reprogramação completa em toda reinicialização do ambiente de testes.
 
 Assim, o Build System não se limita ao software: ele também integra o ciclo de implementação física do sistema digital.
 
@@ -317,30 +342,6 @@ Isso inclui:
 - execução de fluxos de FPGA;
 - coordenação entre software compilado e infraestrutura de hardware.
 
-### 9.1 Fluxo Global do Sistema
-
-```mermaid
-flowchart TB
-
-User[Usuário]
-Make[GNU Make]
-SW[Compilação]
-ELF[Arquivo .elf]
-BIN[Conversão .bin/.hex]
-SIM[Simulação]
-FPGA[Execução FPGA]
-PY[Scripts Python]
-
-User --> Make
-Make --> SW
-SW --> ELF
-ELF --> BIN
-BIN --> SIM
-BIN --> FPGA
-Make --> PY
-PY --> FPGA
-```
-
 O GNU Make atua como um **orquestrador central**, coordenando:
 
 - compilação do software;
@@ -349,5 +350,4 @@ O GNU Make atua como um **orquestrador central**, coordenando:
 - chamada de scripts auxiliares;
 - programação do hardware.
 
----
-
+Essa automação reduz a quantidade de passos manuais, padroniza o fluxo de desenvolvimento e diminui a chance de inconsistências entre o software compilado e os artefatos carregados no hardware.
