@@ -64,7 +64,7 @@ Este arquivo implementa a mesma função básica, porém com duas diferenças im
 
 2. **Halt da simulação**: Após o retorno de `main`, escreve o valor `1` no endereço MMIO `0x10000008`, que é conectado ao hardware de simulação para encerrar a execução controlada.
 
-### 1.3 Inicialização do Stack Pointer (sp) e Global Pointer (gp)
+### 1.3 Inicialização do Stack Pointer (sp)
 
 A inicialização do registrador `sp` (Stack Pointer) é **obrigatória** antes de executar qualquer código em C. O motivo é profundamente enraizado na ABI (Application Binary Interface) do RISC-V e no funcionamento do modelo de chamadas de função.
 
@@ -91,18 +91,6 @@ addi sp, sp, %lo(_stack_start)
 
 A pilha cresce para baixo (endereços decrescentes), então inicializá-la no maior endereço disponível garante espaço máximo para crescimento sem colidir com o código ou dados.
 
-#### O Global Pointer (gp)
-
-Embora não seja explicitamente inicializado nos arquivos analisados (o compilador frequentemente gera código que usa `gp` implicitamente via `gp` relocations), o registrador `gp` é utilizado pelo compilador para acessos eficientes a variáveis globais. Ele aponta para o meio da seção `.bss` ou `.data`, permitindo que acessos a dados globais usem o offset negativo a partir de `gp` em vez de cálculos de endereço absolutos com `pc`.
-
-Em código pequeno ou simples, sem `-fPIC`, o compilador pode usar acesso direto via PC-relativo (instruções como `auipc` + `addi`) sem necessidade de `gp`. Nestes casos, o linker script não define `_global_pointer$`.
-
-Para projetos maiores ou quando se usa `-fPIC` (Position Independent Code), o linker script define `_global_pointer$` e o código de startup deve inicializar `gp` com:
-
-```asm
-la gp, _global_pointer$
-```
-
 ### 1.4 Limpeza da Seção .bss
 
 Em programas C, variáveis globais declaradas sem inicialização explícita (como `int count;`) devem ser automaticamente inicializadas com zero pelo runtime. O compilador coloca essas variáveis na seção `.bss` (Block Started by Symbol), que é uma região de memória não inicializada.
@@ -124,7 +112,7 @@ Nos arquivos analisados (`start.s` e `crt0.s`), esta etapa está ausente porque 
 
 ### 1.5 Transição para main()
 
-Após inicializar `sp` (e opcionalmente `gp` e limpar `.bss`), o startup executa `call main`. A instrução `call` é uma pseudoinstrução que expande para:
+Após inicializar `sp` (e opcionalmente limpar `.bss`), o startup executa `call main`. A instrução `call` é uma pseudoinstrução que expande para:
 
 ```asm
 auipc ra, 0      # ra = PC + 0 (endereço da próxima instrução)
@@ -253,7 +241,7 @@ O processo completo pode ser visualizado como uma cascata de estágios:
 
 2. **Startup Assembly** (crt0.s/start.s):
    - Inicializa `sp` para o topo da RAM
-   - Opcionalmente inicializa `gp` e limpa `.bss`
+   - Opcionalmente limpa `.bss`
    - Chama `main()`
 
 3. **Bootloader C** (boot.c):
