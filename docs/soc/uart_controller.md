@@ -12,7 +12,7 @@ O **UART Controller** é um periférico de comunicação serial assíncrona que 
 |----------------|-------|
 | **Padrão** | UART (Universal Asynchronous Receiver-Transmitter) |
 | **Formato de Frame** | 8N1 (8 bits de dados, sem paridade, 1 stop bit) |
-| **Baud Rate Padrão** | 115.200 bps |
+| **Baud Rate Padrão** | 921.600 bps |
 | **Frequência de Clock** | 100 MHz (configurável) |
 | **Buffer de Recepção** | FIFO de 64 bytes (configurável) |
 | **Interrupções** | Geradas quando dados estão disponíveis na FIFO |
@@ -40,9 +40,9 @@ O **UART Controller** é um periférico de comunicação serial assíncrona que 
 
 ```
 Baud Rate = Bits por segundo (bps)
-Exemplo: 115.200 baud = 115.200 bits/segundo
+Exemplo: 921.600 baud = 921.600 bits/segundo
 
-Tempo por bit = 1 / 115.200 = 8,68 µs/bit
+Tempo por bit = 1 / 921.600 = 8,68 µs/bit
 ```
 
 ---
@@ -253,9 +253,62 @@ A interface de barramento implementa um protocolo de handshake simples com sinai
 
 ### 10.3 Interrupção
 
-```vhdl
-irq_o <= not w_fifo_empty;  -- Level-triggered quando há dados
+#### 10.3.1 O Sinal de Interrupção
+
+O UART possui um pino de saída dedicado para interrupções: `irq_o`. Este pino é conectado ao controlador de interrupções do processador (como o PLIC em sistemas RISC-V), que por sua vez notifica a CPU quando o periférico precisa de atenção.
+
+**Resumo das características:**
+- **Nome do sinal:** `irq_o`
+- **Direção:** Saída (UART → CPU)
+- **Polaridade:** Ativo em nível alto (`1` = interrupção ativa)
+
+#### 10.3.2 Tipo de Gatilho
+
+O UART utiliza **interrupção por nível (level-triggered)**. Isso significa que o sinal permanece ativo (`1`) enquanto a condição que gerou a interrupção existir, e desativa automaticamente quando a condição deixa de existir.
+
+**Comparação rápida:**
+
+| Tipo | Comportamento | Quando usar |
+|------|---------------|-------------|
+| **Level-triggered** | Permanece ativo enquanto condição existir | Condições que podem mudar rapidamente |
+| **Edge-triggered** | Ativa apenas na transição 0→1 | Eventos únicos e instantâneos |
+
+#### 10.3.3 Quando a Interrupção Ocorre
+
+A interrupção é gerada quando a FIFO de recepção contém pelo menos um byte disponível para leitura:
+
 ```
+irq_o = 1  →  FIFO não vazia (há dados para ler)
+irq_o = 0  →  FIFO vazia (todos os dados foram consumidos)
+```
+
+Esta lógica é implementada como:
+```vhdl
+irq_o <= not w_fifo_empty;  -- ativo quando há dados
+```
+
+#### 10.3.4 Fluxo de Atendimento
+
+Para entender o fluxo, imagine a seguinte situação: dados estão chegando pela linha serial RX. O receptor armazena cada byte na FIFO. Quando o primeiro byte chega, a FIFO deixa de estar vazia. Neste momento, o hardware ativa `irq_o = 1`, enviando um pedido de interrupção ao processador.
+
+A CPU, ao receber a notificação, suspende a tarefa atual e executa a rotina de atendimento da UART. Dentro dessa rotina, o software deve:
+
+1. **Ler o registrador de dados (DATA)** para obter o byte disponível
+2. **Executar a operação de pop** no registrador de status para remover o byte da FIFO
+3. **Repetir** até que a FIFO esteja vazia
+
+Quando a FIFO fica vazia (após todos os bytes serem consumidos), o hardware automaticamente desativa `irq_o = 0`. Não é necessário que o software desative explicitamente a interrupção.
+
+#### 10.3.5 Analogia: A Caixa de Correio
+
+Pense no sistema de interrupção como uma caixa de correio com uma campainha:
+
+- A campainha toca (`irq_o = 1`) quando há cartas na caixa (dados na FIFO)
+- Você para o que está fazendo para verificar a caixa (tratamento de interrupção)
+- Remove as cartas (lê os dados e faz pop)
+- Quando a caixa está vazia, a campainha para sozinha (`irq_o = 0`)
+
+Esta analogia ajuda a entender por que não precisamos "limpar" a interrupção manualmente — ela se auto-desativa quando a condição desaparece.
 
 ---
 
