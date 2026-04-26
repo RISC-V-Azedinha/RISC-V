@@ -2,211 +2,121 @@
 
 ## Visão Geral
 
-O sistema inclui uma interface gráfica educacional executada no
-computador hospedeiro (**Host**), responsável por integrar todas as
-frentes do projeto em um único ambiente interativo.
-
-A aplicação permite que alunos interajam com o SoC RISC-V na FPGA sem
-necessidade de utilizar o terminal ou executar comandos manualmente.
+O sistema inclui uma interface gráfica educacional executada no computador hospedeiro (Host), responsável por integrar as diferentes funcionalidades do projeto em um único ambiente interativo.
 
 A interface atua como uma camada de abstração entre:
 
--   o usuário (aluno);
--   os scripts Python do Host;
--   o acelerador de hardware implementado na FPGA.
+- o usuário (aluno);
+- os scripts Python do Host;
+- o SoC RISC-V implementado na FPGA.
 
-Seu objetivo principal é transformar conceitos avançados de arquitetura
-de computadores e aceleração de IA em uma experiência visual e
-intuitiva.
+Seu objetivo principal é permitir que o usuário interaja com o sistema sem necessidade de utilizar diretamente o terminal, facilitando o acesso às funcionalidades de compilação, execução e depuração.
 
-------------------------------------------------------------------------
+Mais importante do que a tecnologia utilizada para construção da interface é o seu papel dentro da arquitetura do sistema: ela funciona como um ponto de entrada para o fluxo completo de desenvolvimento e depuração.
+
+---
 
 ## Arquitetura Geral da Interface
 
-A aplicação é implementada em **Python utilizando Tkinter**, organizada
-em três camadas principais:
+A interface não deve ser interpretada apenas como um componente visual, mas como um elemento integrador que conecta o usuário aos mecanismos internos do sistema.
 
-1.  **Camada de Interface (GUI)** --- interação com o usuário;
-2.  **Camada de Controle (Driver/Host Scripts)** --- lógica de
-    comunicação;
-3.  **Camada de Hardware** --- execução no SoC RISC-V.
-
-``` mermaid
+```mermaid
 flowchart TB
 
 User[Usuário]
 GUI[Interface Gráfica]
-Driver[NPU Driver]
+Host[Scripts Python (Host)]
 UART[Comunicação Serial]
 FPGA[SoC RISC-V]
 
 User --> GUI
-GUI --> Driver
-Driver --> UART
+GUI --> Host
+Host --> UART
 UART --> FPGA
 FPGA --> UART
-UART --> GUI
+UART --> Host
+Host --> GUI
 ```
 
-A interface gráfica centraliza todas as operações do sistema, permitindo
-que o usuário execute tarefas complexas através de ações visuais
-simples.
+---
 
-------------------------------------------------------------------------
+## Papel da Interface no Sistema
 
-## Integração da Interface com o Sistema
+### Abstração de Complexidade
 
-A GUI atua como um **orquestrador de operações**, disparando scripts
-Python responsáveis por:
+A interface permite executar tarefas sem lidar diretamente com:
 
--   compilação de programas;
--   envio de binários para FPGA;
--   execução de modelos de IA;
--   comunicação serial UART;
--   operações de depuração.
+- terminal;
+- comandos de compilação;
+- protocolos de comunicação;
+- comandos de depuração.
 
-O fluxo geral ocorre da seguinte forma:
+### Orquestração de Fluxos
 
-``` mermaid
-sequenceDiagram
-participant Usuario
-participant GUI
-participant Host
-participant FPGA
+A GUI centraliza:
 
-Usuario->>GUI: Ação (botão/menu)
-GUI->>Host: Executa script Python
-Host->>FPGA: Envia comandos UART
-FPGA-->>Host: Resposta
-Host-->>GUI: Resultado
-GUI-->>Usuario: Atualização visual
-```
+- compilação;
+- upload de binários;
+- execução;
+- depuração.
 
-------------------------------------------------------------------------
+### Integração com Debug
 
-# Interface de Depuração --- API de Controle do Host
+O principal papel da interface é servir como ponto de acesso ao toolchain de depuração.
+
+---
 
 ## Ferramenta de Depuração (`debugger.py`)
 
-O arquivo `debugger.py` implementa a **interface de depuração executada
-no Host**, responsável por controlar e inspecionar a execução do núcleo
-RISC-V através de comunicação serial UART.
+O `debugger.py` implementa a API de controle do Host, responsável por interagir com o hardware de debug via UART.
 
-Esta ferramenta representa a camada de software do sistema de debug,
-enviando comandos binários específicos interpretados pelo módulo de
-hardware `debug_controller.vhd`.
+### Fluxo de Controle
 
-------------------------------------------------------------------------
-
-### Objetivos da ferramenta
-
--   interromper a execução do processador (**halt**);
--   retomar execução (**resume**);
--   executar instruções individualmente (**step**);
--   configurar e remover breakpoints;
--   ler registradores e estado interno do núcleo;
--   traduzir comandos do usuário em pacotes binários de baixo nível.
-
-------------------------------------------------------------------------
-
-## Arquitetura Host--Target
-
-A arquitetura segue o modelo clássico **Host--Target**, amplamente
-utilizado em sistemas embarcados e ambientes de depuração:
-
-``` mermaid
-flowchart TB
-
-UserCLI[Usuário]
-Debugger[Debugger Python]
-UART[UART Serial]
-DebugHW[debug_controller.vhd]
-CPU[Núcleo RISC-V]
-
-UserCLI --> Debugger
-Debugger --> UART
-UART --> DebugHW
-DebugHW --> CPU
+```text
+Usuário → GUI → debugger.py → UART → debug_controller → CPU
 ```
 
-Nesse modelo:
+---
 
--   o **Host** executa a ferramenta de depuração;
--   o **Target** corresponde ao hardware na FPGA;
--   a comunicação ocorre por meio de pacotes UART.
+## Comandos de Depuração
 
-------------------------------------------------------------------------
+A ferramenta permite:
 
-## Construção dos Pacotes de Depuração
+- halt;
+- resume;
+- step;
+- leitura de memória;
+- leitura de registradores.
 
-O `debugger.py` converte comandos de alto nível em **frames binários
-UART**, compreendidos pelo controlador de depuração em hardware.
+---
 
-### Estrutura Conceitual do Pacote
+## Estrutura de Pacotes
 
-    [HEADER][OPCODE][ARGUMENTOS][CHECKSUM]
-
-  Campo        Função
-  ------------ -------------------------------
-  HEADER       Indica início do comando
-  OPCODE       Tipo de operação de debug
-  ARGUMENTOS   Endereços ou dados adicionais
-  CHECKSUM     Validação de integridade
-
-------------------------------------------------------------------------
-
-### Principais Comandos
-
-  Operação     Descrição
-  ------------ --------------------------------------
-  HALT         Interrompe a execução do processador
-  RESUME       Retoma execução normal
-  STEP         Executa uma única instrução
-  READ         Lê memória ou registradores
-  BREAKPOINT   Define ponto de parada
-
-Cada comando é serializado em bytes antes do envio pela UART.
-
-------------------------------------------------------------------------
-
-## Fluxo de Depuração
-
-``` mermaid
-sequenceDiagram
-participant Usuario
-participant Debugger
-participant FPGA
-
-Usuario->>Debugger: Comando de debug
-Debugger->>FPGA: Frame UART
-FPGA->>FPGA: Controle do núcleo
-FPGA-->>Debugger: Resposta
-Debugger-->>Usuario: Estado atualizado
+```text
+[OPCODE][ENDEREÇO][DADOS]
 ```
 
-------------------------------------------------------------------------
+---
 
-## Papel Educacional da Interface
+## Integração com Hardware
 
-A integração entre GUI e debugger permite que estudantes:
+O módulo `debug_controller.vhd` interpreta os comandos e executa:
 
--   observem a execução do processador em tempo real;
--   compreendam o ciclo de execução de instruções;
--   experimentem conceitos de arquitetura RISC-V;
--   realizem inspeção de memória e registradores sem conhecimento prévio
-    de ferramentas avançadas.
+- parada da CPU;
+- leitura/escrita de memória;
+- retorno de dados ao Host.
 
-Dessa forma, a interface transforma mecanismos complexos de depuração em
-uma experiência acessível e pedagógica.
+---
 
-------------------------------------------------------------------------
+## Insight Arquitetural
 
-## Benefícios Arquiteturais
+!!! note "Insight"
 
-A separação entre GUI, scripts Host e hardware proporciona:
+    A interface gráfica não implementa lógica de depuração.
+    Ela apenas expõe o toolchain de debug de forma acessível.
 
--   modularidade do sistema;
--   facilidade de manutenção;
--   reutilização dos componentes;
--   escalabilidade para novos experimentos educacionais;
--   isolamento entre interface e lógica de baixo nível.
+---
+
+## Conclusão
+
+A interface gráfica atua como camada de integração entre usuário, software e hardware, permitindo abstração, controle e depuração do sistema embarcado de forma educacional e estruturada.
