@@ -120,27 +120,8 @@ end
 
 ------------------------------------------------------------------------
 
-!!! note "Resumo"
+!!! note "Edge AI"
 
     Os clientes de IA realizam treinamento no Host, convertem os dados e  
     enviam para a FPGA via UART. A FPGA executa a inferência e retorna os  
     resultados.
-
-------------------------------------------------------------------------
-
-## Fluxo Final
-``` text
-    Treinamento
-    ↓
-    Quantização
-    ↓
-    Serialização
-    ↓
-    UART
-    ↓
-    FPGA
-    ↓
-    Inferência
-    ↓
-    Resultados
-```
