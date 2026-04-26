@@ -8,7 +8,9 @@ Este documento descreve o processo de inicialização do processador RISC-V, des
 
 ### 1.1 O Fluxo de Execução Imediatamente Após o Reset
 
-Quando o processador RISC-V sai do estado de reset, o contador de programa (PC - Program Counter) é forçado ao endereço de boot definido pelo hardware. Este endereço é tipicamente `0x00000000` em sistemas que executam código a partir de memória ROM/Flashon-chip, ou pode ser configurado via sinais externos em FPGAs.
+Quando o processador RISC-V sai do estado de reset, o contador de programa (PC - Program Counter) é forçado ao endereço de boot definido pelo hardware. A especificação da arquitetura RISC-V não define um endereço fixo para o Reset Vector — este valor é estritamente determinado pelo projeto de hardware (SoC) específico.
+
+No projeto documentado, o bootloader reside no endereço `0x00000000`. Esta escolha, porém, não é universal: o SoC SiFive FE310, por exemplo, inicia execução em `0x10040000` ou `0x20000000`, enquanto a plataforma virtual QEMU Virt começa em `0x1000`.
 
 A partir deste ponto, o processador começa a executar instruções sequencialmente, sem qualquer contexto de software previamente estabelecido. Não existe pilha, não existem variáveis globais inicializadas, e os registradores possuem valores indeterminados (ou zero, dependendo da implementação). O código executado nesta fase é denominado **startup code** ou **bootloader primário**, e sua única função é preparar o ambiente para que código C possa ser executado de forma confiável.
 
@@ -50,7 +52,7 @@ _start:
 
     call main
 
-    # Escreve no registrador de controle parahaltar a simulação
+    # Escreve no registrador de controle para interromper a simulação
     li a0, 1
     li t0, HALT_MMIO
     sw a0, 0(t0)
@@ -74,7 +76,7 @@ Quando o compilador gera código para uma função em C, ele assume que existe u
 
 2. **Preservação de registradores**: A ABI RISC-V define que os registradores `s0-s11` (saved registers) devem ter seus valores preservados entre chamadas de função. Quando uma função chama outra, ela deve salvar esses valores na pilha antes de modificá-los.
 
-3. **Passagem de argumentos**: A ABI RISC-V passa os primeiros 8 argumentos de função nos registradores `a0-a7`. Se uma função precisa salvar esses valores (por exemplo, porque chamará outra função que também usa `a0`), ela devepushá-los na pilha.
+3. **Passagem de argumentos**: A ABI RISC-V passa os primeiros 8 argumentos de função nos registradores `a0-a7`. Se uma função precisa salvar esses valores (por exemplo, porque chamará outra função que também usa `a0`), ela deve empilhá-los na pilha.
 
 4. **Endereço de retorno**: A instrução `call` em RISC-V armazena o endereço de retorno no registrador `ra` (Return Address). Se uma função chama outra, ela deve salvar o valor anterior de `ra` na pilha para restaurar após o retorno.
 
@@ -87,13 +89,15 @@ lui sp, %hi(_stack_start)
 addi sp, sp, %lo(_stack_start)
 ```
 
-A pilha grows para baixo (endereços decrescentes), então inicializá-la no maior endereço disponível garante espaço máximo para crescimento sem colidir com o código ou dados.
+A pilha cresce para baixo (endereços decrescentes), então inicializá-la no maior endereço disponível garante espaço máximo para crescimento sem colidir com o código ou dados.
 
 #### O Global Pointer (gp)
 
 Embora não seja explicitamente inicializado nos arquivos analisados (o compilador frequentemente gera código que usa `gp` implicitamente via `gp` relocations), o registrador `gp` é utilizado pelo compilador para acessos eficientes a variáveis globais. Ele aponta para o meio da seção `.bss` ou `.data`, permitindo que acessos a dados globais usem o offset negativo a partir de `gp` em vez de cálculos de endereço absolutos com `pc`.
 
-Para projetos maiores ou quando se usa `-fPIC` (Position Independent Code), o linker script tipicamente define `_global_pointer$` e o código de startup deve inicializar `gp` com:
+Em código pequeno ou simples, sem `-fPIC`, o compilador pode usar acesso direto via PC-relativo (instruções como `auipc` + `addi`) sem necessidade de `gp`. Nestes casos, o linker script não define `_global_pointer$`.
+
+Para projetos maiores ou quando se usa `-fPIC` (Position Independent Code), o linker script define `_global_pointer$` e o código de startup deve inicializar `gp` com:
 
 ```asm
 la gp, _global_pointer$
@@ -118,7 +122,7 @@ bge a0, a1, .Lend
 
 Nos arquivos analisados (`start.s` e `crt0.s`), esta etapa está ausente porque são exemplos minimalistas. Em um ambiente de produção completo, o crt0.s deveria incluir esta limpeza.
 
-### 1.5Transição para main()
+### 1.5 Transição para main()
 
 Após inicializar `sp` (e opcionalmente `gp` e limpar `.bss`), o startup executa `call main`. A instrução `call` é uma pseudoinstrução que expande para:
 
@@ -136,12 +140,12 @@ O registrador `ra` (Return Address) é automaticamente configurado para apontar 
 
 ### 2.1 Contexto e Propósito
 
-Uma vez que o código C pode executar corretamente (ambiente preparado pelo startup), o bootloader assume o controle. No contexto deste projeto, o bootloader é um programa em C que reside em memória ROM/Flashon-chip (endereço `0x00000000` após o startup) e possui duas funções principais:
+Uma vez que o código C pode executar corretamente (ambiente preparado pelo startup), o bootloader assume o controle. No contexto deste projeto, o bootloader é um programa em C que reside em memória ROM/Flash on-chip (endereço `0x00000000` após o startup) e possui duas funções principais:
 
 1. Estabelecer comunicação com um host externo via UART
 2. Receber um binário da aplicação do usuário, gravá-lo na RAM, e saltar para sua execução
 
-Este modelo permite que o hardware (FPGA) seja reprogramado com novas aplicações sem modificar o hardware bistream.
+Este modelo permite que o hardware (FPGA) seja reprogramado com novas aplicações sem modificar o hardware bitstream.
 
 ### 2.2 Análise do Código do Bootloader
 
@@ -155,14 +159,14 @@ O bootloader utiliza registradores mapeados em memória (MMIO - Memory-Mapped I/
 #define UART_CTRL_REG   (*(volatile uint32_t *)(UART_BASE + 0x04))
 ```
 
-O endereço `0x10000000` é uma região de MMIO típica em sistemas embarcados RISC-V, onde os periféricos são acessados através de leituras/escritas a endereços específicos.
+O endereço `0x10000000` é utilizado neste projeto para o mapeamento de periféricos UART. O mapeamento de periféricos em RISC-V é arbitrário e determinado pelo design do barramento do sistema escolhido pelo fabricante do chip. Este endereço é o padrão adotado em plataformas como QEMU e SiFive. Como exemplo de mapeamento diferente, o SoC ESP32-C3 aloja seus periféricos MMIO a partir do endereço `0x40000000`.
 
 - `UART_DATA_REG` (offset `0x00`): Registrador de dados - leitura retorna o próximo byte do FIFO de recebimento; escrita envia um byte para transmissão.
 - `UART_CTRL_REG` (offset `0x04`): Registrador de controle/status - o bit 1 indica se há dados disponíveis no FIFO de recebimento (`STATUS_RX_AVAIL`), e o bit 0 é usado para pop do FIFO (`CMD_POP_FIFO`).
 
-A declaração `volatile` é essencial para periféricos MMIO porque impede o compilador de otimizar away as leituras/escritas ou reordenar operações.
+A declaração `volatile` é essencial para periféricos MMIO porque impede o compilador de remover por otimização as leituras/escritas ou reordenar operações.
 
-#### Reception da Magic Word "CAFEBABE"
+#### Recepção da Magic Word "CAFEBABE"
 
 Antes de aceitar qualquer dado, o bootloader exige uma sequência mágica de 4 bytes: `0xCA`, `0xFE`, `0xBA`, `0xBE`. Esta funciona como um handshake de protocolo:
 
@@ -185,9 +189,11 @@ O motivo desta verificação é duplo:
 1. **Sincronização**: Garante que o host e o bootloader estão sincronizados no início da transmissão.
 2. **Validação básica**: Minimiza a chance de executar código espúrio que possa estar presente no buffer da UART.
 
+Este mecanismo funciona como um **two-way handshake** simplificado: a magic word actua como a primeira mensagem de sincronização (equivalente ao SYN em protocolos tradicionais), e o ACK `!` enviado pelo bootloader confirma a sincronização (equivalente ao SYN-ACK). Um three-way handshake completo (com reconhecimento final do host) não é necessário neste contexto porque o fluxo de dados é unidirecional — do host para o bootloader — e o ACK apenas confirma que o bootloader está pronto para receber dados.
+
 Após receber a magic word, o bootloader envia o caractere `!` como ACK (acknowledge) para confirmar ao host que está pronto para receber dados.
 
-#### Receiving do Tamanho do Programa
+#### Recepção do Tamanho do Programa
 
 O bootloader espera 4 bytes que representam o tamanho do programa em bytes, transmitidos em little-endian (menor byte primeiro):
 
@@ -218,11 +224,11 @@ for (uint32_t i = 0; i < program_size; i++) {
 
 A palavra-chave `volatile` é usada para garantir que cada escrita seja realmente executada — sem isso, o compilador poderia otimizar o loop e fazer uma única escrita de 32 bits ou mesmo remover o loop completamente.
 
-O offset de 2KB (`0x800`) foi chosen para alinhar a aplicação do usuário a uma fronteira de setor/região de memória, separando-a claramente da área do bootloader.
+O offset de 2KB (`0x800`) foi escolhido para alinhar a aplicação do usuário a uma fronteira de setor/região de memória, separando-a claramente da área do bootloader.
 
 #### Salto para a Aplicação do Usuário
 
-Apósgravar todos os bytes, o bootloader transfere o controle para a aplicação usando um ponteiro de função:
+Após gravar todos os bytes, o bootloader transfere o controle para a aplicação usando um ponteiro de função:
 
 ```c
 void (*user_app)() = (void (*)())USER_APP_BASE;
@@ -233,7 +239,7 @@ Esta técnica funciona porque:
 
 1. O binário da aplicação foi compilado/linkado para executar a partir do endereço `0x80000800`, então seus endereços absolutos são válidos.
 2. A aplicação tem sua própria função `main()`, que será chamada implicitamente quando o ponteiro for invocado.
-3. A pilha não precisa ser reconfigurada — a aplicação pode usar a mesma pilha existente (假定 que não há conflito de uso).
+3. A pilha não precisa ser reconfigurada — a aplicação pode usar a mesma pilha existente (pressupondo que não há conflito de uso).
 
 Se a aplicação retornar (situação anormal), o bootloader entra em loop infinito.
 
@@ -243,7 +249,7 @@ Se a aplicação retornar (situação anormal), o bootloader entra em loop infin
 
 O processo completo pode ser visualizado como uma cascata de estágios:
 
-1. **Reset Hardware**: O processador inicia no endereço de boot (tipicamente `0x00000000`).
+1. **Reset Hardware**: O processador inicia no endereço de boot definido pelo hardware do SoC (conforme descrito na seção 1.1).
 
 2. **Startup Assembly** (crt0.s/start.s):
    - Inicializa `sp` para o topo da RAM
@@ -260,4 +266,4 @@ O processo completo pode ser visualizado como uma cascata de estágios:
    - Executa a partir de `main()`
    - Pode usar a pilha pré-configurada e acessar periféricos normalmente
 
-Esta arquitetura de boot em dois estágios — startup mínimo em Assembly seguido de bootloader completo em C — é um padrão widely adotado em sistemas embarcados porque equilibra a necessidade de código de inicialização robusto com a flexibilidade de um ambiente de programação de alto nível para a lógica de boot.
+Esta arquitetura de boot em dois estágios — startup mínimo em Assembly seguido de bootloader completo em C — é um padrão amplamente adotado em sistemas embarcados porque equilibra a necessidade de código de inicialização robusto com a flexibilidade de um ambiente de programação de alto nível para a lógica de boot.

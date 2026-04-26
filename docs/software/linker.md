@@ -1,6 +1,6 @@
 # Organização da Memória Executável: Scripts do Linker
 
-Este documento explica o papel do Linker no fluxo de compilação de software embarcado e como os scripts de linkedição distribuem o código compilado nos endereços físicos de memória do SoC RISC-V. A compreensão deste processo é fundamental para entender como o hardware e o software interagem durante a execução.
+Este documento explica o papel do Linker no fluxo de compilação de software embarcado e como os scripts de linkagem distribuem o código compilado nos endereços físicos de memória do SoC RISC-V. A compreensão deste processo é fundamental para entender como o hardware e o software interagem durante a execução.
 
 ---
 
@@ -22,21 +22,15 @@ O **Linker** é o programa responsável por resolver referências simbólicas en
 
 Durante a compilação, o compilador organiza o conteúdo do programa em **seções lógicas** (sections), cada uma com uma finalidade específica:
 
-| Seção | Conteúdo |属性 |
-|-------|----------|------|
+| Seção | Conteúdo | Propriedades |
+|-------|----------|---------------|
 | `.text` | Código máquina das funções | Somente leitura, executável |
 | `.rodata` | Constantes (strings, tabelas de lookup) | Somente leitura |
 | `.data` | Variáveis globais inicializadas | Leitura e escrita |
 | `.bss` | Variáveis globais não inicializadas | Leitura e escrita |
 | `.stack` | Área da pilha (definida pelo linker script) | Leitura e escrita |
 
-A razão para separar o programa em seções reside na natureza diferente de cada tipo de dado. Código e constantes nunca mudam durante a execução, então podem ser placements em memória ROM (somente leitura). Variáveis precisam ser modificadas, portanto devem estar em RAM (leitura-escrita). A pilha também precisa de RAM por ser uma estrutura dinâmica.
-
-### 1.3 A Seção .bss e a Necessidade de Limpeza
-
-A seção `.bss` (Block Started by Symbol) merece atenção especial. Em código C, declarar uma variável como `int count;` no escopo global significa que ela deve ser inicializada com zero implicitamente. O compilador não inclui os zeros no binário — ele simplemente registra que a variável está na seção `.bss` e o linker marca os limites desta região.
-
-Isto significa que, antes de qualquer código que use variáveis de `.bss` executar, a memória correspondente deve ser explicitamente zerada pelo código de startup. O linker fornece os símbolos `__bss_start` e `__bss_end` precisamente para que o startup possa iterar sobre esta região.
+A razão para separar o programa em seções reside na natureza diferente de cada tipo de dado. O linker usa essas informações para mapear cada seção para a região apropriada de memória: código e constantes vão tipicamente para áreas de somente leitura, enquanto variáveis e pilha precisam de áreas de leitura-escrita. Vale notar que, na prática, o programa completo pode ser carregado em RAM pelo bootloader — a divisão em seções serve para o allocator do linker saber como distribuir cada parte.
 
 ---
 
@@ -85,7 +79,7 @@ SECTIONS {
 | `rom` | `0x00000000` | 4 KB | Somente leitura e executável (rx) |
 | `ram` | `0x80000000` | 256 KB | Leitura, escrita e executável (rwx) |
 
-A escolha de `0x00000000` para a ROM segue o padrão RISC-V, onde o processador começa a executar a partir deste endereço após o reset. O endereço `0x80000000` para a RAM é a região designada pelo spec RISC-V para memória acessível via instruções regulares (endereços abaixo de `0x80000000` têm comportamento especial para internamente mapeado e CSR).
+A escolha de `0x00000000` para a ROM segue o padrão RISC-V, onde o processador começa a executar a partir deste endereço após o reset. O endereço `0x80000000` para a RAM é a região designada pela especificação RISC-V para memória acessível via instruções regulares (endereços abaixo de `0x80000000` têm comportamento especial para internamente mapeado e CSR).
 
 #### Mapeamento de Seções
 
@@ -95,11 +89,7 @@ O bootloader coloca `.text` e `.rodata` em ROM porque:
 2. Há apenas 4KB de ROM disponível, suficiente para o bootloader
 3. O bootloader deve executar imediatamente após reset, sem precisar copiar código da RAM
 
-As seções `.data` e `.bss` vão para RAM porque:
-
-1. Variáveis globais inicializadas em `.data` precisam ser modificáveis durante execução
-2. A seção `.bss` precisa ser zerada em runtime, o que requer escrita
-3. A ROM disponível (4KB) seria insuficiente para dados
+As seções `.data` e `.bss` vão para RAM porque variáveis precisam de memória de leitura-escrita:
 
 #### Símbolo _stack_start
 
@@ -161,7 +151,7 @@ Todas as seções (.text, .rodata, .data, .bss) são colocadas em RAM porque:
 
 1. Não há ROM separada para a aplicação
 2. O bootloader pode livremente gravá-las na memória volátil
-3. Todas as seções são acesso-writes necessárias em tempo de execução
+3. Todas as seções necessitam de acesso de escrita em tempo de execução
 
 #### Símbolo _stack_start
 
@@ -179,28 +169,11 @@ addi sp, sp, %lo(_stack_start)
 
 O linker substitui `_stack_start` pelo endereço calculado (`0x80040000` para bootloader, `0x80040800` para aplicação), e o código de startup usa esse valor para inicializar o Stack Pointer.
 
-Outro símbolo comum, aunque não presente nos scripts analisados, seria:
-
-```ld
-__bss_start = .;
-__bss_end = .;
-```
-
-Estes delimitariam os limites da seção .bss, permitindo que o startup iterasse e zerasse a memória:
-
-```asm
-la a0, __bss_start
-la a1, __bss_end
-# ... loop para zerar
-```
-
-A ausência destes símbolos nos scripts atuais explica por que os arquivos de startup analisados não implementam a limpeza do .bss — sem os símbolos, não há como o código assembly saber os limites da seção.
-
 ### 2.5 Justificativa das Escolhas de Endereçamento
 
 #### Por que ROM em 0x00000000?
 
-O spec RISC-V define que, após um reset, o processador começa a executar a partir do endereço `0x00000000`. Este é um requisito arquitetural, não uma convenção. Portanto, qualquer código que deva executar no boot (como o bootloader) precisa estar mapeado nesta região de memória.
+A especificação RISC-V define que, após um reset, o processador começa a executar a partir do endereço `0x00000000`. Este é um requisito arquitetural, não uma convenção. Portanto, qualquer código que deva executar no boot (como o bootloader) precisa estar mapeado nesta região de memória.
 
 #### Por que RAM em 0x80000000?
 
@@ -215,7 +188,7 @@ A escolha de `0x80000000` para a RAM evita problemas com acessos misaligned e se
 
 O bootloader termina sua execução gravando a aplicação em `0x80000800` e saltando para este endereço. Este offset de 2KB serve para:
 
-1. Deixar espaço para buffer de recepción no bootloader (conforme explicitado no comment)
+1. Deixar espaço para buffer de recepção no bootloader (conforme explicitado no comentário)
 2. Garantir alinhamento razoável (2KB = 2048 bytes é uma fronteira de setor comum)
 3. Evitar sobreposição acidental com dados do bootloader
 
@@ -232,22 +205,3 @@ O bootloader termina sua execução gravando a aplicação em `0x80000800` e sal
 | Topo da pilha (_stack_start) | 0x80040000 | 0x80040800 |
 
 Esta arquitetura em dois estágios — bootloader em ROM com aplicação carregável em RAM — é uma prática comum em sistemas embarcados que precisam de atualização de software sem modificação de hardware.
-
----
-
-## 4. Observações sobre Completude
-
-Os scripts de linker analisados (`boot.ld` e `link.ld`) não definem símbolos para os limites da seção `.bss` (`__bss_start` e `__bss_end`). Isto significa que, mesmo que o código de startup desejasse implementar a limpeza do .bss, não teria como obter os endereços necessários sem modificar o linker script.
-
-Para um ambiente de produção completo, recomenda-se adicionar ao arquivo SECTIONS:
-
-```ld
-.bss : {
-    __bss_start = .;
-    *(.bss*)
-    *(COMMON)
-    __bss_end = .;
-} > ram
-```
-
-Isto permitiria que o código Assembly referenciasse `__bss_start` e `__bss_end` para executar a limpeza corretamente.
