@@ -8,7 +8,7 @@ Este documento descreve o processo completo de implementação do SoC RISC-V em 
 
 ### 1.1 Síntese Lógica
 
-A **síntese lógica** é o processo de traduzir a descrição comportamental do hardware em linguagem VHDL (Register Transfer Level) para uma netlist de componentes genéricos disponíveis na FPGA-alvo. Este processo é realizado pelo comando `synth_design` no Vivado e transforma constructs VHDL em primitivas físicas da arquitetura do dispositivo.
+A **síntese lógica** é o processo de traduzir a descrição comportamental do hardware em linguagem VHDL (Register Transfer Level) para uma netlist de componentes genéricos disponíveis na FPGA-alvo. Este processo é realizado pelo comando `synth_design` no Vivado e transforma estruturas VHDL em primitivas físicas da arquitetura do dispositivo.
 
 No contexto deste projeto, a síntese é invocada pelo script `build.tcl` com os seguintes parâmetros críticos:
 
@@ -18,11 +18,13 @@ synth_design -top soc_top -part xc7a100tcsg324-1 \
     -flatten_hierarchy rebuilt -retiming -quiet
 ```
 
+Esses parâmetros são fundamentais para o projeto: o `-part` define o dispositivo-alvo da família Artix-7, enquanto `-generic "INIT_FILE=..."` automatiza a injeção do conteúdo do bootloader no arquivo HEX para a memória ROM (inicialização de BRAM), garantindo que o código de boot esteja presente no bitstream gerado sem necessidade de intervenção manual.
+
 #### Tradução RTL para Netlist
 
 O processo de síntese executa as seguintes transformações:
 
-1. **Análise semântica**: O sintetizador verifica a descrição VHDL, realizando inferência de circuitos combinacionais e sequenciais a partir de expressões booleanas e constructs `process`.
+1. **Análise semântica**: O sintetizador verifica a descrição VHDL, realizando inferência de circuitos combinacionais e sequenciais a partir de expressões booleanas e estruturas `process`.
 
 2. **Mapeamento em primitivas**: Os módulos VHDL são mapeados nas primitivas disponíveis na FPGA Xilinx Artix-7:
    * **LUTs (Look-Up Tables)**: Funções booleanas de até 6 entradas que implementam lógica combinacional
@@ -30,11 +32,13 @@ O processo de síntese executa as seguintes transformações:
    * **MUXEs**: Seletores implementados via LUTs ou recursos dedicados
    * **Carry Chains**: Caminhos de propagação rápida para operações aritméticas
 
-3. **Inferência de memórias**: O sintetizador reconhece padrões de descrição de memórias (arrays, sinais com índice) e os mapeia em blocos de RAM distribuídos (LUTRAM) ou dedicados (BRAM) conforme a capacidade exigida.
+3. **Inferência de memórias**: O sintetizador reconhece padrões de descrição de memórias (arrays, sinais com índice) e os mapeia em dois tipos distintos de recursos. A **LUTRAM** (RAM distribuída) utiliza as LUTs da malha lógica comum da FPGA, sendo adequada para estruturas pequenas como FIFOs curtas ou registradores de deslocamento com memória. Já a **BRAM** (Block RAM) consiste em blocos de silício dedicados com alta densidade, sendo a escolha ideal para a memória principal, bootloader ou qualquer estrutura que exija grande capacidade de armazenamento.
 
 4. **Generic Injection**: O parâmetro `-generic "INIT_FILE=..."` permite injetar o conteúdo do bootloader em memória ROM (inicialização de BRAM com o arquivo `.hex`), possibilitando que o código de boot esteja presente no bitstream gerado.
 
 #### Flags de Otimização
+
+Conhecer estas flags é útil caso seja necessário ajustar a área consumida ou resolver problemas de temporização (timing) no futuro.
 
 | Flag | Função |
 |------|--------|
@@ -46,7 +50,7 @@ O resultado da síntese é uma netlist EDIF que representa a funcionalidade do d
 
 ### 1.2 Implementação (Place and Route)
 
-A fase de **Implementation** transforma a netlist genérica em um desenho físico concreto, alocando cada primitiva a uma localização específica no silício da FPGA e criando as conexões físicas entre elas. Esta fase é composta por três etapas sequenciais invocadas no `build.tcl`:
+A fase de **Implementação** transforma a netlist genérica em um desenho físico concreto, alocando cada primitiva a uma localização específica no silício da FPGA e criando as conexões físicas entre elas. Esta fase é composta por três etapas sequenciais invocadas no `build.tcl`:
 
 ```tcl
 opt_design -quiet
@@ -61,7 +65,7 @@ O comando `opt_design` executa otimizações lógicas sobre a netlist sintetizad
 * **Colapso de redundância**: Remove lógica combinacional duplicada
 * **Ressíntese**: Reformula expressões booleanas para reduzir o número de LUTs
 * **Extração de FSM**: Identifica máquinas de estados e as implementa com otimização de codificação (binary, one-hot, gray)
-* **Optimização de carry**: Agrupa operações aritméticas em cadeias de carry dedicadas
+* **Otimização de carry**: Agrupa operações aritméticas em cadeias de carry dedicadas
 
 #### Posicionamento (place_design)
 
@@ -153,7 +157,7 @@ A diretiva `IOSTANDARD LVCMOS33` define o padrão de tensão para os pinos de en
 
 * **LVCMOS33**: Low-Voltage CMOS com tensão de 3.3V
 * Este padrão é definido porque:
-  1. A placa Nexys 4 utiliza supply de 3.3V para I/O
+  1. A placa Nexys 4 utiliza tensão de alimentação de 3.3V para I/O
   2. Os transceptores USB-UART (FTDI) operam em 3.3V
   3. LEDs e chaves pull-up/pull-down da placa são compatíveis com 3.3V
 
@@ -184,9 +188,9 @@ A diretiva `create_clock` comunica ao Vivado que o pino `CLK_i` é um sinal peri
 
 1. **Calcular atrasos de caminho**: Cada caminho entre registradores tem um atraso máximo permitido definido pelo período do clock
 
-2. **Verificar setup (tempo de preparação)**: Para um flip-flop capturar corretamente um dado no próximo edge de clock, o dado deve ser estável por pelo menos `T_su` (setup time) antes do edge. O Vivado verifica se `T_arrival + T_su <= T_period`
+2. **Verificar setup (tempo de preparação)**: Para um flip-flop capturar corretamente um dado na próxima borda de clock, o dado deve ser estável por pelo menos `T_su` (setup time) antes da borda. O Vivado verifica se `T_arrival + T_su <= T_period`
 
-3. **Verificar hold (tempo de manutenção)**: O dado deve permanecer estável por pelo menos `T_h` (hold time) após o edge de clock para garantir captura correta. O Vivado verifica se `T_arrival >= T_h`
+3. **Verificar hold (tempo de manutenção)**: O dado deve permanecer estável por pelo menos `T_h` (hold time) após a borda de clock para garantir captura correta. O Vivado verifica se `T_arrival >= T_h`
 
 4. **Determinar domínios de clock**: Sinais assíncronos com clocks diferentes são tratados como domínios de clock separados, e o projetista deve inserir lógica de sincronização (async fifo, two-stage synchronizer) para transferência entre domínios
 
@@ -202,7 +206,9 @@ A violação de setup resulta em metastabilidade, onde o flip-flop pode oscilar 
 
 ### 3.1 Configuração de Hardware via JTAG
 
-O protocolo JTAG (Joint Test Action Group) é utilizado para configurar a memória flash da FPGA com o bitstream gerado. O script `program.tcl` executa esta operação:
+O protocolo **JTAG** (Joint Test Action Group) é a interface de comunicação que permite ao Vivado transferir o bitstream gerado do computador para a memória de configuração da FPGA. No contexto da placa Nexys 4, essa comunicação ocorre via cabo USB que conecta o FTDI USB-JTAG integrado ao computador.
+
+O script `program.tcl` executa esta operação:
 
 ```tcl
 open_hw_manager
@@ -215,26 +221,13 @@ set_property PROGRAM.FILE ./build/fpga/bitstream/soc_top.bit $device
 program_hw_devices $device
 ```
 
-#### JTAG: Test Access Port (TAP)
-
-A interface JTAG é um protocolo de configuração serial que utiliza 4 sinais:
-
-| Sinal | Função |
-|-------|--------|
-| TCK (Test Clock) | Clock da máquina de estados JTAG |
-| TDI (Test Data In) | Dados serializados para o dispositivo |
-| TDO (Test Data Out) | Dados serializados do dispositivo |
-| TMS (Test Mode Select) | Controle da máquina de estados |
-
-Na Nexys 4, o FTDI USB-JTAG integrado expõe a interface JTAG via USB, permitindo que o Vivado se conecte ao dispositivo fisicamente.
-
 #### Processo de Programação
 
 1. **Conexão**: O Vivado abre o Hardware Manager e conecta ao servidor de hardware local (ou remoto via cable server)
 
 2. **Descoberta**: O comando `open_hw_target` varre a cadeia JTAG e identifica os dispositivos conectados
 
-3. **Seleção**: O dispositivo FPGA (xc7a100t) é selecionado como target
+3. **Seleção**: O dispositivo FPGA (xc7a100t) é selecionado como alvo
 
 4. **Transferência**: O arquivo `.bit` (contendo a configuração dos CLBs, BRAMs, IOBs, e rotas) é transferido via JTAG para a memória de configuração da FPGA
 
@@ -267,7 +260,7 @@ O protocolo implementado segue uma sequência de handshake:
    * Formato: `struct.pack('<I', file_size)`
 
 5. **Transferência do Binário**:
-   * Dados enviados em chunks de 64 bytes
+   * Dados enviados em blocos de 64 bytes
    * ACK visual: bootloader envia `.` a cada 1KB recebido
 
 6. **Confirmação**: Bootloader envia `>` ao final da transmissão bem-sucedida
@@ -280,8 +273,8 @@ O protocolo implementado segue uma sequência de handshake:
 |---------|-------|
 | Porta padrão | COM6 |
 | Baud rate | 921600 |
-| Tamanho do chunk | 64 bytes |
-| Endereço de load | 0x80000800 |
+| Tamanho do bloco | 64 bytes |
+| Endereço de carregamento | 0x80000800 |
 | Timeout | 2 segundos |
 
 O uso de baud rate alto (921600) reduz o tempo de transferência, e a transferência fragmentada permite feedback visual progressivo durante o upload.
