@@ -22,3 +22,9 @@ targets:
     - rtl/single_cycle/core/branch_unit.vhd
     - sim/single_cycle/include/test_utils.py
     - sim/single_cycle/unit/test_branch_unit.py
+
+  lsu:
+    - rtl/single_cycle/pkg/riscv_isa_pkg.vhd
+    - rtl/single_cycle/core/lsu.vhd
+    - sim/single_cycle/include/test_utils.py
+    - sim/single_cycle/unit/test_lsu.py
