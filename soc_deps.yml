@@ -1,8 +1,5 @@
 targets:
   multi_cycle:
-    utils:
-    - sim/multi_cycle/include/test_utils.py
-    - sim/multi_cycle/include/test_utils.py
     main_fsm:
     - rtl/multi_cycle/pkg/riscv_isa_pkg.vhd
     - rtl/multi_cycle/pkg/riscv_uarch_pkg.vhd
@@ -44,14 +41,14 @@ targets:
     processor_top:
     - rtl/multi_cycle/pkg/riscv_isa_pkg.vhd
     - rtl/multi_cycle/core/alu.vhd
-    - rtl/multi_cycle/pkg/riscv_uarch_pkg.vhd
     - rtl/multi_cycle/core/reg_file.vhd
     - rtl/multi_cycle/core/csr_file.vhd
-    - rtl/multi_cycle/core/lsu.vhd
     - rtl/multi_cycle/core/imm_gen.vhd
+    - rtl/multi_cycle/core/lsu.vhd
+    - rtl/multi_cycle/pkg/riscv_uarch_pkg.vhd
     - rtl/multi_cycle/core/datapath.vhd
-    - rtl/multi_cycle/core/branch_unit.vhd
     - rtl/multi_cycle/core/main_fsm.vhd
+    - rtl/multi_cycle/core/branch_unit.vhd
     - rtl/multi_cycle/core/alu_control.vhd
     - rtl/multi_cycle/core/control.vhd
     - rtl/multi_cycle/core/processor_top.vhd
@@ -59,10 +56,10 @@ targets:
     - sim/multi_cycle/e2e/test_processor_top.py
     control:
       deps:
-      - rtl/multi_cycle/core/branch_unit.vhd
       - rtl/multi_cycle/pkg/riscv_isa_pkg.vhd
       - rtl/multi_cycle/pkg/riscv_uarch_pkg.vhd
       - rtl/multi_cycle/core/main_fsm.vhd
+      - rtl/multi_cycle/core/branch_unit.vhd
       - rtl/multi_cycle/core/alu_control.vhd
       - rtl/multi_cycle/core/control.vhd
       - rtl/multi_cycle/core/wrappers/control_wrapper.vhd
@@ -74,11 +71,11 @@ targets:
       deps:
       - rtl/multi_cycle/pkg/riscv_isa_pkg.vhd
       - rtl/multi_cycle/core/alu.vhd
-      - rtl/multi_cycle/pkg/riscv_uarch_pkg.vhd
       - rtl/multi_cycle/core/reg_file.vhd
       - rtl/multi_cycle/core/csr_file.vhd
-      - rtl/multi_cycle/core/lsu.vhd
       - rtl/multi_cycle/core/imm_gen.vhd
+      - rtl/multi_cycle/core/lsu.vhd
+      - rtl/multi_cycle/pkg/riscv_uarch_pkg.vhd
       - rtl/multi_cycle/core/datapath.vhd
       - rtl/multi_cycle/core/wrappers/datapath_wrapper.vhd
       - sim/multi_cycle/include/test_utils.py
@@ -86,9 +83,6 @@ targets:
       wrapper_top: datapath_wrapper
       wrapper_src: rtl/multi_cycle/core/wrappers/datapath_wrapper.vhd
   single_cycle:
-    utils:
-    - sim/single_cycle/include/test_utils.py
-    - sim/single_cycle/include/test_utils.py
     reg_file:
     - rtl/single_cycle/core/reg_file.vhd
     - sim/single_cycle/include/test_utils.py
@@ -130,13 +124,13 @@ targets:
     processor_top:
     - rtl/single_cycle/pkg/riscv_isa_pkg.vhd
     - rtl/single_cycle/core/alu.vhd
-    - rtl/single_cycle/pkg/riscv_uarch_pkg.vhd
     - rtl/single_cycle/core/reg_file.vhd
-    - rtl/single_cycle/core/lsu.vhd
     - rtl/single_cycle/core/imm_gen.vhd
+    - rtl/single_cycle/core/lsu.vhd
+    - rtl/single_cycle/pkg/riscv_uarch_pkg.vhd
     - rtl/single_cycle/core/datapath.vhd
-    - rtl/single_cycle/core/decoder.vhd
     - rtl/single_cycle/core/branch_unit.vhd
+    - rtl/single_cycle/core/decoder.vhd
     - rtl/single_cycle/core/alu_control.vhd
     - rtl/single_cycle/core/control.vhd
     - rtl/single_cycle/core/processor_top.vhd
@@ -144,10 +138,10 @@ targets:
     - sim/single_cycle/e2e/test_processor_top.py
     control:
       deps:
-      - rtl/single_cycle/pkg/riscv_isa_pkg.vhd
-      - rtl/single_cycle/pkg/riscv_uarch_pkg.vhd
-      - rtl/single_cycle/core/decoder.vhd
       - rtl/single_cycle/core/branch_unit.vhd
+      - rtl/single_cycle/pkg/riscv_uarch_pkg.vhd
+      - rtl/single_cycle/pkg/riscv_isa_pkg.vhd
+      - rtl/single_cycle/core/decoder.vhd
       - rtl/single_cycle/core/alu_control.vhd
       - rtl/single_cycle/core/control.vhd
       - rtl/single_cycle/core/wrappers/control_wrapper.vhd
@@ -159,10 +153,10 @@ targets:
       deps:
       - rtl/single_cycle/pkg/riscv_isa_pkg.vhd
       - rtl/single_cycle/core/alu.vhd
-      - rtl/single_cycle/pkg/riscv_uarch_pkg.vhd
       - rtl/single_cycle/core/reg_file.vhd
-      - rtl/single_cycle/core/lsu.vhd
       - rtl/single_cycle/core/imm_gen.vhd
+      - rtl/single_cycle/core/lsu.vhd
+      - rtl/single_cycle/pkg/riscv_uarch_pkg.vhd
       - rtl/single_cycle/core/datapath.vhd
       - rtl/single_cycle/core/wrappers/datapath_wrapper.vhd
       - sim/single_cycle/include/test_utils.py

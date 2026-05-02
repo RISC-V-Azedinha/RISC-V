@@ -70,6 +70,10 @@ def main():
     for root, _, files in os.walk(SIM_DIR):
         for file in files:
             if file.startswith('test_') and file.endswith('.py'):
+                
+                if 'include' in root.split('/'):
+                    continue
+                
                 # Exemplo: sim/single_cycle/unit/test_alu.py
                 filepath = os.path.join(root, file).replace('\\', '/')
                 parts = filepath.split('/')
