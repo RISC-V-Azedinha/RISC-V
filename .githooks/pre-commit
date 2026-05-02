@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# ANSI color codes
+RED='\033[1;31m'
+GREEN='\033[1;32m'
+BLUE='\033[1;34m'
+NC='\033[0m' # No Color
+
+echo -e "${BLUE}▶ Starting Local CI...${NC}"
+
+# Tests (Garante que o script está em scripts/smart_test.py)
+if ! .venv/bin/python scripts/smart_test.py; then
+  echo -e "\n${RED}✗ Tests Failed.${NC} Check the simulations and try again."
+  exit 1
+fi
+
+echo -e "${GREEN}✓ All checks passed.${NC}"
+exit 0
