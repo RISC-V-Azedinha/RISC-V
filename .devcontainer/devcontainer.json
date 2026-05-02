@@ -11,7 +11,8 @@
                 "teros-technology.teroshdl",
                 "ms-python.python",
                 "ms-python.vscode-pylance",
-                "lramseyer.vaporview"
+                "lramseyer.vaporview",
+                "emeraldwalk.RunOnSave"
             ],
             "settings": {
                 "python.defaultInterpreterPath": "/usr/bin/python3",

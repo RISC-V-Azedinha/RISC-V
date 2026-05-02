@@ -9,5 +9,14 @@
         "${workspaceFolder}/sim/single_cycle/include",
         "${workspaceFolder}/sim/single_cycle/unit",
         "${workspaceFolder}/sim/single_cycle/integration"
+    ],
+    "emeraldwalk.runonsave": {
+    "commands": [
+      {
+        "match": "\\.vhd$|test_.*\\.py$",
+        "isAsync": true,
+        "cmd": "python3 scripts/gera_deps.py"
+      }
     ]
+  }
 }
