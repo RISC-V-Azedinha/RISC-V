@@ -10,3 +10,9 @@ targets:
     - rtl/single_cycle/core/imm_gen.vhd
     - sim/single_cycle/include/test_utils.py
     - sim/single_cycle/unit/test_imm_gen.py
+
+  alu_control:
+    - rtl/single_cycle/pkg/riscv_isa_pkg.vhd
+    - rtl/single_cycle/core/alu_control.vhd
+    - sim/single_cycle/include/test_utils.py
+    - sim/single_cycle/unit/test_alu_control.py
