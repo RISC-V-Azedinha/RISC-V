@@ -567,7 +567,7 @@ begin
                 RegWrite_o  <= '1';
                 WBSel_o     <= "10"; -- PC+4 (Link Address)
                 PCWrite_o   <= '1';
-                PCSrc_o     <= "10"; -- Alvo JALR (ALUResult)
+                PCSrc_o     <= "10"; -- Alvo JALR (ALUResult) 
 
         end case;
 
