@@ -38,3 +38,5 @@ docs/build
 # Compliance 
 sim/single_cycle/e2e/sw/compliance/build/
 sim/multi_cycle/e2e/sw/compliance/build/
+sim/single_cycle/e2e/sw/apps/build/
+sim/multi_cycle/e2e/sw/apps/build/
