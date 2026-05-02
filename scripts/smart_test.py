@@ -49,40 +49,41 @@ def main():
     targets_dict = config.get("targets", {})
     targets_to_run = set()
 
-    # 1. Cruza os arquivos alterados com a matriz do YAML
+    # 1. Cruza os arquivos alterados com a matriz do YAML (agora em 2 níveis)
     for changed_file in changed_files:
-        for target_name, target_data in targets_dict.items():
-            deps = target_data if isinstance(target_data, list) else target_data.get("deps", [])
-            if changed_file in deps:
-                targets_to_run.add(target_name)
+        for arch, modules in targets_dict.items():
+            for target_name, target_data in modules.items():
+                deps = target_data if isinstance(target_data, list) else target_data.get("deps", [])
+                if changed_file in deps:
+                    targets_to_run.add((arch, target_name)) # Salva a tupla (arquitetura, modulo)
 
     if not targets_to_run:
         print("==> As alterações não afetam nenhum módulo mapeado no YAML. Pulando testes.")
         return 0
         
-    print(f"==> Alvos identificados para teste: {', '.join(targets_to_run)}")
+    print(f"==> Alvos identificados para teste: {', '.join([f'{t} ({a})' for a, t in targets_to_run])}")
     
     # 2. Executa os testes identificados
-    for target in targets_to_run:
-        target_data = targets_dict[target]
+    for arch, target in targets_to_run:
+        target_data = targets_dict[arch][target]
         deps = target_data if isinstance(target_data, list) else target_data.get("deps", [])
 
-        # Define automaticamente o prefixo baseado no diretório do testbench
-        if any("sim/single_cycle/e2e/" in f for f in deps):
+        # Define automaticamente o prefixo de forma agnóstica à arquitetura
+        if any("/e2e/" in f for f in deps):
             make_prefix = "test-e2e"
-        elif any("sim/single_cycle/integration/" in f for f in deps):
+        elif any("/integration/" in f for f in deps):
             make_prefix = "test-int"
         else:
             make_prefix = "test-unit"
         
-        # Chama o make puro! O próprio Makefile cuida dos wrappers agora.
-        cmd = f"make {make_prefix}-{target}"
+        # Injeta a arquitetura alvo no comando do Make
+        cmd = f"make {make_prefix}-{target} CORE_ARCH={arch}"
         
         print(f"\n--- Executando {cmd} ---")
         result = subprocess.run(cmd, shell=True)
         
         if result.returncode != 0:
-            print(f"\n❌ Falha no teste: {target}")
+            print(f"\n❌ Falha no teste: {target} para a arquitetura {arch}")
             return 1
             
     print("\n✅ Todos os testes condicionais passaram!")
