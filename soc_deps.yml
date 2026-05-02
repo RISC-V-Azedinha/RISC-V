@@ -34,3 +34,11 @@ targets:
     - rtl/single_cycle/core/reg_file.vhd
     - sim/single_cycle/include/test_utils.py
     - sim/single_cycle/unit/test_reg_file.py
+
+  decoder:
+    - rtl/single_cycle/pkg/riscv_isa_pkg.vhd
+    - rtl/single_cycle/core/decoder.vhd
+    - sim/single_cycle/include/test_utils.py
+    - sim/single_cycle/unit/test_decoder.py
+    - rtl/single_cycle/core/wrappers/decoder_wrapper.vhd
+    - rtl/single_cycle/pkg/riscv_uarch_pkg.vhd
