@@ -1,19 +1,5 @@
-[library.work]
-files = [
-    "pkg/**/*.vhd",
-    "rtl/soc/**/*.vhd",
-    "rtl/perips/**/*.vhd",
-    "sim/soc/**/*.vhd"
-]
-
-[library.single_cycle]
-files = [
-    "rtl/core/single_cycle/**/*.vhd",
-    "sim/core/single_cycle/**/*.vhd"
-]
-
-[library.multi_cycle]
-files = [
-    "rtl/core/multi_cycle/**/*.vhd",
-    "sim/core/multi_cycle/**/*.vhd"
+[libraries]
+work.files = [
+    "rtl/single_cycle/pkg/riscv_isa_pkg.vhd",
+    "rtl/single_cycle/core/*.vhd",
 ]
