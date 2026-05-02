@@ -28,3 +28,9 @@ targets:
     - rtl/single_cycle/core/lsu.vhd
     - sim/single_cycle/include/test_utils.py
     - sim/single_cycle/unit/test_lsu.py
+
+  reg_file:
+    - rtl/single_cycle/pkg/riscv_isa_pkg.vhd
+    - rtl/single_cycle/core/reg_file.vhd
+    - sim/single_cycle/include/test_utils.py
+    - sim/single_cycle/unit/test_reg_file.py
