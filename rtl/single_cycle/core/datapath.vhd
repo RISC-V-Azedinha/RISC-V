@@ -34,7 +34,14 @@ entity datapath is
 
     generic (
 
-        DEBUG_EN : boolean := false  -- Habilita sinais de debug para monitoramento (desabilitado por padrão)
+        -- Habilita sinais de debug para monitoramento (desabilitado por padrão)
+        DEBUG_EN : boolean := false;  
+
+        -- BOOT_ADDR configurado por padrão para Bare-Metal ou BootROM em x"00000000"
+        BOOT_ADDR : std_logic_vector(31 downto 0) := x"00000000"
+
+        -- Para rodar os testes de compliance, foi necessário utilizar 0x80000000,
+        -- em conformidade com o simulador SPIKE.
     
     );
 
@@ -149,7 +156,7 @@ begin
             PC_REGISTER:process(CLK_i, Reset_i)
             begin
                 if Reset_i = '1' then
-                    s_pc_current <= (others => '0');
+                    s_pc_current <= BOOT_ADDR;
                 elsif rising_edge(CLK_i) then
                     s_pc_current <= s_pc_next;
                 end if;

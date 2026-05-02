@@ -7,6 +7,9 @@ PKG := $(PWD)/rtl/single_cycle/pkg/riscv_isa_pkg.vhd \
        $(PWD)/rtl/single_cycle/pkg/riscv_uarch_pkg.vhd
 
 APP ?= hello
+PROGRAM_PATH ?= $(PWD)/sim/single_cycle/e2e/sw/apps/build/$(APP).hex
+SKIP_C_BUILD ?= 0
+SIM_BOOT_ADDR ?= 0
 
 export COCOTB_REDUCED_LOG_FMT := 1
 export PYTHONPATH := $(PWD)/sim/single_cycle/unit:$(PWD)/sim/single_cycle/integration:$(PWD)/sim/single_cycle/e2e:$(PWD)/sim/single_cycle/include:$(shell echo $$PYTHONPATH)
@@ -62,17 +65,19 @@ test-int-%:
 # ---------------------------------------------------------
 # 🚀 Regra Mágica 3: TESTES END-TO-END ("make test-e2e-<nome>")
 # ---------------------------------------------------------
+TARGET_BUILD_DIR ?= $(PWD)/build/$*
+
 test-e2e-%:
 	@echo "================================================="
-	@echo "🚀 Executando Teste End-to-End: $* (App: $(APP))"
+	@echo "🚀 Executando Teste End-to-End: $*"
 	@echo "================================================="
-	@mkdir -p build/$*
-	@$(MAKE) -C sim/single_cycle/e2e/sw/apps APP=$(APP) > /dev/null
+	@mkdir -p $(TARGET_BUILD_DIR)
+	@if [ "$(SKIP_C_BUILD)" != "1" ]; then $(MAKE) -C sim/single_cycle/e2e/sw/apps APP=$(APP) > /dev/null; fi
 	@wrapper_top=$$(python3 scripts/query_yaml.py $* wrapper_top); \
 	wrapper_src=$$(python3 scripts/query_yaml.py $* wrapper_src); \
 	if [ -n "$$wrapper_src" ]; then src_path="$(PWD)/$$wrapper_src"; else src_path=""; fi; \
 	top_lvl=$${wrapper_top:-$*}; \
-	PROGRAM_PATH="$(PWD)/sim/single_cycle/e2e/sw/apps/build/$(APP).hex" \
+	PROGRAM_PATH="$(PROGRAM_PATH)" \
 	$(MAKE) -s --no-print-directory -f $(shell cocotb-config --makefiles)/Makefile.sim \
 		SIM=ghdl \
 		TOPLEVEL_LANG=vhdl \
@@ -80,9 +85,21 @@ test-e2e-%:
 		VHDL_SOURCES="$(PKG) $(wildcard $(PWD)/rtl/single_cycle/core/*.vhd) $$src_path" \
 		TOPLEVEL=$$top_lvl \
 		COCOTB_TEST_MODULES=test_$* \
-		COCOTB_RESULTS_FILE=$(PWD)/build/$*/results.xml \
-		SIM_BUILD=$(PWD)/build/$* \
-		SIM_ARGS="--vcd=$(PWD)/build/$*/wave.vcd --ieee-asserts=disable"
+		COCOTB_RESULTS_FILE=$(TARGET_BUILD_DIR)/results.xml \
+		SIM_BUILD=$(TARGET_BUILD_DIR) \
+		SIM_ARGS="--vcd=$(TARGET_BUILD_DIR)/wave.vcd --ieee-asserts=disable -gBOOT_ADDR_INT=$(SIM_BOOT_ADDR)"
+
+# ---------------------------------------------------------
+# 🏆 SUÍTE DE COMPLIANCE OFICIAL RISC-V
+# ---------------------------------------------------------
+.PHONY: test-compliance test-compliance-clean
+
+# Chama o orquestrador do compliance passando o paralelismo automaticamente
+test-compliance:
+	@$(MAKE) -C sim/single_cycle/e2e/sw/compliance --no-print-directory
+
+test-compliance-clean:
+	@$(MAKE) -C sim/single_cycle/e2e/sw/compliance clean
 
 clean:
 	@echo ">>> 🧹 Limpando..."

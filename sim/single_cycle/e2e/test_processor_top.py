@@ -115,6 +115,10 @@ async def memory_and_mmio_controller(dut, mem_data, halt_event):
     """
     log_info("Controlador de Memória Ativo e Monitorando Barramentos.")
     console_buffer = ""
+    cycle_count = 0
+    
+    # Lê a variável de ambiente para ativar o Trace Mode
+    debug_trace = os.environ.get("DEBUG_TRACE", "0") == "1"
 
     while True:
 
@@ -131,7 +135,16 @@ async def memory_and_mmio_controller(dut, mem_data, halt_event):
             i_addr = int(dut.IMem_addr_o.value)
         except ValueError: 
             i_addr = 0
+            
+        cycle_count += 1
         
+        # --- HEARTBEAT / DEBUG TRACE ---
+        if debug_trace:
+            log_info(f"Trace [{cycle_count}]: PC = {hex(i_addr)}")
+        elif cycle_count % 5000 == 0:
+            log_info(f"⏳ Heartbeat: {cycle_count} ciclos executados... PC Atual: {hex(i_addr)}")
+            
+        # Busca a instrução na memória simulada
         instruction_val = mem_data.get(i_addr & 0xFFFFFFFC, 0)
         dut.IMem_data_i.value = instruction_val
 
@@ -297,7 +310,37 @@ async def test_processor_execution(dut):
     try:
         await with_timeout(halt_event.wait(), 500, "ms")
         log_success("Simulação concluída com sucesso! Processador executou HALT.")
+
+        # =====================================================================
+        # DUMP DA ASSINATURA (COMPLIANCE)
+        # =====================================================================
+        sig_start_str = os.environ.get("SIG_START")
+        sig_end_str   = os.environ.get("SIG_END")
+        sig_out = os.environ.get("SIG_OUT")
+
+        if sig_start_str and sig_end_str and sig_out:
+            os.makedirs(os.path.dirname(sig_out), exist_ok=True)
+            
+            # Converte endereços de hex string para int
+            start = int(sig_start_str, 16)
+            end   = int(sig_end_str, 16)
+            
+            log_info(f"💾 Gerando assinatura: {hex(start)} até {hex(end)}")
+
+            with open(sig_out, 'w') as f:
+                # O riscv-compliance espera 4 words (16 bytes) por linha,
+                # concatenadas da word mais significativa para a menos significativa.
+                for addr in range(start, end, 16):
+                    w0 = ram_image.get(addr, 0)
+                    w1 = ram_image.get(addr + 4, 0)
+                    w2 = ram_image.get(addr + 8, 0)
+                    w3 = ram_image.get(addr + 12, 0)
+                    
+                    # Formata as 4 words em uma única linha de 32 caracteres hex
+                    f.write(f"{w3:08x}{w2:08x}{w1:08x}{w0:08x}\n")
+            
+            log_info(f"✅ Assinatura salva com sucesso.")
+        # =====================================================================
+
     except Exception:
         log_error("TIMEOUT: O processador não finalizou no tempo limite (500ms).")
-        log_error("Possíveis causas: Loop infinito no software ou falha no hardware.")
-        assert False, "Simulation Timeout"

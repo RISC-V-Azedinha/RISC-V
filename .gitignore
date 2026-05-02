@@ -34,3 +34,6 @@ data
 
 # Documentacao
 docs/build
+
+# Compliance 
+sim/single_cycle/e2e/sw/compliance/build/

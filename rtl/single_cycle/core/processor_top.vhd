@@ -49,6 +49,17 @@ use work.riscv_uarch_pkg.all;     -- Contém todas as definições específicas 
 
 entity processor_top is
 
+  generic (
+
+    -- BOOT_ADDR configurado por padrão para Bare-Metal ou BootROM em x"00000000"
+
+    BOOT_ADDR_INT : integer := 0
+
+    -- Para rodar os testes de compliance, foi necessário utilizar 0x80000000,
+    -- em conformidade com o simulador SPIKE.
+
+  );
+
   port (
     
     -- Sinais de controle
@@ -114,6 +125,10 @@ begin
         -- Ele também atualiza o PC (program counter) e acessa a memória de dados conforme os sinais de controle.
 
             U_DATAPATH: entity work.datapath
+                generic map (
+                    DEBUG_EN  => false,
+                    BOOT_ADDR => std_logic_vector(to_signed(BOOT_ADDR_INT, 32))
+                )
                 port map (
                     CLK_i              => CLK_i,
                     Reset_i            => Reset_i,
