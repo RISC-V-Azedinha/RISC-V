@@ -1,0 +1,21 @@
+{
+    "name": "RISC-V VHDL Dev Env",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "forwardPorts": [8000],
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "puorc.awesome-vhdl",
+                "teros-technology.teroshdl",
+                "ms-python.python",
+                "ms-python.vscode-pylance"
+            ],
+            "settings": {
+                "python.defaultInterpreterPath": "/usr/bin/python3",
+                "vhdl.formatter": "vsg"
+            }
+        }
+    }
+}
