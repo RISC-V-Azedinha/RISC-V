@@ -56,3 +56,14 @@ targets:
       - sim/single_cycle/integration/test_control.py
     wrapper_top: control_wrapper
     wrapper_src: rtl/single_cycle/core/wrappers/control_wrapper.vhd
+
+  datapath:
+    deps:
+      - rtl/single_cycle/pkg/riscv_isa_pkg.vhd
+      - rtl/single_cycle/pkg/riscv_uarch_pkg.vhd
+      - rtl/single_cycle/core/datapath.vhd
+      - rtl/single_cycle/core/wrappers/datapath_wrapper.vhd
+      - sim/single_cycle/include/test_utils.py
+      - sim/single_cycle/integration/test_datapath.py
+    wrapper_top: datapath_wrapper
+    wrapper_src: rtl/single_cycle/core/wrappers/datapath_wrapper.vhd
