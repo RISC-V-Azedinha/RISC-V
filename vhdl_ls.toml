@@ -1,4 +1,9 @@
-[library.work]
+[library.single_cycle_lib]
 files = [
-    "rtl/**/*.vhd"
+    "rtl/single_cycle/**/*.vhd"
+]
+
+[library.multi_cycle_lib]
+files = [
+    "rtl/multi_cycle/**/*.vhd"
 ]
