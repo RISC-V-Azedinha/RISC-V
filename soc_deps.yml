@@ -135,3 +135,10 @@ targets:
       - rtl/multi_cycle/core/csr_file.vhd
       - sim/multi_cycle/include/test_utils.py
       - sim/multi_cycle/unit/test_csr_file.py
+
+    main_fsm:
+      - rtl/multi_cycle/pkg/riscv_isa_pkg.vhd
+      - rtl/multi_cycle/pkg/riscv_uarch_pkg.vhd
+      - rtl/multi_cycle/core/main_fsm.vhd
+      - sim/multi_cycle/include/test_utils.py
+      - sim/multi_cycle/unit/test_main_fsm.py
