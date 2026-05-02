@@ -13,3 +13,4 @@ makefile text eol=lf
 
 # Remove Assembly do teste de compliance
 sim/single_cycle/e2e/sw/compliance/** linguist-vendored
+sim/multi_cycle/e2e/sw/compliance/** linguist-vendored
