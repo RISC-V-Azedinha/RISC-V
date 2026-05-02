@@ -21,5 +21,8 @@ RUN apt-get update && apt-get install -y \
 RUN pip3 install --no-cache-dir --upgrade pip && \
     pip3 install --no-cache-dir cocotb pytest vsg mkdocs
 
+# Configura um prompt (PS1) nativo, colorido e universal no bashrc
+RUN echo "export PS1='\[\033[01;32m\]\u@SuperNova-RV\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '" >> ~/.bashrc
+
 # Definir diretório de trabalho padrão
 WORKDIR /workspace
