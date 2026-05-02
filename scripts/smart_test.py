@@ -67,9 +67,13 @@ def main():
         target_data = targets_dict[target]
         deps = target_data if isinstance(target_data, list) else target_data.get("deps", [])
 
-        # Define automaticamente o prefixo
-        is_integration = any("sim/single_cycle/integration/" in f for f in deps)
-        make_prefix = "test-int" if is_integration else "test-unit"
+        # Define automaticamente o prefixo baseado no diretório do testbench
+        if any("sim/single_cycle/e2e/" in f for f in deps):
+            make_prefix = "test-e2e"
+        elif any("sim/single_cycle/integration/" in f for f in deps):
+            make_prefix = "test-int"
+        else:
+            make_prefix = "test-unit"
         
         # Chama o make puro! O próprio Makefile cuida dos wrappers agora.
         cmd = f"make {make_prefix}-{target}"

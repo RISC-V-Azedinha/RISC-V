@@ -67,3 +67,24 @@ targets:
       - sim/single_cycle/integration/test_datapath.py
     wrapper_top: datapath_wrapper
     wrapper_src: rtl/single_cycle/core/wrappers/datapath_wrapper.vhd
+
+  processor_top:
+    deps:
+      # O pacote base e a microarquitetura
+      - rtl/single_cycle/pkg/riscv_isa_pkg.vhd
+      - rtl/single_cycle/pkg/riscv_uarch_pkg.vhd
+      # Todos os módulos do core necessários
+      - rtl/single_cycle/core/alu.vhd
+      - rtl/single_cycle/core/alu_control.vhd
+      - rtl/single_cycle/core/branch_unit.vhd
+      - rtl/single_cycle/core/imm_gen.vhd
+      - rtl/single_cycle/core/lsu.vhd
+      - rtl/single_cycle/core/reg_file.vhd
+      - rtl/single_cycle/core/decoder.vhd
+      - rtl/single_cycle/core/control.vhd
+      - rtl/single_cycle/core/datapath.vhd
+      # O Top-Level do processador (Ajuste o nome do arquivo se for diferente)
+      - rtl/single_cycle/core/processor_top.vhd 
+      # O script Python do testbench
+      - sim/single_cycle/include/test_utils.py
+      - sim/single_cycle/e2e/processor_top.py
