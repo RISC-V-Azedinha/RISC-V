@@ -8,6 +8,9 @@ RED    = \033[0;31m
 YELLOW = \033[0;33m
 NC     = \033[0m
 
+# Microarquitetura
+CORE_ARCH ?= multi_cycle
+
 RISCV_GCC = riscv64-unknown-elf-gcc
 RISCV_OBJCOPY = riscv64-unknown-elf-objcopy
 RISCV_NM = riscv64-unknown-elf-nm
@@ -42,10 +45,11 @@ test-compliance-%: $(BUILD_DIR)/%.elf
 	@SIG_START=$$( $(RISCV_NM) $< | grep begin_signature | awk '{print $$1}' ); \
 	SIG_END=$$( $(RISCV_NM) $< | grep end_signature | awk '{print $$1}' ); \
 	$(MAKE) -C $(ROOT_DIR) -s test-e2e-processor_top \
+		CORE_ARCH=$(CORE_ARCH) \
 		SKIP_C_BUILD=1 \
 		PROGRAM_PATH=$(abspath $(BUILD_DIR)/$*.hex) \
 		SIM_BOOT_ADDR=-2147483648 \
-		TARGET_BUILD_DIR=$(ROOT_DIR)/build/comp_$* \
+		TARGET_BUILD_DIR=$(ROOT_DIR)/build/$(CORE_ARCH)/comp_$* \
 		SIG_START=$$SIG_START \
 		SIG_END=$$SIG_END \
 		SIG_OUT=$(abspath $(BUILD_DIR)/$*.signature) \
@@ -59,7 +63,7 @@ test-compliance-%: $(BUILD_DIR)/%.elf
 test-compliance-all: $(addprefix test-compliance-, $(COMPLIANCE_TESTS))
 	@printf "\n"
 	@printf "$(GREEN)========================================================$(NC)\n"
-	@printf "$(GREEN)            SINGLE-CYCLE COMPLIANCE TEST SUITE          $(NC)\n"
+	@printf "$(GREEN)            MULTI-CYCLE COMPLIANCE TEST SUITE          $(NC)\n"
 	@printf "$(GREEN)========================================================$(NC)\n"
 	@printf "  TARGET ARCHITECTURE : $(YELLOW)RV32I Base Integer$(NC)\n"
 	@printf "  VERIFICATION STATUS : $(GREEN)100%% PASSED$(NC)\n"

@@ -98,6 +98,7 @@ test-e2e-%:
 
 # Chama o orquestrador do compliance passando o paralelismo automaticamente
 test-compliance:
+	@echo ">>> TESTING [$(CORE_ARCH)] RV32I COMPLIANCE"
 	@$(MAKE) -C sim/$(CORE_ARCH)/e2e/sw/compliance --no-print-directory
 
 test-compliance-clean:
