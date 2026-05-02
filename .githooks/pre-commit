@@ -9,7 +9,7 @@ NC='\033[0m' # No Color
 echo -e "${BLUE}▶ Starting Local CI...${NC}"
 
 # Tests (Garante que o script está em scripts/smart_test.py)
-if ! .venv/bin/python scripts/smart_test.py; then
+if ! python3 scripts/smart_test.py; then
   echo -e "\n${RED}✗ Tests Failed.${NC} Check the simulations and try again."
   exit 1
 fi
