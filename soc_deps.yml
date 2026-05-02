@@ -174,3 +174,25 @@ targets:
         - sim/multi_cycle/integration/test_control.py
       wrapper_top: control_wrapper
       wrapper_src: rtl/multi_cycle/core/wrappers/control_wrapper.vhd
+
+    processor_top:
+      deps:
+        # O pacote base e a microarquitetura
+        - rtl/multi_cycle/pkg/riscv_isa_pkg.vhd
+        - rtl/multi_cycle/pkg/riscv_uarch_pkg.vhd
+        # Todos os módulos do core necessários
+        - rtl/multi_cycle/core/alu.vhd
+        - rtl/multi_cycle/core/alu_control.vhd
+        - rtl/multi_cycle/core/branch_unit.vhd
+        - rtl/multi_cycle/core/imm_gen.vhd
+        - rtl/multi_cycle/core/lsu.vhd
+        - rtl/multi_cycle/core/reg_file.vhd
+        - rtl/multi_cycle/core/csr_file.vhd
+        - rtl/multi_cycle/core/main_fsm.vhd
+        - rtl/multi_cycle/core/control.vhd
+        - rtl/multi_cycle/core/datapath.vhd
+        # O Top-Level do processador (Ajuste o nome do arquivo se for diferente)
+        - rtl/multi_cycle/core/processor_top.vhd 
+        # O script Python do testbench
+        - sim/multi_cycle/include/test_utils.py
+        - sim/multi_cycle/e2e/processor_top.py
