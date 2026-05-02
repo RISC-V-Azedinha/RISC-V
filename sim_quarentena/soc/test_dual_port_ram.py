@@ -23,7 +23,7 @@ MAX_ADDR   = (2 ** ADDR_WIDTH) - 1  # Endereço máximo: 0xFFF
 MAX_DATA   = (2 ** DATA_WIDTH) - 1  # Dado máximo: 0xFFFFFFFF
 
 # Importações auxiliares para logging e utilitários de simulação
-from test_utils import (
+from sim.core.single_cycle.include.test_utils import (
     settle, log_header, log_success, log_info
 )
 

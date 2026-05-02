@@ -10,7 +10,7 @@
 import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge, Timer
-from test_utils import log_header, log_info, log_success, log_error, log_console
+from sim.core.single_cycle.include.test_utils import log_header, log_info, log_success, log_error, log_console
 
 # =====================================================================================================
 # CONFIGURAÇÕES GLOBAIS

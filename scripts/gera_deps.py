@@ -2,7 +2,6 @@ import os
 import re
 import yaml
 
-# Configurações de diretórios
 RTL_DIR = 'rtl'
 SIM_DIR = 'sim'
 OUTPUT_YAML = 'soc_deps.yml'
@@ -14,7 +13,6 @@ def parse_vhdl_dependencies(filepath):
         content = re.sub(r'--.*', '', content) # Remove comentários
         
         provides = re.findall(r'(?i)^\s*(?:entity|package)\s+(\w+)\s+is', content, re.MULTILINE)
-        
         depends = re.findall(r'(?i)use\s+work\.(\w+)', content)
         depends.extend(re.findall(r'(?i):\s*entity\s+work\.(\w+)', content))
         depends.extend(re.findall(r'(?i)^\s*component\s+(\w+)\s+(?:is)?', content, re.MULTILINE))
@@ -28,13 +26,20 @@ def scan_rtl():
         for file in files:
             if file.endswith('.vhd'):
                 filepath = os.path.join(root, file).replace('\\', '/')
-                # Infere a arquitetura pela pasta (ex: rtl/single_cycle/...)
                 parts = filepath.split('/')
-                arch = parts[1] if len(parts) > 1 else 'common'
+                
+                # CORREÇÃO AQUI: Refletindo a nova estrutura de pastas
+                # Ex: rtl/core/single_cycle/alu.vhd -> arch_identifier = 'single_cycle'
+                if len(parts) > 2 and parts[1] == 'core':
+                    arch_identifier = parts[2]
+                elif len(parts) > 1:
+                    arch_identifier = parts[1] # perips ou soc
+                else:
+                    arch_identifier = 'common'
                 
                 provides, depends = parse_vhdl_dependencies(filepath)
                 for p in provides:
-                    db[(arch, p)] = {'file': filepath, 'depends': depends}
+                    db[(arch_identifier, p)] = {'file': filepath, 'depends': depends}
     return db
 
 def resolve_dependencies(arch, module_name, rtl_db, resolved=None, visiting=None):
@@ -42,14 +47,12 @@ def resolve_dependencies(arch, module_name, rtl_db, resolved=None, visiting=None
     if resolved is None: resolved = []
     if visiting is None: visiting = set()
 
-    # Tenta achar o módulo na arquitetura específica, ou no 'common' se for compartilhado
     node = rtl_db.get((arch, module_name)) or rtl_db.get(('common', module_name))
     
     if not node or module_name in resolved:
         return resolved
 
     visiting.add(module_name)
-    
     for dep in node['depends']:
         if dep not in visiting and dep not in resolved:
             resolve_dependencies(arch, dep, rtl_db, resolved, visiting)
@@ -62,58 +65,60 @@ def resolve_dependencies(arch, module_name, rtl_db, resolved=None, visiting=None
 
 def main():
     rtl_db = scan_rtl()
-    manifest = {'targets': {}}
+    manifest = {'targets': {'core': {'single_cycle': {}, 'multi_cycle': {}}, 'perips': {}, 'soc': {}}}
 
     print("Gerando manifesto de build...")
     
-    # Varre a pasta de simulação para descobrir os targets
     for root, _, files in os.walk(SIM_DIR):
         for file in files:
             if file.startswith('test_') and file.endswith('.py'):
-                
                 if 'include' in root.split('/'):
                     continue
-                
-                # Exemplo: sim/single_cycle/unit/test_alu.py
+
                 filepath = os.path.join(root, file).replace('\\', '/')
                 parts = filepath.split('/')
                 if len(parts) < 3: continue
                 
-                arch = parts[1] # single_cycle ou multi_cycle
+                domain = parts[1] # 'core', 'perips' ou 'soc'
+                
+                if domain == 'core':
+                    subdomain = parts[2]
+                    arch_identifier = subdomain
+                else:
+                    subdomain = None
+                    arch_identifier = domain
+
                 target_name = file.replace('test_', '').replace('.py', '')
                 
-                if arch not in manifest['targets']:
-                    manifest['targets'][arch] = {}
-
-                # 1. Resolve dependências VHDL na ordem correta
-                vhdl_files = resolve_dependencies(arch, target_name, rtl_db)
+                # 1. Resolve os VHDLs na ordem correta
+                vhdl_files = resolve_dependencies(arch_identifier, target_name, rtl_db)
                 
-                # 2. Verifica se existe um wrapper
+                # 2. Tratamento do Wrapper
                 wrapper_name = f"{target_name}_wrapper"
-                wrapper_node = rtl_db.get((arch, wrapper_name))
+                wrapper_node = rtl_db.get((arch_identifier, wrapper_name))
                 
-                # 3. Adiciona os scripts Python (test_utils e o próprio teste)
-                # Ajuste o caminho do test_utils conforme a estrutura real do seu repositório
-                test_utils_path = f"{SIM_DIR}/{arch}/include/test_utils.py"
-                python_files = []
-                if os.path.exists(test_utils_path):
-                    python_files.append(test_utils_path)
-                python_files.append(filepath)
+                # 3. Adiciona arquivos Python
+                test_utils_path = f"{SIM_DIR}/{domain}/{subdomain}/include/test_utils.py" if subdomain else f"{SIM_DIR}/{domain}/include/test_utils.py"
+                python_files = [test_utils_path, filepath] if os.path.exists(test_utils_path) else [filepath]
 
-                # 4. Monta a estrutura do YAML
+                # 4. Formatação final (Se tiver wrapper cria dicionário, senão, lista)
                 if wrapper_node:
                     wrapper_file = wrapper_node['file']
-                    deps_list = vhdl_files + [wrapper_file] + python_files
-                    manifest['targets'][arch][target_name] = {
-                        'deps': deps_list,
+                    target_data = {
+                        'deps': vhdl_files + [wrapper_file] + python_files,
                         'wrapper_top': wrapper_name,
                         'wrapper_src': wrapper_file
                     }
                 else:
-                    manifest['targets'][arch][target_name] = vhdl_files + python_files
+                    target_data = vhdl_files + python_files
 
-    # Adicionando o processor_top manualmente ou por regra caso ele fuja do padrão de testes unitários
-    # (Como o processor_top tem um script de e2e, a lógica acima pode ser adaptada para cobri-lo)
+                # 5. Salva no dicionário final
+                if domain == 'core':
+                    manifest['targets']['core'][subdomain][target_name] = target_data
+                else:
+                    if domain not in manifest['targets']:
+                        manifest['targets'][domain] = {}
+                    manifest['targets'][domain][target_name] = target_data
 
     with open(OUTPUT_YAML, 'w', encoding='utf-8') as f:
         yaml.dump(manifest, f, default_flow_style=False, sort_keys=False)

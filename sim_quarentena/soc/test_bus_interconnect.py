@@ -14,7 +14,7 @@
 import cocotb
 import random
 from cocotb.triggers import Timer
-from test_utils import log_header, log_success, log_error
+from sim.core.single_cycle.include.test_utils import log_header, log_success, log_error
 
 # ==============================================================================
 # AUXILIARES & GOLDEN MODEL

@@ -14,7 +14,7 @@ from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge
 
 # Importa utilitários compartilhados
-from test_utils import log_header, log_info, log_success, log_error, settle
+from sim.core.single_cycle.include.test_utils import log_header, log_info, log_success, log_error, settle
 
 # =====================================================================================================================
 # CONSTANTES (Memory Map)

@@ -13,7 +13,7 @@ from cocotb.triggers import RisingEdge      # Para aguardar borda de clock
 import os                                   # Para manipulação de arquivos e caminhos
 
 # Utilitários compartilhados (mesmo padrão do Load Unit)
-from test_utils import log_header, log_info, log_success, log_error, log_console
+from sim.core.single_cycle.include.test_utils import log_header, log_info, log_success, log_error, log_console
 
 # =====================================================================================================
 # GOLDEN MODEL – Boot ROM

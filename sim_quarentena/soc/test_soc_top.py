@@ -5,7 +5,7 @@
 import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge
-import test_utils as tu
+import sim.core.single_cycle.include.test_utils as tu
 
 # ==============================================================================
 # CONSTANTES DE MEMÓRIA E MMIO

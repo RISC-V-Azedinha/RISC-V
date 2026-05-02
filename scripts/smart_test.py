@@ -28,12 +28,11 @@ def get_changed_files():
     if result.returncode != 0:
         return []
         
-    # Filtra linhas vazias e remove duplicatas
     return list(set(f for f in result.stdout.strip().split('\n') if f))
 
 def main():
     parser = argparse.ArgumentParser(description="CI/CD Test Runner para SuperNova-RV")
-    parser.add_argument("--regression", action="store_true", help="Executa todos os testes para single e multi cycle")
+    parser.add_argument("--regression", action="store_true", help="Executa todos os testes para todos os domínios")
     args = parser.parse_args()
 
     try:
@@ -48,15 +47,19 @@ def main():
 
     if args.regression:
         print("==> 🛠️  MODO REGRESSÃO ATIVADO: Selecionando todos os testes...")
-        # Define as arquiteturas alvo para a regressão
-        regression_archs = ["single_cycle", "multi_cycle"]
-        
-        for arch in regression_archs:
-            if arch in targets_dict:
-                for target_name in targets_dict[arch].keys():
-                    targets_to_run.add((arch, target_name))
+        # Varre toda a árvore assimétrica para a regressão
+        for domain, content in targets_dict.items():
+            if domain == 'core':
+                if isinstance(content, dict):
+                    for arch, modules in content.items():
+                        if isinstance(modules, dict):
+                            for target_name in modules.keys():
+                                targets_to_run.add((arch, target_name))
             else:
-                print(f"⚠️  Aviso: Arquitetura '{arch}' não encontrada no YAML.")
+                arch = domain
+                if isinstance(content, dict):
+                    for target_name in content.keys():
+                        targets_to_run.add((arch, target_name))
     else:
         print("==> Analisando modificações do Git...")
         changed_files = get_changed_files()
@@ -65,13 +68,24 @@ def main():
             print("==> Nenhuma alteração detectada. Pulando testes.")
             return 0
 
-        # Cruza arquivos alterados com a matriz (comportamento original)
+        # Cruza arquivos alterados com a matriz assimétrica
         for changed_file in changed_files:
-            for arch, modules in targets_dict.items():
-                for target_name, target_data in modules.items():
-                    deps = target_data if isinstance(target_data, list) else target_data.get("deps", [])
-                    if changed_file in deps:
-                        targets_to_run.add((arch, target_name))
+            for domain, content in targets_dict.items():
+                if domain == 'core':
+                    if isinstance(content, dict):
+                        for arch, modules in content.items():
+                            if isinstance(modules, dict): # <--- Proteção contra o erro de 'list'
+                                for target_name, target_data in modules.items():
+                                    deps = target_data if isinstance(target_data, list) else target_data.get("deps", [])
+                                    if changed_file in deps:
+                                        targets_to_run.add((arch, target_name))
+                else:
+                    arch = domain
+                    if isinstance(content, dict): # <--- Proteção contra o erro de 'list'
+                        for target_name, target_data in content.items():
+                            deps = target_data if isinstance(target_data, list) else target_data.get("deps", [])
+                            if changed_file in deps:
+                                targets_to_run.add((arch, target_name))
 
     if not targets_to_run:
         print("==> Nenhum alvo identificado. Finalizando.")
@@ -81,7 +95,13 @@ def main():
     
     # Execução dos testes
     for arch, target in targets_to_run:
-        target_data = targets_dict[arch][target]
+        
+        # Desvio para buscar os dados corretos dependendo de onde o alvo está no YAML
+        if arch in ['single_cycle', 'multi_cycle']:
+            target_data = targets_dict.get('core', {}).get(arch, {}).get(target, {})
+        else:
+            target_data = targets_dict.get(arch, {}).get(target, {})
+
         deps = target_data if isinstance(target_data, list) else target_data.get("deps", [])
 
         if any("/e2e/" in f for f in deps):
