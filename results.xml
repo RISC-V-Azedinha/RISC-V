@@ -1,0 +1,9 @@
+<testsuites name="results">
+  <testsuite name="all" package="all">
+    <property name="random_seed" value="1777694744" />
+    <testcase name="test_basic_ops" classname="test_alu" file="/workspaces/RISC-V/sim/test_alu.py" lineno="104" time="0.0003113746643066406" sim_time_ns="2.0" ratio_time="6423.130168453293" />
+    <testcase name="test_shifts" classname="test_alu" file="/workspaces/RISC-V/sim/test_alu.py" lineno="142" time="0.00019502639770507812" sim_time_ns="3.0000000000000004" ratio_time="15382.533007334965" />
+    <testcase name="test_slt_logic" classname="test_alu" file="/workspaces/RISC-V/sim/test_alu.py" lineno="171" time="0.0001239776611328125" sim_time_ns="2.0" ratio_time="16131.938461538462" />
+    <testcase name="test_randomized" classname="test_alu" file="/workspaces/RISC-V/sim/test_alu.py" lineno="203" time="0.027986526489257812" sim_time_ns="1000.0" ratio_time="35731.47958835957" />
+  </testsuite>
+</testsuites>
