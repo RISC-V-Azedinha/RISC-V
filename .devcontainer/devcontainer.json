@@ -10,7 +10,8 @@
                 "puorc.awesome-vhdl",
                 "teros-technology.teroshdl",
                 "ms-python.python",
-                "ms-python.vscode-pylance"
+                "ms-python.vscode-pylance",
+                "lramseyer.vaporview"
             ],
             "settings": {
                 "python.defaultInterpreterPath": "/usr/bin/python3",
