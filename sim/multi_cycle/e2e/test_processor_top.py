@@ -153,89 +153,88 @@ async def pulse_irq(dut, irq_type):
 
 async def memory_and_mmio_controller(dut, mem_data, halt_event):
     """
-    Simula Memória com Latência e Handshake para Instruções e Dados.
+    Simula Memória com Latência e Handshake (Sincronizado com settle).
     """
-    log_info("Controlador de Memória (Ready/Valid IMEM+DMEM) Ativo.")
+    log_info("Controlador de Memória Ativo (Handshake com 'await settle()').")
     console_buffer = ""
-    
-    # Estados internos para evitar processamento duplo
-    d_transaction_in_progress = False
-    i_transaction_in_progress = False
-
-    # Inicializa os Ready em 0
-    dut.IMem_rdy_i.value = 0
-    dut.DMem_rdy_i.value = 0
+    cycle_count = 0
 
     while True:
+        # ----------------------------------------------------------------------
+        # [FASE 0] INÍCIO DO CICLO (Sincronização com o Clock)
+        # ----------------------------------------------------------------------
         await RisingEdge(dut.CLK_i)
         
-        # --- 1. CAPTURA SINAIS DE CONTROLE ---
-        # Verificamos se o sinal existe para evitar erros caso o VHDL ainda esteja sendo mapeado
-        i_vld = int(dut.IMem_vld_o.value) if str(dut.IMem_vld_o.value) not in "xuz" else 0
-        d_vld = int(dut.DMem_vld_o.value) if str(dut.DMem_vld_o.value) not in "xuz" else 0
+        # FUNDAMENTAL: Espera o VHDL atualizar a Máquina de Estados e saídas combinacionais!
+        await settle() 
+        
+        cycle_count += 1
 
-        # --- 2. HANDSHAKE DE INSTRUÇÕES (IMem) ---
+        # ----------------------------------------------------------------------
+        # [FASE 1] INSTRUCTION FETCH (Handshake de Instruções)
+        # ----------------------------------------------------------------------
+        try:
+            i_vld = int(dut.IMem_vld_o.value)
+            i_addr = int(dut.IMem_addr_o.value)
+        except ValueError:
+            i_vld = 0
+            i_addr = 0
+
         if i_vld == 1:
-            if not i_transaction_in_progress:
-                i_transaction_in_progress = True
-                dut.IMem_rdy_i.value = 1
-                
-                # Busca endereço e entrega dado (Instrução)
-                addr_i = int(dut.IMem_addr_o.value)
-                dut.IMem_data_i.value = mem_data.get(addr_i & 0xFFFFFFFC, 0)
-            else:
-                # Mantém Ready até o Core processar
-                dut.IMem_rdy_i.value = 1
+            # O processador requisitou a instrução. Devolvemos no mesmo ciclo para ele capturar na próxima borda.
+            dut.IMem_data_i.value = mem_data.get(i_addr & 0xFFFFFFFC, 0)
+            dut.IMem_rdy_i.value = 1
         else:
-            i_transaction_in_progress = False
             dut.IMem_rdy_i.value = 0
 
-        # --- 3. HANDSHAKE DE DADOS (DMem) ---
+        # ----------------------------------------------------------------------
+        # [FASE 2] DATA MEMORY & MMIO (Handshake de Dados)
+        # ----------------------------------------------------------------------
+        try:
+            d_vld  = int(dut.DMem_vld_o.value)
+            d_addr = int(dut.DMem_addr_o.value)
+            d_we   = int(dut.DMem_we_o.value)
+            d_data = int(dut.DMem_data_o.value)
+        except ValueError:
+            d_vld  = 0
+            d_addr = 0
+            d_we   = 0
+            d_data = 0
+
         if d_vld == 1:
-            if not d_transaction_in_progress:
-                d_transaction_in_progress = True
-                dut.DMem_rdy_i.value = 1
-                
-                addr_d = int(dut.DMem_addr_o.value)
-                we     = int(dut.DMem_we_o.value)
-                data_w = int(dut.DMem_data_o.value)
+            dut.DMem_rdy_i.value = 1
+            
+            # Leitura (Loads)
+            dut.DMem_data_i.value = mem_data.get(d_addr & 0xFFFFFFFC, 0)
 
-                # Processa Leitura
-                dut.DMem_data_i.value = mem_data.get(addr_d & 0xFFFFFFFC, 0)
-
-                # Processa Escrita (RAM ou MMIO)
-                if we > 0:
-                    if addr_d == MMIO_CONSOLE_ADDR:
-                        char = chr(data_w & 0xFF)
-                        if char == '\n':
-                            log_console(f"{console_buffer}")
-                            console_buffer = ""
-                        else:
-                            console_buffer += char
-                    elif addr_d == MMIO_HALT_ADDR:
-                        log_success("Sinal de HALT recebido!")
-                        halt_event.set()
-                    elif addr_d == MMIO_INT_ADDR:
-                        val = data_w if data_w < 0x80000000 else data_w - 0x100000000
-                        log_int(f"{val}")
-                    # Gatilho de Interrupção
-                    elif addr_d == MMIO_IRQ_TRIGGER_ADDR:
-                        # Dispara em background para não travar o handshake da memória
-                        cocotb.start_soon(pulse_irq(dut, data_w))
+            # Escrita (Stores & MMIO)
+            if d_we > 0:
+                if d_addr == MMIO_CONSOLE_ADDR:
+                    char = chr(d_data & 0xFF)
+                    if char == '\n':
+                        log_console(f"{console_buffer}")
+                        console_buffer = ""
                     else:
-                        # Escrita normal na RAM
-                        aligned_addr = addr_d & 0xFFFFFFFC
-                        current_word = mem_data.get(aligned_addr, 0)
-                        new_word = current_word
-                        if (we & 0x1): new_word = (new_word & 0xFFFFFF00) | (data_w & 0x000000FF)
-                        if (we & 0x2): new_word = (new_word & 0xFFFF00FF) | (data_w & 0x0000FF00)
-                        if (we & 0x4): new_word = (new_word & 0xFF00FFFF) | (data_w & 0x00FF0000)
-                        if (we & 0x8): new_word = (new_word & 0x00FFFFFF) | (data_w & 0xFF000000)
-                        mem_data[aligned_addr] = new_word
-            else:
-                dut.DMem_rdy_i.value = 1
+                        console_buffer += char
+                elif d_addr == MMIO_HALT_ADDR:
+                    log_success("Sinal de HALT recebido via MMIO! Encerrando simulação.")
+                    halt_event.set()
+                    break 
+                elif d_addr == MMIO_INT_ADDR:
+                    val_signed = d_data if d_data < 0x80000000 else d_data - 0x100000000
+                    log_int(f"{val_signed}")
+                elif d_addr == MMIO_IRQ_TRIGGER_ADDR:
+                    cocotb.start_soon(pulse_irq(dut, d_data))
+                else:
+                    aligned_addr = d_addr & 0xFFFFFFFC
+                    current_word = mem_data.get(aligned_addr, 0)
+                    new_word = current_word
+                    if (d_we & 0x1): new_word = (new_word & 0xFFFFFF00) | (d_data & 0x000000FF)
+                    if (d_we & 0x2): new_word = (new_word & 0xFFFF00FF) | (d_data & 0x0000FF00)
+                    if (d_we & 0x4): new_word = (new_word & 0xFF00FFFF) | (d_data & 0x00FF0000)
+                    if (d_we & 0x8): new_word = (new_word & 0x00FFFFFF) | (d_data & 0xFF000000)
+                    mem_data[aligned_addr] = new_word
         else:
-            d_transaction_in_progress = False
             dut.DMem_rdy_i.value = 0
 
 # ================================================================================================================
@@ -297,6 +296,12 @@ async def test_processor_execution(dut):
     dut.Irq_External_i.value = 0
     dut.Irq_Timer_i.value    = 0
     dut.Irq_Software_i.value = 0
+    
+    # Habilita a FSM do processador!
+    dut.soc_en_i.value = 1            
+    
+    # Evita estado 'U' no barramento de debug
+    dut.debug_reg_addr_i.value = 0    
     
     # Segura o Reset por 2 ciclos de clock
     await RisingEdge(dut.CLK_i)

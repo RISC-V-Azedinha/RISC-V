@@ -9,7 +9,7 @@ PKG := $(PWD)/rtl/$(CORE_ARCH)/pkg/riscv_isa_pkg.vhd \
        $(PWD)/rtl/$(CORE_ARCH)/pkg/riscv_uarch_pkg.vhd
 
 APP ?= hello
-PROGRAM_PATH ?= $(PWD)/sim/single_cycle/e2e/sw/apps/build/$(APP).hex
+PROGRAM_PATH ?= $(PWD)/sim/$(CORE_ARCH)/e2e/sw/apps/build/$(APP).hex
 SKIP_C_BUILD ?= 0
 SIM_BOOT_ADDR ?= 0
 
@@ -98,10 +98,10 @@ test-e2e-%:
 
 # Chama o orquestrador do compliance passando o paralelismo automaticamente
 test-compliance:
-	@$(MAKE) -C sim/single_cycle/e2e/sw/compliance --no-print-directory
+	@$(MAKE) -C sim/$(CORE_ARCH)/e2e/sw/compliance --no-print-directory
 
 test-compliance-clean:
-	@$(MAKE) -C sim/single_cycle/e2e/sw/compliance clean
+	@$(MAKE) -C sim/$(CORE_ARCH)/e2e/sw/compliance clean
 
 clean:
 	@echo ">>> 🧹 Limpando..."
