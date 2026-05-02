@@ -3,7 +3,7 @@
 # =========================================================
 
 PWD := $(shell pwd)
-CORE_ARCH ?= single_cycle
+CORE_ARCH ?= multi_cycle
 
 PKG := $(PWD)/rtl/$(CORE_ARCH)/pkg/riscv_isa_pkg.vhd \
        $(PWD)/rtl/$(CORE_ARCH)/pkg/riscv_uarch_pkg.vhd

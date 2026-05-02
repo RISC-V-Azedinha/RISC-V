@@ -129,3 +129,9 @@ targets:
       - rtl/multi_cycle/core/reg_file.vhd
       - sim/multi_cycle/include/test_utils.py
       - sim/multi_cycle/unit/test_reg_file.py
+
+    csr_file:
+      - rtl/multi_cycle/pkg/riscv_isa_pkg.vhd
+      - rtl/multi_cycle/core/csr_file.vhd
+      - sim/multi_cycle/include/test_utils.py
+      - sim/multi_cycle/unit/test_csr_file.py
