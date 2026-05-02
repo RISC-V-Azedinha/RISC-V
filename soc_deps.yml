@@ -111,3 +111,9 @@ targets:
       - rtl/multi_cycle/core/alu_control.vhd
       - sim/multi_cycle/include/test_utils.py
       - sim/multi_cycle/unit/test_alu_control.py
+
+    branch_unit:
+      - rtl/multi_cycle/pkg/riscv_isa_pkg.vhd
+      - rtl/multi_cycle/core/branch_unit.vhd
+      - sim/multi_cycle/include/test_utils.py
+      - sim/multi_cycle/unit/test_branch_unit.py
