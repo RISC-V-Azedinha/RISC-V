@@ -123,3 +123,9 @@ targets:
       - rtl/multi_cycle/core/lsu.vhd
       - sim/multi_cycle/include/test_utils.py
       - sim/multi_cycle/unit/test_lsu.py
+
+    reg_file:
+      - rtl/multi_cycle/pkg/riscv_isa_pkg.vhd
+      - rtl/multi_cycle/core/reg_file.vhd
+      - sim/multi_cycle/include/test_utils.py
+      - sim/multi_cycle/unit/test_reg_file.py

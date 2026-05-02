@@ -39,7 +39,7 @@ test-unit-%:
 		COCOTB_TEST_MODULES=test_$* \
 		COCOTB_RESULTS_FILE=$(PWD)/build/$(CORE_ARCH)/$*/results.xml \
 		SIM_BUILD=$(PWD)/build/$(CORE_ARCH)/$* \
-		SIM_ARGS="--vcd=$(PWD)/build/$(CORE_ARCH)/$*/wave.vcd"
+		SIM_ARGS="--vcd=$(PWD)/build/$(CORE_ARCH)/$*/wave.vcd --ieee-asserts=disable"
 
 # ---------------------------------------------------------
 # 🌍 Regra 2: TESTES DE INTEGRAÇÃO ("make test-int-<nome>")
@@ -62,7 +62,7 @@ test-int-%:
 		COCOTB_TEST_MODULES=test_$* \
 		COCOTB_RESULTS_FILE=$(PWD)/build/$(CORE_ARCH)/$*/results.xml \
 		SIM_BUILD=$(PWD)/build/$(CORE_ARCH)/$* \
-		SIM_ARGS="--vcd=$(PWD)/build/$(CORE_ARCH)/$*/wave.vcd"
+		SIM_ARGS="--vcd=$(PWD)/build/$(CORE_ARCH)/$*/wave.vcd --ieee-asserts=disable"
 
 # ---------------------------------------------------------
 # 🚀 Regra 3: TESTES END-TO-END ("make test-e2e-<nome>")
