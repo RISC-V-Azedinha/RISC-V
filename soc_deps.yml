@@ -105,3 +105,9 @@ targets:
       - rtl/multi_cycle/core/imm_gen.vhd
       - sim/multi_cycle/include/test_utils.py
       - sim/multi_cycle/unit/test_imm_gen.py
+
+    alu_control:
+      - rtl/multi_cycle/pkg/riscv_isa_pkg.vhd
+      - rtl/multi_cycle/core/alu_control.vhd
+      - sim/multi_cycle/include/test_utils.py
+      - sim/multi_cycle/unit/test_alu_control.py
