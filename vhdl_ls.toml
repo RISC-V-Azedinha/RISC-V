@@ -1,5 +1,6 @@
-[libraries]
-work.files = [
-    "rtl/single_cycle/pkg/riscv_isa_pkg.vhd",
+[library.work]
+files = [
+    "rtl/single_cycle/pkg/*.vhd",
     "rtl/single_cycle/core/*.vhd",
+    "rtl/single_cycle/core/wrappers/*.vhd"
 ]

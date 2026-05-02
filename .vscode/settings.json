@@ -4,5 +4,10 @@
     },
     "search.exclude": {
         "**/*_quarentena": true
-    }
+    },
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/sim/single_cycle/include",
+        "${workspaceFolder}/sim/single_cycle/unit",
+        "${workspaceFolder}/sim/single_cycle/integration"
+    ]
 }
