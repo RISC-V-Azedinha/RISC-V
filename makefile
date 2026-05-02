@@ -1,25 +1,34 @@
 # =========================================================
-# MINIMALIST COCOTB MAKEFILE - APENAS ALU
+# MINIMALIST COCOTB MAKEFILE - UNIT TESTS ONLY
 # =========================================================
 
-SIM ?= ghdl
-TOPLEVEL_LANG ?= vhdl
-EXTRA_ARGS += --std=08
+PWD := $(shell pwd)
 
-# 1. Ajustado exatamente para a sua estrutura do 'ls -R'
-VHDL_SOURCES += $(PWD)/rtl/pkg/riscv_isa_pkg.vhd
-VHDL_SOURCES += $(PWD)/rtl/core/alu.vhd
+# Pacotes essenciais que sempre devem ser compilados primeiro
+PKG := $(PWD)/rtl/single_cycle/pkg/riscv_isa_pkg.vhd
 
-# 2. Entidade VHDL e Script Python
-TOPLEVEL = alu
-MODULE   = test_alu
+.PHONY: clean
 
-# 3. Ajustado para onde os arquivos Python realmente estão
-export PYTHONPATH := $(PWD)/sim
+# 🎯 Regra Mágica: "make test-unit-<nome>" 
+# O símbolo % captura o nome (ex: alu) e armazena na variável $*
+test-unit-%:
+	@echo "================================================="
+	@echo "🧪 Executando Teste Unitário: $*"
+	@echo "================================================="
+	@mkdir -p build/$*
+	@export COCOTB_REDUCED_LOG_FMT=1; \
+	$(MAKE) -s --no-print-directory -f $(shell cocotb-config --makefiles)/Makefile.sim \
+		SIM=ghdl \
+		TOPLEVEL_LANG=vhdl \
+		EXTRA_ARGS="--std=08" \
+		VHDL_SOURCES="$(PKG) $(PWD)/rtl/single_cycle/core/$*.vhd" \
+		TOPLEVEL=$* \
+		COCOTB_TEST_MODULES=test_$* \
+		SIM_BUILD=$(PWD)/build/$* \
+		SIM_ARGS="--vcd=$(PWD)/build/$*/wave.vcd" \
+		PYTHONPATH="$(PWD)/sim/single_cycle/unit:$(PWD)/sim/single_cycle/include:$(PYTHONPATH)"
 
-# 4. Inclui o motor do Cocotb
-include $(shell cocotb-config --makefiles)/Makefile.sim
-
-# 5. Limpeza
-clean::
-	@rm -rf sim_build *.vcd results.xml __pycache__
+clean:
+	@echo ">>> 🧹 Limpando..."
+	@rm -rf build sim_build *.vcd *.cf results.xml .pytest_cache
+	@find . -type d -name "__pycache__" -exec rm -rf {} +

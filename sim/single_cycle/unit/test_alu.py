@@ -22,7 +22,7 @@ import random   # Para gerar valores aleatórios nos testes
 # Importa todas as utilidades compartilhadas entre testbenches 
 # Isso inclui: constantes, funções de log e utilitárias, etc.
 
-from test_utils import (
+from sim.single_cycle.include.test_utils import (
     ALU_ADD, ALU_SUB, ALU_SLL, ALU_SLT, ALU_SLTU,
     ALU_XOR, ALU_SRL, ALU_SRA, ALU_OR, ALU_AND,
     settle, log_header, log_success, Colors, 
