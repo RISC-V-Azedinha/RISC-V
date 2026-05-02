@@ -82,7 +82,7 @@ test-e2e-%:
 		COCOTB_TEST_MODULES=test_$* \
 		COCOTB_RESULTS_FILE=$(PWD)/build/$*/results.xml \
 		SIM_BUILD=$(PWD)/build/$* \
-		SIM_ARGS="--vcd=$(PWD)/build/$*/wave.vcd"
+		SIM_ARGS="--vcd=$(PWD)/build/$*/wave.vcd --ieee-asserts=disable"
 
 clean:
 	@echo ">>> 🧹 Limpando..."

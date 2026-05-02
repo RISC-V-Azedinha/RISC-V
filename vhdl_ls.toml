@@ -1,6 +1,4 @@
 [library.work]
 files = [
-    "rtl/single_cycle/pkg/*.vhd",
-    "rtl/single_cycle/core/*.vhd",
-    "rtl/single_cycle/core/wrappers/*.vhd"
+    "rtl/**/*.vhd"
 ]
