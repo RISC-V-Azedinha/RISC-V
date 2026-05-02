@@ -24,6 +24,7 @@ test-unit-%:
 		VHDL_SOURCES="$(PKG) $(PWD)/rtl/single_cycle/core/$*.vhd" \
 		TOPLEVEL=$* \
 		COCOTB_TEST_MODULES=test_$* \
+		COCOTB_RESULTS_FILE=$(PWD)/build/$*/results.xml \''
 		SIM_BUILD=$(PWD)/build/$* \
 		SIM_ARGS="--vcd=$(PWD)/build/$*/wave.vcd" \
 		PYTHONPATH="$(PWD)/sim/single_cycle/unit:$(PWD)/sim/single_cycle/include:$(PYTHONPATH)"
