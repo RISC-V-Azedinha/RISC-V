@@ -68,6 +68,11 @@ nav:
       - Microarquitetura Multiciclo: hardware/multi-cycle.md
       - Controlador GPIO: soc/gpio_controller.md
       - Controlador UART: soc/uart_controller.md
+  - Software:
+      - Processo de Boot: software/boot.md
+      - Linker Scripts: software/linker.md
+  - Periféricos:
+       - Controlador VGA: soc/vga_controller.md
   - Simulação e Verificação:
       - Ambiente de Testes (Cocotb): dev/simulation.md     # Baseado nos ficheiros em sim/
       - Fluxo de Síntese (FPGA): dev/fpga_build.md         # Baseado em fpga/scripts/
