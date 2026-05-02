@@ -66,6 +66,9 @@ nav:
   - Arquitetura de Hardware:
       - Microarquitetura Monociclo: hardware/single-cycle.md
       - Microarquitetura Multiciclo: hardware/multi-cycle.md
+  - Software:
+      - Processo de Boot: software/boot.md
+      - Linker Scripts: software/linker.md
   - Periféricos:
        - Controlador VGA: soc/vga_controller.md
   - Simulação e Verificação:
