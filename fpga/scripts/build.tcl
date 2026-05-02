@@ -143,17 +143,28 @@ report_timing_summary -file $rptDir/timing_summary.rpt
 report_power -file $rptDir/power.rpt
 
 # ==========================================================================================
-#                             BITSTREAM
+#                             BITSTREAM E CFGMEM (FLASH)
 # ==========================================================================================
 puts "\n--------------------------------------------------------------------------------------------------------------------------------"
-puts ">>> [5/6] Gerando Bitstream...\n"
+puts ">>> [5/6] Gerando Bitstream e Arquivo de Memoria (MCS)...\n"
 
+# Otimizações para boot rápido via Quad-SPI Flash
+set_property BITSTREAM.GENERAL.COMPRESS TRUE [current_design]
+set_property BITSTREAM.CONFIG.CONFIGRATE 33 [current_design]
+set_property CONFIG_MODE SPIx4 [current_design]
+set_property BITSTREAM.CONFIG.SPI_BUSWIDTH 4 [current_design]
+
+# Gera o bitstream tradicional (volátil)
 write_bitstream -force $bitDir/${topEntity}.bit -quiet
+
+# Gera o arquivo MCS para a memória Flash (não volátil)
+write_cfgmem -force -format mcs -size 16 -interface SPIx4 -loadbit "up 0x0 $bitDir/${topEntity}.bit" -quiet $bitDir/${topEntity}.mcs
 
 puts " "
 puts "================================================================"
-puts "   SUCESSO! Bitstream gerado:"
-puts "   $outputDir/${topEntity}.bit"
+puts "   SUCESSO! Arquivos gerados:"
+puts "   Bitstream: $outputDir/${topEntity}.bit"
+puts "   Flash MCS: $outputDir/${topEntity}.mcs"
 puts "================================================================"
 
 if {[file exists "clockInfo.txt"]} {
