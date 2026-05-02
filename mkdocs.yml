@@ -66,6 +66,8 @@ nav:
   - Arquitetura de Hardware:
       - Microarquitetura Monociclo: hardware/single-cycle.md
       - Microarquitetura Multiciclo: hardware/multi-cycle.md
+      - Controlador GPIO: soc/gpio_controller.md
+      - Controlador UART: soc/uart_controller.md
   - Software:
       - Processo de Boot: software/boot.md
       - Linker Scripts: software/linker.md
