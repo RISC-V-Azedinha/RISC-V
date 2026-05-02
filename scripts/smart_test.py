@@ -8,22 +8,18 @@ CONFIG_FILE = "soc_deps.yml"
 
 def get_changed_files():
     """Obtém a lista de arquivos alterados, adaptando-se ao ambiente (Local vs CI vs PR)."""
-    
     is_ci = os.environ.get('GITHUB_ACTIONS') == 'true'
     event_name = os.environ.get('GITHUB_EVENT_NAME')
-    base_ref = os.environ.get('GITHUB_BASE_REF') # Ex: 'main' em um PR
+    base_ref = os.environ.get('GITHUB_BASE_REF')
     
     if is_ci:
         if event_name == 'pull_request' and base_ref:
-            # Em um PR, compara a branch alvo inteira com o código atual do PR
             cmd = ["git", "diff", "--name-only", f"origin/{base_ref}", "HEAD"]
             print(f"==> Modo PR detectado: Comparando origin/{base_ref} com HEAD")
         else:
-            # Em um push direto para a main, compara com o commit imediatamente anterior
             cmd = ["git", "diff", "--name-only", "HEAD~1", "HEAD"]
             print("==> Modo Push detectado: Comparando HEAD~1 com HEAD")
     else:
-        # Localmente, olha para o 'stage' (arquivos adicionados com git add)
         cmd = ["git", "diff", "--cached", "--name-only"]
         print("==> Modo Local detectado: Analisando arquivos em stage")
         
@@ -43,24 +39,21 @@ def main():
         print("==> Nenhuma alteração detectada no stage/commit. Pulando testes.")
         return 0
 
-    # 1. Carrega a matriz de dependências do arquivo YAML
     try:
         with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
             config = yaml.safe_load(f)
-    except FileNotFoundError:
-        print(f"❌ Erro fatal: O arquivo '{CONFIG_FILE}' não foi encontrado na raiz do projeto.")
-        return 1
-    except yaml.YAMLError as exc:
-        print(f"❌ Erro de sintaxe no YAML: {exc}")
+    except Exception as e:
+        print(f"❌ Erro ao ler YAML: {e}")
         return 1
 
     targets_dict = config.get("targets", {})
     targets_to_run = set()
 
-    # 2. Cruza os arquivos alterados com a matriz do YAML
+    # 1. Cruza os arquivos alterados com a matriz do YAML
     for changed_file in changed_files:
-        for target_name, dependencies in targets_dict.items():
-            if changed_file in dependencies:
+        for target_name, target_data in targets_dict.items():
+            deps = target_data if isinstance(target_data, list) else target_data.get("deps", [])
+            if changed_file in deps:
                 targets_to_run.add(target_name)
 
     if not targets_to_run:
@@ -69,10 +62,17 @@ def main():
         
     print(f"==> Alvos identificados para teste: {', '.join(targets_to_run)}")
     
-    # 3. Executa os testes identificados
+    # 2. Executa os testes identificados
     for target in targets_to_run:
-        # Usa a regra mágica que criamos no Makefile minimalista
-        cmd = f"make test-unit-{target}"
+        target_data = targets_dict[target]
+        deps = target_data if isinstance(target_data, list) else target_data.get("deps", [])
+
+        # Define automaticamente o prefixo
+        is_integration = any("sim/single_cycle/integration/" in f for f in deps)
+        make_prefix = "test-int" if is_integration else "test-unit"
+        
+        # Chama o make puro! O próprio Makefile cuida dos wrappers agora.
+        cmd = f"make {make_prefix}-{target}"
         
         print(f"\n--- Executando {cmd} ---")
         result = subprocess.run(cmd, shell=True)
