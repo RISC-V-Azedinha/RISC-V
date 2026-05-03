@@ -43,7 +43,7 @@ test-unit-%:
 	$(MAKE) -s --no-print-directory -f $(shell cocotb-config --makefiles)/Makefile.sim \
 		SIM=ghdl \
 		TOPLEVEL_LANG=vhdl \
-		EXTRA_ARGS="--std=08" \
+		EXTRA_ARGS="--std=08 -frelaxed" \
 		VHDL_SOURCES="$(PKG) $$target_deps $$target_src $$src_path" \
 		TOPLEVEL=$$top_lvl \
 		COCOTB_TEST_MODULES=test_$* \
