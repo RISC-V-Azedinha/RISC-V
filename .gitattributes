@@ -10,3 +10,7 @@ makefile text eol=lf
 *.bit binary
 *.bin binary
 *.pdf binary
+
+# Remove Assembly do teste de compliance
+sim/core/single_cycle/e2e/sw/compliance/** linguist-vendored
+sim/core/multi_cycle/e2e/sw/compliance/** linguist-vendored

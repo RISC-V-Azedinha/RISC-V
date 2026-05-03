@@ -1,103 +1,110 @@
-# =============================================================================
-#  RISC-V PROJECT MAIN MAKEFILE
-# =============================================================================
+# =========================================================
+# MINIMALIST COCOTB MAKEFILE - UNIT & INTEGRATION TESTS
+# =========================================================
 
-# Default targets 
+PWD := $(shell pwd)
+CORE_ARCH ?= multi_cycle
 
-.PHONY: all help info clean detect-info
-all: help
+PKG := $(PWD)/rtl/core/$(CORE_ARCH)/pkg/riscv_isa_pkg.vhd \
+       $(PWD)/rtl/core/$(CORE_ARCH)/pkg/riscv_uarch_pkg.vhd
 
-# Inclusão de Configuração (mk/config.mk carrega mk/detect.mk automaticamente)
-include mk/config.mk
+APP ?= hello
+PROGRAM_PATH ?= $(PWD)/sim/core/$(CORE_ARCH)/e2e/sw/apps/build/$(APP).hex
+SKIP_C_BUILD ?= 0
+SIM_BOOT_ADDR ?= 0
 
-# Definição dos Fontes (VHDL)
-include mk/sources.mk
+export COCOTB_REDUCED_LOG_FMT := 1
+export PYTHONPATH := $(PWD)/sim/core/$(CORE_ARCH)/unit:$(PWD)/sim/core/$(CORE_ARCH)/integration:$(PWD)/sim/core/$(CORE_ARCH)/e2e:$(PWD)/sim/core/$(CORE_ARCH)/include:$(shell echo $$PYTHONPATH)
 
-# =============================================================================
-#  TARGETS PRINCIPAIS
-# =============================================================================
+.PHONY: clean
 
-# Regras de Software (GCC, Bootloader)
-include mk/rules_sw.mk
+# ---------------------------------------------------------
+# 🎯 Regra 1: TESTES UNITÁRIOS ("make test-unit-<nome>")
+# ---------------------------------------------------------
+test-unit-%:
+	@echo "================================================="
+	@echo "🧪 Executando Teste Unitário: $* [$(CORE_ARCH)]"
+	@echo "================================================="
+	@mkdir -p build/$(CORE_ARCH)/$*
+	@wrapper_top=$$(python3 scripts/query_yaml.py $(CORE_ARCH) $* wrapper_top); \
+	wrapper_src=$$(python3 scripts/query_yaml.py $(CORE_ARCH) $* wrapper_src); \
+	if [ -n "$$wrapper_src" ]; then src_path="$(PWD)/$$wrapper_src"; else src_path=""; fi; \
+	top_lvl=$${wrapper_top:-$*}; \
+	$(MAKE) -s --no-print-directory -f $(shell cocotb-config --makefiles)/Makefile.sim \
+		SIM=ghdl \
+		TOPLEVEL_LANG=vhdl \
+		EXTRA_ARGS="--std=08" \
+		VHDL_SOURCES="$(PKG) $(PWD)/rtl/core/$(CORE_ARCH)/core/$*.vhd $$src_path" \
+		TOPLEVEL=$$top_lvl \
+		COCOTB_TEST_MODULES=test_$* \
+		COCOTB_RESULTS_FILE=$(PWD)/build/$(CORE_ARCH)/$*/results.xml \
+		SIM_BUILD=$(PWD)/build/$(CORE_ARCH)/$* \
+		SIM_ARGS="--vcd=$(PWD)/build/$(CORE_ARCH)/$*/wave.vcd --ieee-asserts=disable"
 
-# Regras de Simulação (Cocotb, GTKWave)
-include mk/rules_sim.mk
+# ---------------------------------------------------------
+# 🌍 Regra 2: TESTES DE INTEGRAÇÃO ("make test-int-<nome>")
+# ---------------------------------------------------------
+test-int-%:
+	@echo "================================================="
+	@echo "🌍 Executando Teste de Integração: $* [$(CORE_ARCH)]"
+	@echo "================================================="
+	@mkdir -p build/$(CORE_ARCH)/$*
+	@wrapper_top=$$(python3 scripts/query_yaml.py $(CORE_ARCH) $* wrapper_top); \
+	wrapper_src=$$(python3 scripts/query_yaml.py $(CORE_ARCH) $* wrapper_src); \
+	if [ -n "$$wrapper_src" ]; then src_path="$(PWD)/$$wrapper_src"; else src_path=""; fi; \
+	top_lvl=$${wrapper_top:-$*}; \
+	$(MAKE) -s --no-print-directory -f $(shell cocotb-config --makefiles)/Makefile.sim \
+		SIM=ghdl \
+		TOPLEVEL_LANG=vhdl \
+		EXTRA_ARGS="--std=08" \
+		VHDL_SOURCES="$(PKG) $(wildcard $(PWD)/rtl/core/$(CORE_ARCH)/core/*.vhd) $$src_path" \
+		TOPLEVEL=$$top_lvl \
+		COCOTB_TEST_MODULES=test_$* \
+		COCOTB_RESULTS_FILE=$(PWD)/build/$(CORE_ARCH)/$*/results.xml \
+		SIM_BUILD=$(PWD)/build/$(CORE_ARCH)/$* \
+		SIM_ARGS="--vcd=$(PWD)/build/$(CORE_ARCH)/$*/wave.vcd --ieee-asserts=disable"
 
-# Regras de FPGA (Vivado, Bitstream, Upload)
-include mk/rules_fpga.mk
+# ---------------------------------------------------------
+# 🚀 Regra 3: TESTES END-TO-END ("make test-e2e-<nome>")
+# ---------------------------------------------------------
+TARGET_BUILD_DIR ?= $(PWD)/build/$(CORE_ARCH)/$*
 
-# =============================================================================
-#  HELP & CLEANUP
-# =============================================================================
+test-e2e-%:
+	@echo "================================================="
+	@echo "🚀 Executando Teste End-to-End: $* [$(CORE_ARCH)]"
+	@echo "================================================="
+	@mkdir -p $(TARGET_BUILD_DIR)
+	@if [ "$(SKIP_C_BUILD)" != "1" ]; then $(MAKE) -C sim/core/$(CORE_ARCH)/e2e/sw/apps APP=$(APP) > /dev/null; fi
+	@wrapper_top=$$(python3 scripts/query_yaml.py $(CORE_ARCH) $* wrapper_top); \
+	wrapper_src=$$(python3 scripts/query_yaml.py $(CORE_ARCH) $* wrapper_src); \
+	if [ -n "$$wrapper_src" ]; then src_path="$(PWD)/$$wrapper_src"; else src_path=""; fi; \
+	top_lvl=$${wrapper_top:-$*}; \
+	PROGRAM_PATH="$(PROGRAM_PATH)" \
+	$(MAKE) -s --no-print-directory -f $(shell cocotb-config --makefiles)/Makefile.sim \
+		SIM=ghdl \
+		TOPLEVEL_LANG=vhdl \
+		EXTRA_ARGS="--std=08" \
+		VHDL_SOURCES="$(PKG) $(wildcard $(PWD)/rtl/core/$(CORE_ARCH)/core/*.vhd) $$src_path" \
+		TOPLEVEL=$$top_lvl \
+		COCOTB_TEST_MODULES=test_$* \
+		COCOTB_RESULTS_FILE=$(TARGET_BUILD_DIR)/results.xml \
+		SIM_BUILD=$(TARGET_BUILD_DIR) \
+		SIM_ARGS="--vcd=$(TARGET_BUILD_DIR)/wave.vcd --ieee-asserts=disable -gBOOT_ADDR_INT=$(SIM_BOOT_ADDR)"
 
-.PHONY: help
-help:
-	@echo " "
-	@echo " "
-	@echo "      ██████╗ ██╗███████╗ ██████╗ ██╗   ██╗     "
-	@echo "      ██╔══██╗██║██╔════╝██╔════╝ ██║   ██║     "
-	@echo "      ██████╔╝██║███████╗██║█████╗██║   ██║     "
-	@echo "      ██╔══██╗██║╚════██║██║╚════╝╚██╗ ██╔╝     "
-	@echo "      ██║  ██║██║███████║╚██████╗  ╚████╔╝      "
-	@echo "      ╚═╝  ╚═╝╚═╝╚══════╝ ╚═════╝   ╚═══╝       "
-	@echo " "
-	@echo "========================================================================================================="
-	@echo "                         RISC-V Project Build System                                                     "
-	@echo "========================================================================================================="
-	@echo " "
-	@echo " 📦 SOFTWARE COMPILATION"
-	@echo " ────────────────────────────────────────────────────────────────────────────────────────────────────────"
-	@echo "   make sw SW=<prog>                                            Compilar App (Detecta FPGA ou Simulação)"
-	@echo "   make boot                                                    Compilar bootloader da FPGA"
-	@echo "   make list-apps                                               Listar aplicações disponíveis"
-	@echo " "
-	@echo " 🧪 HARDWARE TESTING & SIMULATION"
-	@echo " ────────────────────────────────────────────────────────────────────────────────────────────────────────"
-	@echo "   make cocotb [CORE=<core>] TEST=<test> TOP=<top> [SW=<prog>]  Rodar teste COCOTB"
-	@echo "   make cocotb TEST=<test> TOP=<top>                            Teste de componente (unit)"
-	@echo "   make list-tests [CORE=<core>]                                Listar testes disponíveis"
-	@echo " "
-	@echo " 📊 VISUALIZATION & DEBUG"
-	@echo " ────────────────────────────────────────────────────────────────────────────────────────────────────────"
-	@echo "   make view TEST=<test>                                        Abrir ondas (VCD) no GTKWave"
-	@echo " "
-	@echo " 🔌 FPGA & UPLOAD "
-	@echo " ─────────────────────────────────────────────────────────────────────────────────────────────────────"
-	@echo "   make fpga                                                    Sintetizar e programar a FPGA"
-	@echo "   make upload SW=<prog> [COM=<port>]                           Enviar software via UART"
-	@echo " "
-	@echo " ⚙️  INFORMAÇÕES & DEBUG"
-	@echo " ────────────────────────────────────────────────────────────────────────────────────────────────────────"
-	@echo "   make info                                                    Mostrar informações do sistema e config"
-	@echo "   make detect-info                                             Mostrar detecção do SO e ferramentas"
-	@echo " "
-	@echo " 🧹 MAINTENANCE"
-	@echo " ────────────────────────────────────────────────────────────────────────────────────────────────────────"
-	@echo "   make clean                                                   Limpar diretório de build"
-	@echo " "
-	@echo "========================================================================================================="
+# ---------------------------------------------------------
+# 🏆 SUÍTE DE COMPLIANCE OFICIAL RISC-V
+# ---------------------------------------------------------
+.PHONY: test-compliance test-compliance-clean
 
-# =============================================================================
-#                            TARGETS ESPECÍFICOS
-# =============================================================================
+# Chama o orquestrador do compliance passando o paralelismo automaticamente
+test-compliance:
+	@echo ">>> TESTING [$(CORE_ARCH)] RV32I COMPLIANCE"
+	@$(MAKE) -C sim/core/$(CORE_ARCH)/e2e/sw/compliance --no-print-directory
+
+test-compliance-clean:
+	@$(MAKE) -C sim/core/$(CORE_ARCH)/e2e/sw/compliance clean
 
 clean:
-	@echo ">>> 🧹 Limpando diretório de build..."
-	@rm -rf $(BUILD_DIR) *.cf
-	@echo ">>> ✅ Limpeza concluída"
-
-# =============================================================================
-#  INFORMAÇÕES E DEBUG
-# =============================================================================
-
-info: detect-info
-	@echo " "
-	@echo "╔═════════════════════════════════════════════════════════════╗"
-	@echo "║           CONFIGURAÇÃO DO PROJETO RISC-V                    ║"
-	@echo "╚═════════════════════════════════════════════════════════════╝"
-	@echo " "
-	@echo "  Arquitetura Ativa    : $(CORE)"
-	@echo "  Diretório de Build   : $(BUILD_DIR)"
-	@echo " "
-
-# =============================================================================
+	@echo ">>> 🧹 Limpando..."
+	@rm -rf build sim_build *.vcd *.cf results.xml .pytest_cache
+	@find . -type d -name "__pycache__" -exec rm -rf {} +

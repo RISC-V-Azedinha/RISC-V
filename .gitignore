@@ -1,36 +1,43 @@
-# Ignorar o diretório de build
-/build/
+# ==========================================
+# 🏗️ Diretórios de Build
+# ==========================================
+# Ignora QUALQUER pasta com esses nomes em todo o repositório
+build/
+sim_build/
+.Xil/
 
-# Ignorar arquivos de log e de onda do GHDL
-*.cf
-*.ghw
+# ==========================================
+# 💾 Hardware, Simulação e Logs (GHDL/Vivado/Cocotb)
+# ==========================================
 *.vcd
+*.ghw
+*.cf
+*.log
+*.jou
+results.xml
 
-# Ignorar arquivos gerados pelo compilador de C
+# ==========================================
+# 💻 Compilação de Software (C/Assembly/Hex)
+# ==========================================
 *.o
 *.elf
+*.hex
 *.bin
 *.map
+*.signature
 
-# Ignorar pycache do Python
+# ==========================================
+# 🐍 Python e Ambientes Virtuais
+# ==========================================
 __pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
 
-# Ignorar .venv
-.venv
-venv
-
-# Documentação
+# ==========================================
+# 📚 Documentação e Dados
+# ==========================================
 site/
-
-# Ignorar arquivos VIVADO (Xilinx)
-.Xil
-*.txt
-*.jou
-*.log
-
-# MNIST image processing
 mnist.npz
-data
-
-# Documentacao
-docs/build
+data/

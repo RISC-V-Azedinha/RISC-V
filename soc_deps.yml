@@ -1,0 +1,168 @@
+targets:
+  core:
+    single_cycle:
+      reg_file:
+      - rtl/core/single_cycle/core/reg_file.vhd
+      - sim/core/single_cycle/include/test_utils.py
+      - sim/core/single_cycle/unit/test_reg_file.py
+      lsu:
+      - rtl/core/single_cycle/pkg/riscv_isa_pkg.vhd
+      - rtl/core/single_cycle/core/lsu.vhd
+      - sim/core/single_cycle/include/test_utils.py
+      - sim/core/single_cycle/unit/test_lsu.py
+      alu:
+      - rtl/core/single_cycle/pkg/riscv_isa_pkg.vhd
+      - rtl/core/single_cycle/core/alu.vhd
+      - sim/core/single_cycle/include/test_utils.py
+      - sim/core/single_cycle/unit/test_alu.py
+      decoder:
+        deps:
+        - rtl/core/single_cycle/pkg/riscv_uarch_pkg.vhd
+        - rtl/core/single_cycle/pkg/riscv_isa_pkg.vhd
+        - rtl/core/single_cycle/core/decoder.vhd
+        - rtl/core/single_cycle/core/wrappers/decoder_wrapper.vhd
+        - sim/core/single_cycle/include/test_utils.py
+        - sim/core/single_cycle/unit/test_decoder.py
+        wrapper_top: decoder_wrapper
+        wrapper_src: rtl/core/single_cycle/core/wrappers/decoder_wrapper.vhd
+      imm_gen:
+      - rtl/core/single_cycle/pkg/riscv_isa_pkg.vhd
+      - rtl/core/single_cycle/core/imm_gen.vhd
+      - sim/core/single_cycle/include/test_utils.py
+      - sim/core/single_cycle/unit/test_imm_gen.py
+      alu_control:
+      - rtl/core/single_cycle/pkg/riscv_isa_pkg.vhd
+      - rtl/core/single_cycle/core/alu_control.vhd
+      - sim/core/single_cycle/include/test_utils.py
+      - sim/core/single_cycle/unit/test_alu_control.py
+      branch_unit:
+      - rtl/core/single_cycle/core/branch_unit.vhd
+      - sim/core/single_cycle/include/test_utils.py
+      - sim/core/single_cycle/unit/test_branch_unit.py
+      processor_top:
+      - rtl/core/single_cycle/pkg/riscv_isa_pkg.vhd
+      - rtl/core/single_cycle/core/imm_gen.vhd
+      - rtl/core/single_cycle/core/alu.vhd
+      - rtl/core/single_cycle/core/lsu.vhd
+      - rtl/core/single_cycle/core/reg_file.vhd
+      - rtl/core/single_cycle/pkg/riscv_uarch_pkg.vhd
+      - rtl/core/single_cycle/core/datapath.vhd
+      - rtl/core/single_cycle/core/alu_control.vhd
+      - rtl/core/single_cycle/core/branch_unit.vhd
+      - rtl/core/single_cycle/core/decoder.vhd
+      - rtl/core/single_cycle/core/control.vhd
+      - rtl/core/single_cycle/core/processor_top.vhd
+      - sim/core/single_cycle/include/test_utils.py
+      - sim/core/single_cycle/e2e/test_processor_top.py
+      control:
+        deps:
+        - rtl/core/single_cycle/pkg/riscv_isa_pkg.vhd
+        - rtl/core/single_cycle/core/alu_control.vhd
+        - rtl/core/single_cycle/core/branch_unit.vhd
+        - rtl/core/single_cycle/pkg/riscv_uarch_pkg.vhd
+        - rtl/core/single_cycle/core/decoder.vhd
+        - rtl/core/single_cycle/core/control.vhd
+        - rtl/core/single_cycle/core/wrappers/control_wrapper.vhd
+        - sim/core/single_cycle/include/test_utils.py
+        - sim/core/single_cycle/integration/test_control.py
+        wrapper_top: control_wrapper
+        wrapper_src: rtl/core/single_cycle/core/wrappers/control_wrapper.vhd
+      datapath:
+        deps:
+        - rtl/core/single_cycle/pkg/riscv_isa_pkg.vhd
+        - rtl/core/single_cycle/core/imm_gen.vhd
+        - rtl/core/single_cycle/core/alu.vhd
+        - rtl/core/single_cycle/core/lsu.vhd
+        - rtl/core/single_cycle/core/reg_file.vhd
+        - rtl/core/single_cycle/pkg/riscv_uarch_pkg.vhd
+        - rtl/core/single_cycle/core/datapath.vhd
+        - rtl/core/single_cycle/core/wrappers/datapath_wrapper.vhd
+        - sim/core/single_cycle/include/test_utils.py
+        - sim/core/single_cycle/integration/test_datapath.py
+        wrapper_top: datapath_wrapper
+        wrapper_src: rtl/core/single_cycle/core/wrappers/datapath_wrapper.vhd
+    multi_cycle:
+      main_fsm:
+      - rtl/core/multi_cycle/pkg/riscv_uarch_pkg.vhd
+      - rtl/core/multi_cycle/pkg/riscv_isa_pkg.vhd
+      - rtl/core/multi_cycle/core/main_fsm.vhd
+      - sim/core/multi_cycle/include/test_utils.py
+      - sim/core/multi_cycle/unit/test_main_fsm.py
+      reg_file:
+      - rtl/core/multi_cycle/core/reg_file.vhd
+      - sim/core/multi_cycle/include/test_utils.py
+      - sim/core/multi_cycle/unit/test_reg_file.py
+      csr_file:
+      - rtl/core/multi_cycle/core/csr_file.vhd
+      - sim/core/multi_cycle/include/test_utils.py
+      - sim/core/multi_cycle/unit/test_csr_file.py
+      lsu:
+      - rtl/core/multi_cycle/pkg/riscv_isa_pkg.vhd
+      - rtl/core/multi_cycle/core/lsu.vhd
+      - sim/core/multi_cycle/include/test_utils.py
+      - sim/core/multi_cycle/unit/test_lsu.py
+      alu:
+      - rtl/core/multi_cycle/pkg/riscv_isa_pkg.vhd
+      - rtl/core/multi_cycle/core/alu.vhd
+      - sim/core/multi_cycle/include/test_utils.py
+      - sim/core/multi_cycle/unit/test_alu.py
+      imm_gen:
+      - rtl/core/multi_cycle/pkg/riscv_isa_pkg.vhd
+      - rtl/core/multi_cycle/core/imm_gen.vhd
+      - sim/core/multi_cycle/include/test_utils.py
+      - sim/core/multi_cycle/unit/test_imm_gen.py
+      alu_control:
+      - rtl/core/multi_cycle/pkg/riscv_isa_pkg.vhd
+      - rtl/core/multi_cycle/core/alu_control.vhd
+      - sim/core/multi_cycle/include/test_utils.py
+      - sim/core/multi_cycle/unit/test_alu_control.py
+      branch_unit:
+      - rtl/core/multi_cycle/core/branch_unit.vhd
+      - sim/core/multi_cycle/include/test_utils.py
+      - sim/core/multi_cycle/unit/test_branch_unit.py
+      processor_top:
+      - rtl/core/multi_cycle/core/csr_file.vhd
+      - rtl/core/multi_cycle/pkg/riscv_isa_pkg.vhd
+      - rtl/core/multi_cycle/core/imm_gen.vhd
+      - rtl/core/multi_cycle/core/alu.vhd
+      - rtl/core/multi_cycle/core/lsu.vhd
+      - rtl/core/multi_cycle/core/reg_file.vhd
+      - rtl/core/multi_cycle/pkg/riscv_uarch_pkg.vhd
+      - rtl/core/multi_cycle/core/datapath.vhd
+      - rtl/core/multi_cycle/core/alu_control.vhd
+      - rtl/core/multi_cycle/core/branch_unit.vhd
+      - rtl/core/multi_cycle/core/main_fsm.vhd
+      - rtl/core/multi_cycle/core/control.vhd
+      - rtl/core/multi_cycle/core/processor_top.vhd
+      - sim/core/multi_cycle/include/test_utils.py
+      - sim/core/multi_cycle/e2e/test_processor_top.py
+      control:
+        deps:
+        - rtl/core/multi_cycle/pkg/riscv_isa_pkg.vhd
+        - rtl/core/multi_cycle/core/alu_control.vhd
+        - rtl/core/multi_cycle/core/branch_unit.vhd
+        - rtl/core/multi_cycle/pkg/riscv_uarch_pkg.vhd
+        - rtl/core/multi_cycle/core/main_fsm.vhd
+        - rtl/core/multi_cycle/core/control.vhd
+        - rtl/core/multi_cycle/core/wrappers/control_wrapper.vhd
+        - sim/core/multi_cycle/include/test_utils.py
+        - sim/core/multi_cycle/integration/test_control.py
+        wrapper_top: control_wrapper
+        wrapper_src: rtl/core/multi_cycle/core/wrappers/control_wrapper.vhd
+      datapath:
+        deps:
+        - rtl/core/multi_cycle/core/csr_file.vhd
+        - rtl/core/multi_cycle/pkg/riscv_isa_pkg.vhd
+        - rtl/core/multi_cycle/core/imm_gen.vhd
+        - rtl/core/multi_cycle/core/alu.vhd
+        - rtl/core/multi_cycle/core/lsu.vhd
+        - rtl/core/multi_cycle/core/reg_file.vhd
+        - rtl/core/multi_cycle/pkg/riscv_uarch_pkg.vhd
+        - rtl/core/multi_cycle/core/datapath.vhd
+        - rtl/core/multi_cycle/core/wrappers/datapath_wrapper.vhd
+        - sim/core/multi_cycle/include/test_utils.py
+        - sim/core/multi_cycle/integration/test_datapath.py
+        wrapper_top: datapath_wrapper
+        wrapper_src: rtl/core/multi_cycle/core/wrappers/datapath_wrapper.vhd
+  perips: {}
+  soc: {}
