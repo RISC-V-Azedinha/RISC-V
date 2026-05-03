@@ -5,8 +5,12 @@
 PWD := $(shell pwd)
 CORE_ARCH ?= multi_cycle
 
-PKG := $(PWD)/rtl/core/$(CORE_ARCH)/pkg/riscv_isa_pkg.vhd \
-       $(PWD)/rtl/core/$(CORE_ARCH)/pkg/riscv_uarch_pkg.vhd
+CORE_ARCH ?= multi_cycle
+
+PKG_ARCH := $(if $(filter perips,$(CORE_ARCH)),multi_cycle,$(CORE_ARCH))
+
+PKG := $(PWD)/rtl/core/$(PKG_ARCH)/pkg/riscv_isa_pkg.vhd \
+       $(PWD)/rtl/core/$(PKG_ARCH)/pkg/riscv_uarch_pkg.vhd
 
 APP ?= hello
 PROGRAM_PATH ?= $(PWD)/sim/core/$(CORE_ARCH)/e2e/sw/apps/build/$(APP).hex
@@ -14,7 +18,10 @@ SKIP_C_BUILD ?= 0
 SIM_BOOT_ADDR ?= 0
 
 export COCOTB_REDUCED_LOG_FMT := 1
-export PYTHONPATH := $(PWD)/sim/core/$(CORE_ARCH)/unit:$(PWD)/sim/core/$(CORE_ARCH)/integration:$(PWD)/sim/core/$(CORE_ARCH)/e2e:$(PWD)/sim/core/$(CORE_ARCH)/include:$(shell echo $$PYTHONPATH)
+export PYTHONPATH := $(PWD)/sim/core/$(CORE_ARCH)/unit:$(PWD)/sim/core/$(CORE_ARCH)/integration:$(PWD)/sim/core/$(CORE_ARCH)/e2e:$(PWD)/sim/core/$(CORE_ARCH)/include:$(PWD)/sim/perips/unit:$(PWD)/sim/perips/integration:$(shell echo $$PYTHONPATH)
+
+# Variável auxiliar para pegar todos os fontes do core E dos periféricos (útil para os testes de integração e e2e)
+RTL_SOURCES := $(wildcard $(PWD)/rtl/core/$(CORE_ARCH)/core/*.vhd) $(wildcard $(PWD)/rtl/perips/*/*.vhd)
 
 .PHONY: clean
 
@@ -30,11 +37,13 @@ test-unit-%:
 	wrapper_src=$$(python3 scripts/query_yaml.py $(CORE_ARCH) $* wrapper_src); \
 	if [ -n "$$wrapper_src" ]; then src_path="$(PWD)/$$wrapper_src"; else src_path=""; fi; \
 	top_lvl=$${wrapper_top:-$*}; \
+	target_src=$$(find $(PWD)/rtl -type f -name "$*.vhd" | head -n 1); \
+	if [ -z "$$target_src" ]; then echo "❌ Erro: Arquivo $*.vhd não encontrado em rtl/!"; exit 1; fi; \
 	$(MAKE) -s --no-print-directory -f $(shell cocotb-config --makefiles)/Makefile.sim \
 		SIM=ghdl \
 		TOPLEVEL_LANG=vhdl \
 		EXTRA_ARGS="--std=08" \
-		VHDL_SOURCES="$(PKG) $(PWD)/rtl/core/$(CORE_ARCH)/core/$*.vhd $$src_path" \
+		VHDL_SOURCES="$(PKG) $$target_src $$src_path" \
 		TOPLEVEL=$$top_lvl \
 		COCOTB_TEST_MODULES=test_$* \
 		COCOTB_RESULTS_FILE=$(PWD)/build/$(CORE_ARCH)/$*/results.xml \
@@ -57,7 +66,7 @@ test-int-%:
 		SIM=ghdl \
 		TOPLEVEL_LANG=vhdl \
 		EXTRA_ARGS="--std=08" \
-		VHDL_SOURCES="$(PKG) $(wildcard $(PWD)/rtl/core/$(CORE_ARCH)/core/*.vhd) $$src_path" \
+		VHDL_SOURCES="$(PKG) $(RTL_SOURCES) $$src_path" \
 		TOPLEVEL=$$top_lvl \
 		COCOTB_TEST_MODULES=test_$* \
 		COCOTB_RESULTS_FILE=$(PWD)/build/$(CORE_ARCH)/$*/results.xml \
@@ -84,7 +93,7 @@ test-e2e-%:
 		SIM=ghdl \
 		TOPLEVEL_LANG=vhdl \
 		EXTRA_ARGS="--std=08" \
-		VHDL_SOURCES="$(PKG) $(wildcard $(PWD)/rtl/core/$(CORE_ARCH)/core/*.vhd) $$src_path" \
+		VHDL_SOURCES="$(PKG) $(RTL_SOURCES) $$src_path" \
 		TOPLEVEL=$$top_lvl \
 		COCOTB_TEST_MODULES=test_$* \
 		COCOTB_RESULTS_FILE=$(TARGET_BUILD_DIR)/results.xml \
