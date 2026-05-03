@@ -2,7 +2,7 @@ name: SoC RISC-V Verification Pipeline
 
 on:
   push:
-    branches: [ "feature/build-system" ]
+    branches: [ "feature/build-system", "main" ]
   pull_request:
     branches: [ "main" ]
 
@@ -23,7 +23,7 @@ jobs:
       - uses: dorny/paths-filter@v3
         id: filter
         with:
-          # 🛑 AQUI ESTÁ O SEGREDO: Se for push, olha só para o commit atual. Se for PR, olha para a main.
+          # Se for push, olha só para o commit atual. Se for PR, olha para a main.
           base: ${{ github.event_name == 'push' && github.event.before || github.event.pull_request.base.sha }}
           filters: |
             hardware:
@@ -47,32 +47,28 @@ jobs:
     runs-on: ubuntu-latest
     needs: changes
 
-    steps:
-      - name: Bypass Message (If No HW Changes)
-        if: ${{ needs.changes.outputs.hardware == 'false' }}
-        run: echo "✅ Nenhuma alteração de hardware detectada. Simulação finalizada em bypass."
+    # Cancela o Job inteiro se nenhum arquivo rastreado mudou
+    if: ${{ needs.changes.outputs.hardware == 'true' }}
 
+    steps:
       - name: Checkout do código
-        if: ${{ needs.changes.outputs.hardware == 'true' }}
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          # Necessário para o smart_test.py ver o histórico do Git e fazer o diff
+          fetch-depth: 0 
 
       - name: Instalar Dependências de Sistema (GHDL e RISC-V GCC)
-        if: ${{ needs.changes.outputs.hardware == 'true' }}
         run: |
           sudo apt-get update
           sudo apt-get install -y ghdl gcc-riscv64-unknown-elf picolibc-riscv64-unknown-elf make
 
       - name: Configurar Ambiente Python (Cocotb)
-        if: ${{ needs.changes.outputs.hardware == 'true' }}
         run: |
           python3 -m pip install --upgrade pip
           pip install cocotb cocotb-test pytest
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
       - name: Executar Testes Inteligentes
-        if: ${{ needs.changes.outputs.hardware == 'true' }}
         run: python3 scripts/smart_test.py
 
   # ================================================
@@ -83,7 +79,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [changes, rtl-simulation]
     
-    # ⚡ OTIMIZAÇÃO: Cancela o Job inteiro se nenhum core mudou
+    # Cancela o Job inteiro se nenhum core mudou
     if: ${{ needs.changes.outputs.single_cycle == 'true' || needs.changes.outputs.multi_cycle == 'true' }}
 
     steps:
