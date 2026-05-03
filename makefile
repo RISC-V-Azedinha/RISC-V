@@ -1,10 +1,8 @@
 # =========================================================
-# MINIMALIST COCOTB MAKEFILE - UNIT & INTEGRATION TESTS
+# MINIMALIST COCOTB MAKEFILE - UNIT, INT, E2E & FPGA
 # =========================================================
 
 PWD := $(shell pwd)
-CORE_ARCH ?= multi_cycle
-
 CORE_ARCH ?= multi_cycle
 
 PKG_ARCH := $(if $(filter perips soc,$(CORE_ARCH)),multi_cycle,$(CORE_ARCH))
@@ -20,11 +18,13 @@ SIM_BOOT_ADDR ?= 0
 export COCOTB_REDUCED_LOG_FMT := 1
 export PYTHONPATH := $(PWD)/sim/core/$(CORE_ARCH)/unit:$(PWD)/sim/core/$(CORE_ARCH)/integration:$(PWD)/sim/core/$(CORE_ARCH)/e2e:$(PWD)/sim/core/$(CORE_ARCH)/include:$(PWD)/sim/perips/unit:$(PWD)/sim/perips/integration:$(PWD)/sim/soc/unit:$(PWD)/sim/soc/integration:$(PWD)/sim/soc:$(PWD)/sim/soc/e2e:$(shell echo $$PYTHONPATH)
 
-# Define os caminhos base
+# =========================================================
+# 🛠️ CONFIGURAÇÕES DE DIRETÓRIOS E FONTES
+# =========================================================
 PERIPS_DIR := $(PWD)/rtl/perips
 NPU_DIR    := $(PERIPS_DIR)/npu
 
-# Coleta arquivos da NPU de forma recursiva, ignorando a pasta fpga_tester
+# Coleta arquivos da NPU ignorando a pasta de testes
 NPU_SOURCES := $(shell find $(NPU_DIR) -name "*.vhd" ! -path "*/fpga_tester/*")
 
 # Monta o RTL_SOURCES principal
@@ -33,7 +33,35 @@ RTL_SOURCES := $(wildcard $(PWD)/rtl/core/$(PKG_ARCH)/core/*.vhd) \
                $(wildcard $(PWD)/rtl/soc/*.vhd) \
                $(NPU_SOURCES)
 
-.PHONY: clean
+# =========================================================
+# ⚙️ CONFIGURAÇÕES DE FPGA E SOFTWARE
+# =========================================================
+CC           = riscv64-unknown-elf-gcc
+OBJCOPY      = riscv64-unknown-elf-objcopy
+VIVADO_BIN  ?= vivado
+PYTHON_BIN  ?= python3
+COM         ?= /dev/ttyUSB1
+
+FPGA_SW_DIR     := $(PWD)/fpga/sw
+BUILD_FPGA      := $(PWD)/build/fpga
+BUILD_FPGA_BIN  := $(BUILD_FPGA)/bin
+BUILD_FPGA_BOOT := $(BUILD_FPGA)/boot
+BUILD_FPGA_LOGS := $(BUILD_FPGA)/logs
+FPGA_SCRIPTS    := $(PWD)/fpga/scripts
+
+BASE_CFLAGS := -march=rv32i -mabi=ilp32 -nostdlib -nostartfiles -g --specs=picolibc.specs
+
+.PHONY: clean list-tests fpga upload boot-fpga sw-fpga
+
+# ---------------------------------------------------------
+# 📋 Regra 0: LISTAR TESTES ("make list-tests")
+# ---------------------------------------------------------
+list-tests:
+	@echo " "
+	@echo "🔎 Testes disponíveis para CORE_ARCH=$(CORE_ARCH):"
+	@echo "────────────────────────────────────────────────"
+	@find $(PWD)/sim -name "test_*.py" | grep "$(CORE_ARCH)\|perips\|soc" | awk -F/ '{print $$NF}' | sed 's/\.py$$//' | sort | uniq | sed 's/^/  • /' || echo "  (Nenhum encontrado)"
+	@echo " "
 
 # ---------------------------------------------------------
 # 🎯 Regra 1: TESTES UNITÁRIOS ("make test-unit-<nome>")
@@ -127,6 +155,44 @@ test-e2e-%:
 		SIM_ARGS="$$sim_args"
 
 # ---------------------------------------------------------
+# 🔌 Regra 4: FPGA (Síntese, Implementação e Upload)
+# ---------------------------------------------------------
+boot-fpga:
+	@mkdir -p $(BUILD_FPGA_BOOT)
+	@echo ">>> 🔨 [BOOT-FPGA] Compilando bootloader..."
+	@$(CC) $(BASE_CFLAGS) -I$(FPGA_SW_DIR)/platform/bsp -T $(FPGA_SW_DIR)/platform/linker/boot.ld \
+		-o $(BUILD_FPGA_BOOT)/bootloader.elf $(FPGA_SW_DIR)/platform/startup/start.s \
+		$(FPGA_SW_DIR)/platform/bootloader/boot.c $$(find $(FPGA_SW_DIR)/platform/bsp -name "*.c")
+	@$(OBJCOPY) -O binary $(BUILD_FPGA_BOOT)/bootloader.elf $(BUILD_FPGA_BOOT)/bootloader.bin
+	@od -An -t x4 -v -w4 $(BUILD_FPGA_BOOT)/bootloader.bin > $(BUILD_FPGA_BOOT)/bootloader.hex
+	@echo ">>> ✅ Hex gerado: $(BUILD_FPGA_BOOT)/bootloader.hex"
+
+sw-fpga:
+	@if [ -z "$(SW)" ]; then echo "❌ Defina SW=... (ex: make sw-fpga SW=hello)"; exit 1; fi
+	@echo ">>> 🏗️  Compilando $(SW) para FPGA..."
+	@src_file=$$(find $(FPGA_SW_DIR)/apps $(FPGA_SW_DIR)/tests $(FPGA_SW_DIR)/server -name "$(SW).c" -o -name "$(SW).s" 2>/dev/null | head -n 1); \
+	if [ -z "$$src_file" ]; then echo "❌ Erro: $(SW) não encontrado"; exit 1; fi; \
+	mkdir -p $(BUILD_FPGA_BIN); \
+	$(CC) $(BASE_CFLAGS) -I$(FPGA_SW_DIR)/platform/bsp -T $(FPGA_SW_DIR)/platform/linker/link.ld \
+		-o $(BUILD_FPGA_BIN)/$(SW).elf $(FPGA_SW_DIR)/platform/startup/start.s \
+		$$(find $(FPGA_SW_DIR)/platform/bsp -name "*.c") $$src_file; \
+	$(OBJCOPY) -O binary $(BUILD_FPGA_BIN)/$(SW).elf $(BUILD_FPGA_BIN)/$(SW).bin; \
+	$(OBJCOPY) -O verilog $(BUILD_FPGA_BIN)/$(SW).elf $(BUILD_FPGA_BIN)/$(SW).hex
+	@echo ">>> ✅ Binário pronto: $(BUILD_FPGA_BIN)/$(SW).bin"
+
+fpga: boot-fpga
+	@echo ">>> ⚡ Sintetizando e Programando FPGA..."
+	@mkdir -p $(BUILD_FPGA_LOGS)
+	@$(VIVADO_BIN) -mode batch -notrace -source $(FPGA_SCRIPTS)/build.tcl -log $(BUILD_FPGA_LOGS)/vivado.log -journal $(BUILD_FPGA_LOGS)/vivado.jou
+	@$(VIVADO_BIN) -mode batch -notrace -source $(FPGA_SCRIPTS)/program.tcl -log $(BUILD_FPGA_LOGS)/prog.log -journal $(BUILD_FPGA_LOGS)/prog.jou
+	@rm -rf .Xil usage_statistics* vivado*.backup* vivado*.str
+	@echo ">>> ✅ FPGA programada com sucesso."
+
+upload: sw-fpga
+	@echo ">>> 🚀 Enviando $(SW) para a FPGA via porta $(COM)..."
+	@$(PYTHON_BIN) fpga/upload.py -p $(COM) -f $(BUILD_FPGA_BIN)/$(SW).bin
+
+# ---------------------------------------------------------
 # 🏆 SUÍTE DE COMPLIANCE OFICIAL RISC-V
 # ---------------------------------------------------------
 .PHONY: test-compliance test-compliance-clean
@@ -141,5 +207,5 @@ test-compliance-clean:
 
 clean:
 	@echo ">>> 🧹 Limpando..."
-	@rm -rf build sim_build *.vcd *.cf results.xml .pytest_cache
+	@rm -rf build sim_build *.vcd *.cf results.xml .pytest_cache .Xil
 	@find . -type d -name "__pycache__" -exec rm -rf {} +

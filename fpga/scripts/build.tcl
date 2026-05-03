@@ -51,9 +51,13 @@ proc read_dir {dir pattern} {
     }
 }
 
-# Packages do RISC-V
+# Packages Genéricos
 read_dir "./pkg" "*.vhd"
-read_dir "./rtl/core/$coreArch" "*pkg.vhd"
+
+# Packages e Arquivos do Core (Arquitetura Ativa)
+read_dir "./rtl/core/$coreArch/pkg" "*.vhd"
+read_dir "./rtl/core/$coreArch/core" "*.vhd"
+read_dir "./rtl/core/common" "*.vhd"
 
 # Arquivos da NPU
 set npu_root "./rtl/perips/npu"
@@ -61,24 +65,11 @@ set npu_root "./rtl/perips/npu"
 # NPU Package 
 read_vhdl "$npu_root/pkg/npu_pkg.vhd"
 
-# NPU Modules (Core, PPU, Common)
+# NPU Modules (Core, PPU, Common, Top)
 read_dir "$npu_root/rtl/common" "*.vhd"
 read_dir "$npu_root/rtl/core"   "*.vhd"
 read_dir "$npu_root/rtl/ppu"    "*.vhd"
-
-# NPU Top Level
-read_dir "$npu_root/rtl/"       "*.vhd"
-
-# Core Common
-read_dir "./rtl/core/common" "*.vhd"
-
-# Core Architecture
-set core_files [glob -nocomplain -directory "./rtl/core/$coreArch" "*.vhd"]
-foreach f $core_files {
-    if {[string first "pkg.vhd" $f] == -1} {
-        read_vhdl $f
-    }
-}
+read_dir "$npu_root/rtl"        "*.vhd"
 
 # Outros Periféricos (GPIO, UART, VGA)
 set perip_dirs [glob -nocomplain -type d "./rtl/perips/*"]
@@ -91,7 +82,7 @@ foreach dir $perip_dirs {
 # Lê arquivos soltos na raiz de perips (se houver)
 read_dir "./rtl/perips" "*.vhd"
 
-# SoC
+# SoC Top Level
 read_dir "./rtl/soc" "*.vhd"
 
 # Constraints
