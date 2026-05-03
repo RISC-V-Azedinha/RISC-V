@@ -6,7 +6,10 @@ CC      = riscv64-unknown-elf-gcc
 OBJCOPY = riscv64-unknown-elf-objcopy
 OBJDUMP = riscv64-unknown-elf-objdump
 
-ARCH_FLAGS = -march=rv32i -mabi=ilp32
+# Auto-detecta suporte/exigência da extensão _zicsr
+ZICSR_EXT := $(shell $(CC) -march=rv32i_zicsr -mabi=ilp32 -E - < /dev/null > /dev/null 2>&1 && echo "_zicsr" || echo "")
+
+ARCH_FLAGS = -march=rv32i$(ZICSR_EXT) -mabi=ilp32
 CFLAGS = -O2 -ffreestanding -nostdlib -nostartfiles $(ARCH_FLAGS) -Wall
 
 PLATFORM_DIR = ../boot
