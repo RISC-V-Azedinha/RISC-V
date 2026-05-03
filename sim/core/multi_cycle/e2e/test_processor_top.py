@@ -11,7 +11,7 @@
 
 # Importações COCOTB
 import cocotb
-from cocotb.clock import Clock
+from cocotb.clock import Clock 
 from cocotb.triggers import RisingEdge, Event, with_timeout, FallingEdge
 
 # Importação módulo os do sistema operacional para manipulação de arquivos
