@@ -39,11 +39,13 @@ test-unit-%:
 	top_lvl=$${wrapper_top:-$*}; \
 	target_src=$$(find $(PWD)/rtl -type f -name "$*.vhd" | head -n 1); \
 	if [ -z "$$target_src" ]; then echo "❌ Erro: Arquivo $*.vhd não encontrado em rtl/!"; exit 1; fi; \
+	target_dir=$$(dirname "$$target_src"); \
+	target_deps=$$(find "$$target_dir" -type f -name "*.vhd" | grep -v "$$target_src" | tr '\n' ' '); \
 	$(MAKE) -s --no-print-directory -f $(shell cocotb-config --makefiles)/Makefile.sim \
 		SIM=ghdl \
 		TOPLEVEL_LANG=vhdl \
 		EXTRA_ARGS="--std=08" \
-		VHDL_SOURCES="$(PKG) $$target_src $$src_path" \
+		VHDL_SOURCES="$(PKG) $$target_deps $$target_src $$src_path" \
 		TOPLEVEL=$$top_lvl \
 		COCOTB_TEST_MODULES=test_$* \
 		COCOTB_RESULTS_FILE=$(PWD)/build/$(CORE_ARCH)/$*/results.xml \
