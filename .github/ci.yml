@@ -2,8 +2,9 @@ name: SoC RISC-V CI Pipeline
 
 on:
   push:
-    - "main"
-    - "feature/build-system"
+    branches:
+      - "main"
+      - "feature/build-system"
   pull_request:
     branches: [ "main" ]
 
