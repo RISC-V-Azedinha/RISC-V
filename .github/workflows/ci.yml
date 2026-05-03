@@ -2,7 +2,7 @@ name: SoC RISC-V Verification Pipeline
 
 on:
   push:
-    branches: [ "feature/build-system", "main" ]
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
 
