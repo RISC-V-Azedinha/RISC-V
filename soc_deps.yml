@@ -40,16 +40,16 @@ targets:
       - sim/core/single_cycle/include/test_utils.py
       - sim/core/single_cycle/unit/test_branch_unit.py
       processor_top:
-      - rtl/core/single_cycle/pkg/riscv_uarch_pkg.vhd
       - rtl/core/single_cycle/core/branch_unit.vhd
+      - rtl/core/single_cycle/pkg/riscv_uarch_pkg.vhd
       - rtl/core/single_cycle/pkg/riscv_isa_pkg.vhd
       - rtl/core/single_cycle/core/alu_control.vhd
       - rtl/core/single_cycle/core/decoder.vhd
       - rtl/core/single_cycle/core/control.vhd
-      - rtl/core/single_cycle/core/reg_file.vhd
-      - rtl/core/single_cycle/core/alu.vhd
-      - rtl/core/single_cycle/core/lsu.vhd
       - rtl/core/single_cycle/core/imm_gen.vhd
+      - rtl/core/single_cycle/core/lsu.vhd
+      - rtl/core/single_cycle/core/alu.vhd
+      - rtl/core/single_cycle/core/reg_file.vhd
       - rtl/core/single_cycle/core/datapath.vhd
       - rtl/core/single_cycle/core/processor_top.vhd
       - sim/core/single_cycle/include/test_utils.py
@@ -69,12 +69,12 @@ targets:
         wrapper_src: rtl/core/single_cycle/core/wrappers/control_wrapper.vhd
       datapath:
         deps:
-        - rtl/core/single_cycle/core/reg_file.vhd
         - rtl/core/single_cycle/pkg/riscv_isa_pkg.vhd
-        - rtl/core/single_cycle/core/alu.vhd
-        - rtl/core/single_cycle/core/lsu.vhd
-        - rtl/core/single_cycle/pkg/riscv_uarch_pkg.vhd
         - rtl/core/single_cycle/core/imm_gen.vhd
+        - rtl/core/single_cycle/core/lsu.vhd
+        - rtl/core/single_cycle/core/alu.vhd
+        - rtl/core/single_cycle/core/reg_file.vhd
+        - rtl/core/single_cycle/pkg/riscv_uarch_pkg.vhd
         - rtl/core/single_cycle/core/datapath.vhd
         - rtl/core/single_cycle/core/wrappers/datapath_wrapper.vhd
         - sim/core/single_cycle/include/test_utils.py
@@ -122,27 +122,27 @@ targets:
       - sim/core/multi_cycle/unit/test_branch_unit.py
       processor_top:
       - rtl/core/multi_cycle/pkg/riscv_uarch_pkg.vhd
-      - rtl/core/multi_cycle/core/branch_unit.vhd
       - rtl/core/multi_cycle/pkg/riscv_isa_pkg.vhd
       - rtl/core/multi_cycle/core/main_fsm.vhd
       - rtl/core/multi_cycle/core/alu_control.vhd
+      - rtl/core/multi_cycle/core/branch_unit.vhd
       - rtl/core/multi_cycle/core/control.vhd
-      - rtl/core/multi_cycle/core/reg_file.vhd
-      - rtl/core/multi_cycle/core/alu.vhd
-      - rtl/core/multi_cycle/core/lsu.vhd
-      - rtl/core/multi_cycle/core/csr_file.vhd
       - rtl/core/multi_cycle/core/imm_gen.vhd
+      - rtl/core/multi_cycle/core/lsu.vhd
+      - rtl/core/multi_cycle/core/alu.vhd
+      - rtl/core/multi_cycle/core/csr_file.vhd
+      - rtl/core/multi_cycle/core/reg_file.vhd
       - rtl/core/multi_cycle/core/datapath.vhd
       - rtl/core/multi_cycle/core/processor_top.vhd
       - sim/core/multi_cycle/include/test_utils.py
       - sim/core/multi_cycle/e2e/test_processor_top.py
       control:
         deps:
-        - rtl/core/multi_cycle/core/branch_unit.vhd
         - rtl/core/multi_cycle/pkg/riscv_uarch_pkg.vhd
         - rtl/core/multi_cycle/pkg/riscv_isa_pkg.vhd
         - rtl/core/multi_cycle/core/main_fsm.vhd
         - rtl/core/multi_cycle/core/alu_control.vhd
+        - rtl/core/multi_cycle/core/branch_unit.vhd
         - rtl/core/multi_cycle/core/control.vhd
         - rtl/core/multi_cycle/core/wrappers/control_wrapper.vhd
         - sim/core/multi_cycle/include/test_utils.py
@@ -151,13 +151,13 @@ targets:
         wrapper_src: rtl/core/multi_cycle/core/wrappers/control_wrapper.vhd
       datapath:
         deps:
-        - rtl/core/multi_cycle/core/reg_file.vhd
         - rtl/core/multi_cycle/pkg/riscv_isa_pkg.vhd
-        - rtl/core/multi_cycle/core/alu.vhd
-        - rtl/core/multi_cycle/core/lsu.vhd
-        - rtl/core/multi_cycle/core/csr_file.vhd
-        - rtl/core/multi_cycle/pkg/riscv_uarch_pkg.vhd
         - rtl/core/multi_cycle/core/imm_gen.vhd
+        - rtl/core/multi_cycle/core/lsu.vhd
+        - rtl/core/multi_cycle/core/alu.vhd
+        - rtl/core/multi_cycle/core/csr_file.vhd
+        - rtl/core/multi_cycle/core/reg_file.vhd
+        - rtl/core/multi_cycle/pkg/riscv_uarch_pkg.vhd
         - rtl/core/multi_cycle/core/datapath.vhd
         - rtl/core/multi_cycle/core/wrappers/datapath_wrapper.vhd
         - sim/core/multi_cycle/include/test_utils.py
@@ -183,6 +183,9 @@ targets:
     bus_arbiter:
     - rtl/soc/bus_arbiter.vhd
     - sim/soc/unit/test_bus_arbiter.py
+    boot_rom:
+    - rtl/soc/boot_rom.vhd
+    - sim/soc/unit/test_boot_rom.py
     dma_controller:
     - rtl/soc/dma_controller.vhd
     - sim/soc/unit/test_dma_controller.py

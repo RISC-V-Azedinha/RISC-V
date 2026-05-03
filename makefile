@@ -32,7 +32,14 @@ test-unit-%:
 	@echo "🧪 Executando Teste Unitário: $* [$(CORE_ARCH)]"
 	@echo "================================================="
 	@mkdir -p build/$(CORE_ARCH)/$*
-	@wrapper_top=$$(python3 scripts/query_yaml.py $(CORE_ARCH) $* wrapper_top); \
+	@sim_args="--vcd=$(PWD)/build/$(CORE_ARCH)/$*/wave.vcd --ieee-asserts=disable"; \
+    if [ "$*" = "boot_rom" ]; then \
+        echo "[COMPILER] Detectado teste da Boot ROM! Compilando bootloader real..."; \
+        $(MAKE) -C sim/soc/sw all || exit 1; \
+        sim_args="$$sim_args -gINIT_FILE=$(PWD)/sim/soc/sw/build/bootloader.hex"; \
+        echo "[SUCCESS] Bootloader compilado com sucesso!"; \
+    fi; \
+	wrapper_top=$$(python3 scripts/query_yaml.py $(CORE_ARCH) $* wrapper_top); \
 	wrapper_src=$$(python3 scripts/query_yaml.py $(CORE_ARCH) $* wrapper_src); \
 	if [ -n "$$wrapper_src" ]; then src_path="$(PWD)/$$wrapper_src"; else src_path=""; fi; \
 	top_lvl=$${wrapper_top:-$*}; \
@@ -40,7 +47,8 @@ test-unit-%:
 	if [ -z "$$target_src" ]; then echo "❌ Erro: Arquivo $*.vhd não encontrado em rtl/!"; exit 1; fi; \
 	target_dir=$$(dirname "$$target_src"); \
 	target_deps=$$(find "$$target_dir" -type f -name "*.vhd" | grep -v "$$target_src" | tr '\n' ' '); \
-	$(MAKE) -s --no-print-directory -f $(shell cocotb-config --makefiles)/Makefile.sim \
+	HEX_PATH_FOR_TEST="$(PWD)/sim/soc/sw/build/bootloader.hex" \
+    $(MAKE) -s --no-print-directory -f $(shell cocotb-config --makefiles)/Makefile.sim \
 		SIM=ghdl \
 		TOPLEVEL_LANG=vhdl \
 		EXTRA_ARGS="--std=08 -frelaxed" \
@@ -49,7 +57,7 @@ test-unit-%:
 		COCOTB_TEST_MODULES=test_$* \
 		COCOTB_RESULTS_FILE=$(PWD)/build/$(CORE_ARCH)/$*/results.xml \
 		SIM_BUILD=$(PWD)/build/$(CORE_ARCH)/$* \
-		SIM_ARGS="--vcd=$(PWD)/build/$(CORE_ARCH)/$*/wave.vcd --ieee-asserts=disable"
+		SIM_ARGS="$$sim_args"
 
 # ---------------------------------------------------------
 # 🌍 Regra 2: TESTES DE INTEGRAÇÃO ("make test-int-<nome>")
