@@ -54,7 +54,7 @@ test-unit-%:
 	wrapper_src=$$(python3 scripts/query_yaml.py $(CORE_ARCH) $* wrapper_src); \
 	if [ -n "$$wrapper_src" ]; then src_path="$(PWD)/$$wrapper_src"; else src_path=""; fi; \
 	top_lvl=$${wrapper_top:-$*}; \
-	target_src=$$(find $(PWD)/rtl -type f -name "$*.vhd" | head -n 1); \
+	target_src=$$(find $(PWD)/rtl -type f -name "$*.vhd" ! -path "*/fpga_tester/*" | head -n 1); \
 	if [ -z "$$target_src" ]; then echo "❌ Erro: Arquivo $*.vhd não encontrado em rtl/!"; exit 1; fi; \
 	target_dir=$$(dirname "$$target_src"); \
 	target_deps=$$(find "$$target_dir" -type f -name "*.vhd" | grep -v "$$target_src" | tr '\n' ' '); \
