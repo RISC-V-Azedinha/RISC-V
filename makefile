@@ -18,10 +18,9 @@ SKIP_C_BUILD ?= 0
 SIM_BOOT_ADDR ?= 0
 
 export COCOTB_REDUCED_LOG_FMT := 1
-export PYTHONPATH := $(PWD)/sim/core/$(CORE_ARCH)/unit:$(PWD)/sim/core/$(CORE_ARCH)/integration:$(PWD)/sim/core/$(CORE_ARCH)/e2e:$(PWD)/sim/core/$(CORE_ARCH)/include:$(PWD)/sim/perips/unit:$(PWD)/sim/perips/integration:$(shell echo $$PYTHONPATH)
+export PYTHONPATH := $(PWD)/sim/core/$(CORE_ARCH)/unit:$(PWD)/sim/core/$(CORE_ARCH)/integration:$(PWD)/sim/core/$(CORE_ARCH)/e2e:$(PWD)/sim/core/$(CORE_ARCH)/include:$(PWD)/sim/perips/unit:$(PWD)/sim/perips/integration:$(PWD)/sim/soc/unit:$(PWD)/sim/soc/integration:$(shell echo $$PYTHONPATH)
 
-# Variável auxiliar para pegar todos os fontes do core E dos periféricos (útil para os testes de integração e e2e)
-RTL_SOURCES := $(wildcard $(PWD)/rtl/core/$(CORE_ARCH)/core/*.vhd) $(wildcard $(PWD)/rtl/perips/*/*.vhd)
+RTL_SOURCES := $(wildcard $(PWD)/rtl/core/$(CORE_ARCH)/core/*.vhd) $(wildcard $(PWD)/rtl/perips/*/*.vhd) $(wildcard $(PWD)/rtl/soc/*.vhd)
 
 .PHONY: clean
 
