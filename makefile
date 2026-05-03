@@ -54,6 +54,44 @@ ZICSR_EXT   := $(shell $(CC) -march=rv32i_zicsr -mabi=ilp32 -E - < /dev/null > /
 
 BASE_CFLAGS := -march=rv32i$(ZICSR_EXT) -mabi=ilp32 -nostdlib -nostartfiles -g --specs=picolibc.specs
 
+
+# =========================================================
+# 🆘 MENU DE AJUDA ("make" ou "make help")
+# =========================================================
+.DEFAULT_GOAL := help
+
+help:
+	@echo " "
+	@echo "      ██████╗ ██╗███████╗ ██████╗ ██╗   ██╗     "
+	@echo "      ██╔══██╗██║██╔════╝██╔════╝ ██║   ██║     "
+	@echo "      ██████╔╝██║███████╗██║█████╗██║   ██║     "
+	@echo "      ██╔══██╗██║╚════██║██║╚════╝╚██╗ ██╔╝     "
+	@echo "      ██║  ██║██║███████║╚██████╗  ╚████╔╝      "
+	@echo "      ╚═╝  ╚═╝╚═╝╚══════╝ ╚═════╝   ╚═══╝       "
+	@echo " "
+	@echo "======================================================================"
+	@echo "                 RISC-V Project Build System                          "
+	@echo "======================================================================"
+	@echo " "
+	@echo " 🧪 SIMULAÇÃO E TESTES (Cocotb)"
+	@echo " ────────────────────────────────────────────────────────────────────"
+	@echo "   make test-unit-<nome>      Executa teste unitário"
+	@echo "   make test-int-<nome>       Executa teste de integração"
+	@echo "   make test-e2e-<nome>       Executa teste end-to-end (ex: soc_top)"
+	@echo "   make test-compliance       Roda a suíte oficial do RISC-V"
+	@echo "   make list-tests            Lista todos os testes em Python disponíveis"
+	@echo " "
+	@echo " 🔌 FPGA E SOFTWARE"
+	@echo " ────────────────────────────────────────────────────────────────────"
+	@echo "   make fpga                  Sintetiza, implementa e grava a FPGA (Vivado)"
+	@echo "   make upload SW=<app>       Compila o C e envia via UART (ex: COM=/dev/ttyUSB1)"
+	@echo "   make list-apps             Lista todos os apps em C/Assembly disponíveis"
+	@echo " "
+	@echo " 🧹 UTILITÁRIOS"
+	@echo " ────────────────────────────────────────────────────────────────────"
+	@echo "   make clean                 Apaga a pasta build/ e arquivos temporários"
+	@echo " "
+
 .PHONY: clean list-tests fpga upload boot-fpga sw-fpga
 
 # ---------------------------------------------------------
@@ -67,7 +105,21 @@ list-tests:
 	@echo " "
 
 # ---------------------------------------------------------
-# 🎯 Regra 1: TESTES UNITÁRIOS ("make test-unit-<nome>")
+# 📦 Regra 1: LISTAR APPs ("make list-apps")
+# ---------------------------------------------------------
+list-apps:
+	@echo " "
+	@echo "📦 APLICAÇÕES DISPONÍVEIS:"
+	@echo "────────────────────────────────────────────────"
+	@echo "🔌 FPGA (Apps, Tests e Servers):"
+	@find $(FPGA_SW_DIR) -type f \( -name "*.c" -o -name "*.s" \) ! -name "boot.c" ! -name "start.s" 2>/dev/null | awk -F/ '{print $$NF}' | sed -E 's/\.(c|s)$$//' | sort | uniq | sed 's/^/  • /' || echo "  (Vazio)"
+	@echo " "
+	@echo "🧪 Simulação (E2E Apps):"
+	@find $(PWD)/sim/core/$(PKG_ARCH)/e2e/sw/apps -type f \( -name "*.c" -o -name "*.s" \) 2>/dev/null | awk -F/ '{print $$NF}' | sed -E 's/\.(c|s)$$//' | sort | uniq | sed 's/^/  • /' || echo "  (Vazio)"
+	@echo " "
+
+# ---------------------------------------------------------
+# 🎯 Regra 2: TESTES UNITÁRIOS ("make test-unit-<nome>")
 # ---------------------------------------------------------
 test-unit-%:
 	@echo "================================================="
@@ -102,7 +154,7 @@ test-unit-%:
 		SIM_ARGS="$$sim_args"
 
 # ---------------------------------------------------------
-# 🌍 Regra 2: TESTES DE INTEGRAÇÃO ("make test-int-<nome>")
+# 🌍 Regra 3: TESTES DE INTEGRAÇÃO ("make test-int-<nome>")
 # ---------------------------------------------------------
 test-int-%:
 	@echo "================================================="
@@ -125,7 +177,7 @@ test-int-%:
 		SIM_ARGS="--vcd=$(PWD)/build/$(CORE_ARCH)/$*/wave.vcd --ieee-asserts=disable"
 
 # ---------------------------------------------------------
-# 🚀 Regra 3: TESTES END-TO-END ("make test-e2e-<nome>")
+# 🚀 Regra 4: TESTES END-TO-END ("make test-e2e-<nome>")
 # ---------------------------------------------------------
 TARGET_BUILD_DIR ?= $(PWD)/build/$(CORE_ARCH)/$*
 
@@ -158,7 +210,7 @@ test-e2e-%:
 		SIM_ARGS="$$sim_args"
 
 # ---------------------------------------------------------
-# 🔌 Regra 4: FPGA (Síntese, Implementação e Upload)
+# 🔌 Regra 5: FPGA (Síntese, Implementação e Upload)
 # ---------------------------------------------------------
 boot-fpga:
 	@mkdir -p $(BUILD_FPGA_BOOT)
