@@ -1,5 +1,5 @@
 # =====================================================================================================================
-# File: test_alu.py (Testbench para a ALU)
+# File: test_alu.py (Testbench para a ALU) 
 # =====================================================================================================================
 #
 # >>> Descrição: TESTBENCH em Python usando cocotb (COroutine COmmand-based TestBench)
