@@ -7,7 +7,7 @@
 
 ![RISC-V SOC](./assets/risc-v.jpg){ .hero-img }
 
-Bem-vindo à documentação oficial do Processador RISC-V. Este projeto engloba a implementação de um processador de 32 bits baseado na ISA `RV32I_Zicsr`, projetado para suportar múltiplas microarquiteturas. O hardware foi desenvolvido inteiramente em `VHDL-2008`, com um forte foco em clareza, modularidade e propósitos educacionais para o estudo de arquitetura de computadores.
+Bem-vindo à documentação oficial do Processador RISC-V. Este projeto engloba a implementação de um processador de 32 bits baseado na ISA `RV32I_Zicsr`, projetado para suportar múltiplas microarquiteturas. O hardware foi desenvolvido inteiramente em `VHDL-2008`, com um forte foco em clareza, modularidade e propósitos educacionais para o estudo de arquitetura de computadores. 
 
 !!! note "RV32I_Zicsr"
     O `RV32I` é o conjunto obrigatório de instruções base de inteiros de 32 bits. A extensão `Zicsr` adiciona a capacidade de ler e escrever nos Control and Status Registers (Registradores de Controlo e Estado). Isso será detalhado na seção dedicada à exceções e interrupções.
