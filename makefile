@@ -49,7 +49,10 @@ BUILD_FPGA_BOOT := $(BUILD_FPGA)/boot
 BUILD_FPGA_LOGS := $(BUILD_FPGA)/logs
 FPGA_SCRIPTS    := $(PWD)/fpga/scripts
 
-BASE_CFLAGS := -march=rv32i -mabi=ilp32 -nostdlib -nostartfiles -g --specs=picolibc.specs
+# Auto-detecta se o compilador atual suporta/exige a extensão _zicsr
+ZICSR_EXT   := $(shell $(CC) -march=rv32i_zicsr -mabi=ilp32 -E - < /dev/null > /dev/null 2>&1 && echo "_zicsr" || echo "")
+
+BASE_CFLAGS := -march=rv32i$(ZICSR_EXT) -mabi=ilp32 -nostdlib -nostartfiles -g --specs=picolibc.specs
 
 .PHONY: clean list-tests fpga upload boot-fpga sw-fpga
 
