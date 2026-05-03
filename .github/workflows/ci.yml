@@ -23,6 +23,8 @@ jobs:
       - uses: dorny/paths-filter@v3
         id: filter
         with:
+          # 🛑 AQUI ESTÁ O SEGREDO: Se for push, olha só para o commit atual. Se for PR, olha para a main.
+          base: ${{ github.event_name == 'push' && github.event.before || github.event.pull_request.base.sha }}
           filters: |
             hardware:
               - 'rtl/**'
@@ -54,7 +56,7 @@ jobs:
         if: ${{ needs.changes.outputs.hardware == 'true' }}
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Necessário para o smart_test.py ver o histórico do Git e fazer o diff
+          fetch-depth: 0
 
       - name: Instalar Dependências de Sistema (GHDL e RISC-V GCC)
         if: ${{ needs.changes.outputs.hardware == 'true' }}
@@ -80,24 +82,20 @@ jobs:
     name: RV32I Compliance Suite
     runs-on: ubuntu-latest
     needs: [changes, rtl-simulation]
+    
+    # ⚡ OTIMIZAÇÃO: Cancela o Job inteiro se nenhum core mudou
+    if: ${{ needs.changes.outputs.single_cycle == 'true' || needs.changes.outputs.multi_cycle == 'true' }}
 
     steps:
-      - name: Bypass Message (If No Core Changes)
-        if: ${{ needs.changes.outputs.single_cycle == 'false' && needs.changes.outputs.multi_cycle == 'false' }}
-        run: echo "✅ Nenhuma alteração nos cores detectada. Compliance E2E finalizado em bypass."
-
       - name: Checkout do código
-        if: ${{ needs.changes.outputs.single_cycle == 'true' || needs.changes.outputs.multi_cycle == 'true' }}
         uses: actions/checkout@v4
 
       - name: Instalar Dependências de Sistema (GHDL e RISC-V GCC)
-        if: ${{ needs.changes.outputs.single_cycle == 'true' || needs.changes.outputs.multi_cycle == 'true' }}
         run: |
           sudo apt-get update
           sudo apt-get install -y ghdl gcc-riscv64-unknown-elf picolibc-riscv64-unknown-elf make
 
       - name: Configurar Ambiente Python (Cocotb)
-        if: ${{ needs.changes.outputs.single_cycle == 'true' || needs.changes.outputs.multi_cycle == 'true' }}
         run: |
           python3 -m pip install --upgrade pip
           pip install cocotb cocotb-test pytest
@@ -109,11 +107,3 @@ jobs:
       - name: Executar Compliance Oficial (Multi Cycle)
         if: ${{ needs.changes.outputs.multi_cycle == 'true' }}
         run: make test-compliance CORE_ARCH=multi_cycle
-
-      # - name: Salvar Logs de Falha e Ondas
-      #   if: failure()
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: compliance-error-traces
-      #     path: build/  # Salva a pasta inteira para você poder baixar os arquivos .vcd e o results.xml do Cocotb
-      #     retention-days: 5
