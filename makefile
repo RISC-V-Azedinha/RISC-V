@@ -7,7 +7,7 @@ CORE_ARCH ?= multi_cycle
 
 CORE_ARCH ?= multi_cycle
 
-PKG_ARCH := $(if $(filter perips,$(CORE_ARCH)),multi_cycle,$(CORE_ARCH))
+PKG_ARCH := $(if $(filter perips soc,$(CORE_ARCH)),multi_cycle,$(CORE_ARCH))
 
 PKG := $(PWD)/rtl/core/$(PKG_ARCH)/pkg/riscv_isa_pkg.vhd \
        $(PWD)/rtl/core/$(PKG_ARCH)/pkg/riscv_uarch_pkg.vhd
