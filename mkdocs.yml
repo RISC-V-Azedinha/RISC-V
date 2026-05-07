@@ -62,27 +62,27 @@ nav:
   - Introdução:
       - Visão Geral: index.md
       - Requisitos e Setup: intro/setup.md
-      - Primeiros Passos: intro/quickstart.md
   - Arquitetura de Hardware:
       - Microarquitetura Monociclo: hardware/single-cycle.md
       - Microarquitetura Multiciclo: hardware/multi-cycle.md
       - Subsistema de Interrupções: hardware/interrupts.md
-      - Controlador GPIO: soc/gpio_controller.md
-      - Controlador UART: soc/uart_controller.md
+      - Barramento: soc/barramento.md
+      - Controlador de Debug: soc/debug_controller.md
+      - Memória e DMA: soc/memoria_dma.md
   - Software:
       - Processo de Boot: software/boot.md
       - Linker Scripts: software/linker.md
+      - Toolchain e Build System: software/toolchain_build_system.md
+      - Protocolo de Comunicação: software/protocolo_comunicacao_host_fpga.md
+      - Interface Gráfica: software/interface_grafica_educacional_depuracao.md
+      - Aplicações e Servidores: software/documentar_apps_servidores_ia.md
+      - Pipeline de Inteligência Artificial: software/clientes_inteligencia_artificial.md
   - Periféricos:
-       - Controlador VGA: soc/vga_controller.md
+      - Controlador GPIO: soc/gpio_controller.md
+      - Controlador UART: soc/uart_controller.md
+      - Controlador VGA: soc/vga_controller.md
   - Simulação e Verificação:
-      - Ambiente de Testes (Cocotb): dev/simulation.md     # Baseado nos ficheiros em sim/
-      - Fluxo de Síntese (FPGA): dev/fpga_build.md         # Baseado em fpga/scripts/
-  - Aplicações:
-      - Protocolo de Comunicação: apps/protocolo_comunicacao_host_fpga.md 
-      - Interface Gráfica Educacional e Depuração: apps/interface_grafica_educacional_depuracao.md 
-      - Clientes de Inteligência Artificial: apps/clientes_inteligencia_artificial.md 
-      - Jogo Pong: apps/pong.md
-      - Renderização de Fractal: apps/fractal.md
+      - Fluxo de Síntese (FPGA): dev/fpga_build.md         
 
 
 extra_css:

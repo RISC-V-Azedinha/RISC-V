@@ -1,5 +1,3 @@
-!!! warning Atualizar referência do link para documentação do barramento.
-
 # Organização do Espaço de Memória do SoC RISC-V
 
 ## 1. Espaço de Endereçamento
@@ -709,7 +707,7 @@ O **bus_interconnect** realiza a decodificação de endereços e roteamento de d
 3. Roteia os sinais de endereço, dados e controle
 4. Multiplexa o dado de resposta ao master
 
-!!! info Mais informações sobre o barramento em [Barramento: Mestres e Escravos ](https://url.com).
+!!! info Mais informações sobre o barramento em [Barramento: Mestres e Escravos ](barramento.md).
 
 
 

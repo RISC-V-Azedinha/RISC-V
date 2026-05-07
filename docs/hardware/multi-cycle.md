@@ -350,8 +350,3 @@ A arquitetura de Harvard Modificada é mantida, com barramentos separados para I
 A microarquitetura multiciclo representa um compromisso entre simplicidade de controle (herdada do monociclo) e desempenho (proporcional à frequência de operação). Ao dividir a execução em múltiplos ciclos e reutilizar recursos de hardware no tempo, o processador pode atingir frequencies significativamente mais altas que o monociclo, mantendo uma complexidade controlável.
 
 A implementação do protocolo handshake ready/valid garante que o processador pode funcionar corretamente com memórias reais de latência variável, algo impossível no modelo monociclo.
-
-## Referências
-
-* JENSEN, J. J. How the AXI-style ready/valid handshake works. Disponível em: <https://vhdlwhiz.com/how-the-axi-style-ready-valid-handshake-works/>.
-* AMD Technical Information Portal. 7 Series FPGAs Memory Resources. Disponível em: <https://docs.amd.com/v/u/en-US/ug473_7Series_Memory_Resources>.
