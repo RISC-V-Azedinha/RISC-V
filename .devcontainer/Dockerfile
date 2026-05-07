@@ -15,7 +15,6 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     python3-dev \
     gcc-riscv64-unknown-elf \
-    picolibc-riscv64-unknown-elf \
     && rm -rf /var/lib/apt/lists/*
 
 # Atualizar o pip e instalar ferramentas Python
@@ -23,7 +22,7 @@ RUN pip3 install --no-cache-dir --upgrade pip && \
     pip3 install --no-cache-dir cocotb pytest vsg mkdocs pyserial
 
 # Configura um prompt (PS1) nativo, colorido e universal no bashrc
-RUN echo "export PS1='\[\033[01;32m\]\u@SuperNova-RV\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '" >> ~/.bashrc
+RUN echo "export PS1='\[\033[01;32m\]\u@RISC-V\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '" >> ~/.bashrc
 
 # Definir diretório de trabalho padrão
 WORKDIR /workspace
