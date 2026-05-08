@@ -1,38 +1,66 @@
-# =============================================================================
-#  RISC-V PROJECT MAIN MAKEFILE
-# =============================================================================
+# =========================================================
+# MINIMALIST COCOTB MAKEFILE - UNIT, INT, E2E & FPGA
+# =========================================================
 
-# Default targets 
+PWD := $(shell pwd)
+CORE_ARCH ?= multi_cycle
 
-.PHONY: all help info clean detect-info
-all: help
+PKG_ARCH := $(if $(filter perips soc,$(CORE_ARCH)),multi_cycle,$(CORE_ARCH))
 
-# Inclusão de Configuração (mk/config.mk carrega mk/detect.mk automaticamente)
-include mk/config.mk
+PKG := $(PWD)/rtl/core/$(PKG_ARCH)/pkg/riscv_isa_pkg.vhd \
+       $(PWD)/rtl/core/$(PKG_ARCH)/pkg/riscv_uarch_pkg.vhd
 
-# Definição dos Fontes (VHDL)
-include mk/sources.mk
+APP ?= hello
+PROGRAM_PATH ?= $(PWD)/sim/core/$(PKG_ARCH)/e2e/sw/apps/build/$(APP).hex
+SKIP_C_BUILD ?= 0
+SIM_BOOT_ADDR ?= 0
 
-# =============================================================================
-#  TARGETS PRINCIPAIS
-# =============================================================================
+export COCOTB_REDUCED_LOG_FMT := 1
+export PYTHONPATH := $(PWD)/sim/core/$(CORE_ARCH)/unit:$(PWD)/sim/core/$(CORE_ARCH)/integration:$(PWD)/sim/core/$(CORE_ARCH)/e2e:$(PWD)/sim/core/$(CORE_ARCH)/include:$(PWD)/sim/perips/unit:$(PWD)/sim/perips/integration:$(PWD)/sim/soc/unit:$(PWD)/sim/soc/integration:$(PWD)/sim/soc:$(PWD)/sim/soc/e2e:$(shell echo $$PYTHONPATH)
 
-# Regras de Software (GCC, Bootloader)
-include mk/rules_sw.mk
+# =========================================================
+# 🛠️ CONFIGURAÇÕES DE DIRETÓRIOS E FONTES
+# =========================================================
+PERIPS_DIR := $(PWD)/rtl/perips
+NPU_DIR    := $(PERIPS_DIR)/npu
 
-# Regras de Simulação (Cocotb, GTKWave)
-include mk/rules_sim.mk
+# Coleta arquivos da NPU ignorando a pasta de testes
+NPU_SOURCES := $(shell find $(NPU_DIR) -name "*.vhd" ! -path "*/fpga_tester/*")
 
-# Regras de FPGA (Vivado, Bitstream, Upload)
-include mk/rules_fpga.mk
+# Monta o RTL_SOURCES principal
+RTL_SOURCES := $(wildcard $(PWD)/rtl/core/$(PKG_ARCH)/core/*.vhd) \
+               $(wildcard $(PERIPS_DIR)/*/*.vhd) \
+               $(wildcard $(PWD)/rtl/soc/*.vhd) \
+               $(NPU_SOURCES)
 
-# =============================================================================
-#  HELP & CLEANUP
-# =============================================================================
+# =========================================================
+# ⚙️ CONFIGURAÇÕES DE FPGA E SOFTWARE
+# =========================================================
+CC           = riscv64-unknown-elf-gcc
+OBJCOPY      = riscv64-unknown-elf-objcopy
+VIVADO_BIN  ?= vivado
+PYTHON_BIN  ?= python3
+COM         ?= /dev/ttyUSB1
 
-.PHONY: help
+FPGA_SW_DIR     := $(PWD)/fpga/sw
+BUILD_FPGA      := $(PWD)/build/fpga
+BUILD_FPGA_BIN  := $(BUILD_FPGA)/bin
+BUILD_FPGA_BOOT := $(BUILD_FPGA)/boot
+BUILD_FPGA_LOGS := $(BUILD_FPGA)/logs
+FPGA_SCRIPTS    := $(PWD)/fpga/scripts
+
+# Auto-detecta se o compilador atual suporta/exige a extensão _zicsr
+ZICSR_EXT   := $(shell $(CC) -march=rv32i_zicsr -mabi=ilp32 -E - < /dev/null > /dev/null 2>&1 && echo "_zicsr" || echo "")
+
+BASE_CFLAGS := -march=rv32i$(ZICSR_EXT) -mabi=ilp32 -nostdlib -nostartfiles -g --specs=picolibc.specs
+
+
+# =========================================================
+# 🆘 MENU DE AJUDA ("make" ou "make help")
+# =========================================================
+.DEFAULT_GOAL := help
+
 help:
-	@echo " "
 	@echo " "
 	@echo "      ██████╗ ██╗███████╗ ██████╗ ██╗   ██╗     "
 	@echo "      ██╔══██╗██║██╔════╝██╔════╝ ██║   ██║     "
@@ -41,21 +69,17 @@ help:
 	@echo "      ██║  ██║██║███████║╚██████╗  ╚████╔╝      "
 	@echo "      ╚═╝  ╚═╝╚═╝╚══════╝ ╚═════╝   ╚═══╝       "
 	@echo " "
-	@echo "========================================================================================================="
-	@echo "                         RISC-V Project Build System                                                     "
-	@echo "========================================================================================================="
+	@echo "======================================================================"
+	@echo "                 RISC-V Project Build System                          "
+	@echo "======================================================================"
 	@echo " "
-	@echo " 📦 SOFTWARE COMPILATION"
-	@echo " ────────────────────────────────────────────────────────────────────────────────────────────────────────"
-	@echo "   make sw SW=<prog>                                            Compilar App (Detecta FPGA ou Simulação)"
-	@echo "   make boot                                                    Compilar bootloader da FPGA"
-	@echo "   make list-apps                                               Listar aplicações disponíveis"
-	@echo " "
-	@echo " 🧪 HARDWARE TESTING & SIMULATION"
-	@echo " ────────────────────────────────────────────────────────────────────────────────────────────────────────"
-	@echo "   make cocotb [CORE=<core>] TEST=<test> TOP=<top> [SW=<prog>]  Rodar teste COCOTB"
-	@echo "   make cocotb TEST=<test> TOP=<top>                            Teste de componente (unit)"
-	@echo "   make list-tests [CORE=<core>]                                Listar testes disponíveis"
+	@echo " 🧪 SIMULAÇÃO E TESTES (Cocotb)"
+	@echo " ────────────────────────────────────────────────────────────────────"
+	@echo "   make test-unit-<nome>      Executa teste unitário"
+	@echo "   make test-int-<nome>       Executa teste de integração"
+	@echo "   make test-e2e-<nome>       Executa teste end-to-end (ex: soc_top)"
+	@echo "   make test-compliance       Roda a suíte oficial do RISC-V"
+	@echo "   make list-tests            Lista todos os testes em Python disponíveis"
 	@echo " "
 	@echo " 🔌 FPGA E SOFTWARE"
 	@echo " ────────────────────────────────────────────────────────────────────"
@@ -65,43 +89,35 @@ help:
 	@echo "   make upload SW=<app>       Compila o C e envia via UART (ex: COM=/dev/ttyUSB1)"
 	@echo "   make list-apps             Lista todos os apps em C/Assembly disponíveis"
 	@echo " "
-	@echo " 🔌 FPGA & UPLOAD "
-	@echo " ─────────────────────────────────────────────────────────────────────────────────────────────────────"
-	@echo "   make fpga                                                    Sintetizar e programar a FPGA"
-	@echo "   make upload SW=<prog> [COM=<port>]                           Enviar software via UART"
+	@echo " 🧹 UTILITÁRIOS"
+	@echo " ────────────────────────────────────────────────────────────────────"
+	@echo "   make clean                 Apaga a pasta build/ e arquivos temporários"
 	@echo " "
-	@echo " ⚙️  INFORMAÇÕES & DEBUG"
-	@echo " ────────────────────────────────────────────────────────────────────────────────────────────────────────"
-	@echo "   make info                                                    Mostrar informações do sistema e config"
-	@echo "   make detect-info                                             Mostrar detecção do SO e ferramentas"
-	@echo " "
-	@echo " 🧹 MAINTENANCE"
-	@echo " ────────────────────────────────────────────────────────────────────────────────────────────────────────"
-	@echo "   make clean                                                   Limpar diretório de build"
-	@echo " "
-	@echo "========================================================================================================="
 
-# =============================================================================
-#                            TARGETS ESPECÍFICOS
-# =============================================================================
+.PHONY: clean list-tests fpga upload boot-fpga sw-fpga
 
-clean:
-	@echo ">>> 🧹 Limpando diretório de build..."
-	@rm -rf $(BUILD_DIR) *.cf
-	@echo ">>> ✅ Limpeza concluída"
-
-# =============================================================================
-#  INFORMAÇÕES E DEBUG
-# =============================================================================
-
-info: detect-info
+# ---------------------------------------------------------
+# 📋 Regra 0: LISTAR TESTES ("make list-tests")
+# ---------------------------------------------------------
+list-tests:
 	@echo " "
-	@echo "╔═════════════════════════════════════════════════════════════╗"
-	@echo "║           CONFIGURAÇÃO DO PROJETO RISC-V                    ║"
-	@echo "╚═════════════════════════════════════════════════════════════╝"
+	@echo "🔎 Testes disponíveis para CORE_ARCH=$(CORE_ARCH):"
+	@echo "────────────────────────────────────────────────"
+	@find $(PWD)/sim -name "test_*.py" | grep "$(CORE_ARCH)\|perips\|soc" | awk -F/ '{print $$NF}' | sed 's/\.py$$//' | sort | uniq | sed 's/^/  • /' || echo "  (Nenhum encontrado)"
 	@echo " "
-	@echo "  Arquitetura Ativa    : $(CORE)"
-	@echo "  Diretório de Build   : $(BUILD_DIR)"
+
+# ---------------------------------------------------------
+# 📦 Regra 1: LISTAR APPs ("make list-apps")
+# ---------------------------------------------------------
+list-apps:
+	@echo " "
+	@echo "📦 APLICAÇÕES DISPONÍVEIS:"
+	@echo "────────────────────────────────────────────────"
+	@echo "🔌 FPGA (Apps, Tests e Servers):"
+	@find $(FPGA_SW_DIR) -type f \( -name "*.c" -o -name "*.s" \) ! -name "boot.c" ! -name "start.s" 2>/dev/null | awk -F/ '{print $$NF}' | sed -E 's/\.(c|s)$$//' | sort | uniq | sed 's/^/  • /' || echo "  (Vazio)"
+	@echo " "
+	@echo "🧪 Simulação (E2E Apps):"
+	@find $(PWD)/sim/core/$(PKG_ARCH)/e2e/sw/apps -type f \( -name "*.c" -o -name "*.s" \) 2>/dev/null | awk -F/ '{print $$NF}' | sed -E 's/\.(c|s)$$//' | sort | uniq | sed 's/^/  • /' || echo "  (Vazio)"
 	@echo " "
 
 # ---------------------------------------------------------
