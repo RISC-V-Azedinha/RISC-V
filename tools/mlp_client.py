@@ -157,6 +157,9 @@ class NPUDriverEdge:
 # ==============================================================================
 # INTERFACE GRÁFICA TKINTER
 # ==============================================================================
+# ==============================================================================
+# INTERFACE GRÁFICA TKINTER (Real-Time Inference)
+# ==============================================================================
 class EdgeAI_App:
     def __init__(self, driver):
         self.driver = driver
@@ -167,7 +170,10 @@ class EdgeAI_App:
         self.imagem_virtual = Image.new("L", (self.canvas_size, self.canvas_size), color=0)
         self.draw = ImageDraw.Draw(self.imagem_virtual)
 
-        tk.Label(self.janela, text="Desenhe o dígito (O SoC fará o resto):", font=("Consolas", 12)).pack(pady=5)
+        # Flag para controlar se a tela foi alterada desde a última inferência
+        self.modificado = False
+
+        tk.Label(self.janela, text="Desenhe o dígito (O SoC adivinha em tempo real!):", font=("Consolas", 12)).pack(pady=5)
 
         self.cv = tk.Canvas(self.janela, width=self.canvas_size, height=self.canvas_size, bg="black")
         self.cv.pack(pady=10)
@@ -175,21 +181,30 @@ class EdgeAI_App:
 
         frame_botoes = tk.Frame(self.janela)
         frame_botoes.pack(pady=5)
-        tk.Button(frame_botoes, text="Inferir SoC", command=self.executar, font=("Consolas", 12), bg="#4CAF50", fg="white").pack(side=tk.LEFT, padx=10)
-        tk.Button(frame_botoes, text="Limpar", command=self.limpar, font=("Consolas", 12)).pack(side=tk.RIGHT, padx=10)
+        
+        # O botão de inferir manual foi removido para focar na experiência em tempo real,
+        # mas mantivemos o botão de limpar.
+        tk.Button(frame_botoes, text="Limpar Tela", command=self.limpar, font=("Consolas", 12), bg="#E53935", fg="white").pack(padx=10)
 
-        self.lbl_resultado = tk.Label(self.janela, text="Hardware Pronto.", font=("Consolas", 14))
+        self.lbl_resultado = tk.Label(self.janela, text="Aguardando desenho...", font=("Consolas", 14))
         self.lbl_resultado.pack(pady=10)
+
+        # Inicia o loop de adivinhação em tempo real
+        self.loop_inferencia()
 
     def pintar(self, event):
         x1, y1, x2, y2 = (event.x - 12), (event.y - 12), (event.x + 12), (event.y + 12)
         self.cv.create_oval(x1, y1, x2, y2, fill="white", outline="white")
         self.draw.ellipse([x1, y1, x2, y2], fill=255)
+        
+        # Sinaliza que há pixels novos para serem analisados
+        self.modificado = True
 
     def limpar(self):
         self.cv.delete("all")
         self.draw.rectangle([0, 0, self.canvas_size, self.canvas_size], fill=0)
-        self.lbl_resultado.config(text="Hardware Pronto.", fg="black")
+        self.lbl_resultado.config(text="Aguardando desenho...", fg="black")
+        self.modificado = False
 
     def executar(self):
         bbox = self.imagem_virtual.getbbox()
@@ -214,9 +229,19 @@ class EdgeAI_App:
             latencia = (time.time() - start_t) * 1000
             predicao = np.argmax(logits)
 
-            self.lbl_resultado.config(text=f"Predição SoC: {predicao}\nLatência Total (UART+SoC+NPU): {latencia:.1f} ms", fg="green")
+            self.lbl_resultado.config(text=f"Predição SoC: {predicao}\nLatência (HIL): {latencia:.1f} ms", fg="green")
         except Exception as e:
             self.lbl_resultado.config(text=f"Erro de Conexão: {e}", fg="red")
+
+    def loop_inferencia(self):
+        """ Loop rodando em background usando o event loop do Tkinter """
+        if self.modificado:
+            # Reseta a flag ANTES de executar, para capturar desenhos feitos durante a latência
+            self.modificado = False 
+            self.executar()
+            
+        # Agenda a si mesmo para rodar novamente em 250 milissegundos (4 FPS)
+        self.janela.after(250, self.loop_inferencia)
 
     def iniciar(self):
         self.janela.protocol("WM_DELETE_WINDOW", self.on_fechar)
