@@ -3,6 +3,15 @@
 #include "hal/hal_uart.h"
 #include "hal/hal_dma.h"
 
+// =========================================================
+// DEFINIÇÕES DE HARDWARE (LEDS)
+// =========================================================
+#define GPIO_BASE 0x20000000
+#define REG_LEDS  (*(volatile uint32_t *)(GPIO_BASE + 0x00))
+
+// =========================================================
+// ALOCAÇÃO DE MEMÓRIA (PESOS E ATIVAÇÕES)
+// =========================================================
 __attribute__((aligned(4))) uint32_t W1_packed[25088]; 
 __attribute__((aligned(4))) int32_t  B1[128];
 __attribute__((aligned(4))) uint32_t W2_packed[384]; 
@@ -36,6 +45,7 @@ void npu_run_layer(uint32_t* weights_packed, int32_t* biases, int8_t* inputs, in
 
     int chunk_idx = 0;
     for (int chunk_start = 0; chunk_start < out_features; chunk_start += 4) {
+        
         int chunk_size = (out_features - chunk_start < 4) ? (out_features - chunk_start) : 4;
 
         for (int b = 0; b < 4; b++) {
@@ -50,14 +60,12 @@ void npu_run_layer(uint32_t* weights_packed, int32_t* biases, int8_t* inputs, in
         MMIO32(NPU_BASE_ADDR + 0x08) = in_features; 
         MMIO32(NPU_BASE_ADDR + 0x04) = 0x36;        
 
-        // FIX 1: Impede a "Race Condition" aguardando o FSM ir para COMPUTE
-        while (!(MMIO32(NPU_BASE_ADDR + 0x00) & (1 << 0))); // Aguarda STATUS_BUSY == 1
+        // Aguarda STATUS_BUSY == 1
+        while (!(MMIO32(NPU_BASE_ADDR + 0x00) & (1 << 0))); 
         
-        // Agora sim podemos esperar terminar com segurança
-        while (!(MMIO32(NPU_BASE_ADDR + 0x00) & (1 << 1))); // Aguarda STATUS_DONE == 1
+        // Aguarda STATUS_DONE == 1
+        while (!(MMIO32(NPU_BASE_ADDR + 0x00) & (1 << 1))); 
 
-        // FIX 2: A Linha 0 (Onde estão os inputs) é a 4ª a sair no Output DRAIN do Array.
-        // Precisamos descartar os primeiros 3 lixos e salvar o 4º pop da FIFO.
         uint32_t trash, valid_res;
         while (!(MMIO32(NPU_BASE_ADDR + 0x00) & (1 << 3))); trash = MMIO32(NPU_BASE_ADDR + 0x18);
         while (!(MMIO32(NPU_BASE_ADDR + 0x00) & (1 << 3))); trash = MMIO32(NPU_BASE_ADDR + 0x18);
@@ -75,8 +83,15 @@ void npu_run_layer(uint32_t* weights_packed, int32_t* biases, int8_t* inputs, in
 
 int main(void) {
     hal_uart_init();
+    
+    // Feedback visual de Boot Concluído
+    REG_LEDS = 0xFFFF;
+    for (volatile int i = 0; i < 200000; i++); 
+    REG_LEDS = 0x0000;
+
     while(1) {
         uint8_t cmd = hal_uart_getc();
+        
         if (cmd == 0xAA) {
             for(int i = 0; i < 25088; i++) W1_packed[i] = uart_read_uint32_be();
             hal_uart_putc('A'); 
@@ -94,12 +109,30 @@ int main(void) {
             hal_uart_putc('D');
         }
         else if (cmd == 0xFF) {
+            // Recebe a imagem da UI
             for(int i = 0; i < 784; i++) input_image[i] = (int8_t)hal_uart_getc();
 
+            // Desliga os LEDs enquanto calcula
+            REG_LEDS = 0x0000;
+
+            // Executa inferência
             npu_run_layer(W1_packed, B1, input_image, hidden_acts, 784, 128, 1, 9, 1);
             npu_run_layer(W2_packed, B2, hidden_acts, output_logits, 128, 10, 1, 9, 0);
 
-            for(int i = 0; i < 10; i++) hal_uart_putc((char)output_logits[i]);
+            // Encontra o dígito previsto (Argmax) e envia resultados via UART
+            int8_t max_logit = -128;
+            int predicted_digit = 0;
+            
+            for(int i = 0; i < 10; i++) {
+                if (output_logits[i] > max_logit) {
+                    max_logit = output_logits[i];
+                    predicted_digit = i;
+                }
+                hal_uart_putc((char)output_logits[i]);
+            }
+
+            // Mostra o resultado final acendendo o LED correspondente (LED 0 = Dígito 0... LED 9 = Dígito 9)
+            REG_LEDS = (1 << predicted_digit);
         }
     }
     return 0;
