@@ -1,145 +1,236 @@
-import serial, struct, time
 import numpy as np
-import argparse
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torchvision import datasets, transforms
+from torch.utils.data import DataLoader
+import tkinter as tk
+from PIL import Image, ImageDraw
+import serial
+import struct
+import time
+import sys
 
-parser = argparse.ArgumentParser(description='MLP Client')
-parser.add_argument('-p', '--port', default='/dev/ttyUSB1', help='Porta Serial (Ex: /dev/ttyUSB1 ou COM6)')
-parser.add_argument('-b', '--baud', type=int, default=921600, help='Baud Rate')
-args = parser.parse_args()
+# ==============================================================================
+# CONFIGURAÇÃO DE HARDWARE
+# ==============================================================================
+SERIAL_PORT = '/dev/ttyUSB1'  # Verifique sua porta
+BAUD_RATE   = 921600
 
-SERIAL_PORT = args.port
-BAUD_RATE   = args.baud 
-NETWORK_SHAPE = [64, 32, 16] 
-Q_MULT, Q_SHIFT, Q_ZP, Q_RELU = 1, 0, 10, 1
+# ==============================================================================
+# PYTORCH MODEL & QUANTIZAÇÃO
+# ==============================================================================
+class MLP_Model(nn.Module):
+    def __init__(self):
+        super(MLP_Model, self).__init__()
+        self.flatten = nn.Flatten()
+        self.hidden_layer = nn.Linear(28 * 28, 128)
+        self.relu = nn.ReLU()
+        self.output_layer = nn.Linear(128, 10)
 
-def npu_layer_lane0(inputs_vec, weights_mat, biases_vec, mult, shift, zp, relu):
-    n_out = weights_mat.shape[0]
-    res_vec = np.zeros(n_out, dtype=np.uint32)
-    for o in range(n_out):
-        acc = 0
-        row_w = weights_mat[o]
-        for i in range(len(inputs_vec)):
-            ival = int(inputs_vec[i]) & 0xFF
-            wval = int(row_w[i]) & 0xFF
-            if ival > 127: ival -= 256
-            if wval > 127: wval -= 256
-            acc += ival * wval
-        
-        bias = int(biases_vec[o])
-        val = (acc + bias) * mult >> shift
-        val += zp
-        if relu and val < 0: val = 0
-        if val > 127: val = 127
-        if val < -128: val = -128
-        res_vec[o] = (val & 0xFF)
-    return res_vec
+    def forward(self, x):
+        x = self.flatten(x)
+        x = self.hidden_layer(x)
+        x = self.relu(x)
+        return self.output_layer(x)
 
-def main():
-    print(f"🚀 Finale Debug V2 (Com Flow Control)")
-    try: ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=10.0)
-    except Exception as e: print(f"❌ {e}"); return
+def quantize_tensor(tensor_float, target_dtype, max_val_int):
+    max_abs = np.max(np.abs(tensor_float))
+    scale = max_val_int / max_abs if max_abs > 0 else 1.0
+    tensor_quant = np.round(tensor_float * scale)
+    return np.clip(tensor_quant, -max_val_int, max_val_int).astype(target_dtype), scale
 
-    # Handshake
-    print("📡 Conectando...", end='')
-    while True:
-        ser.write(b'P')
-        if ser.read(1) == b'O': break
-    print(" ✅ OK!")
-
-    # --- Geração de Dados ---
-    print("🎲 Gerando Dados...")
-    curr_in = np.random.randint(0, 0xFFFFFFFF, size=NETWORK_SHAPE[0], dtype=np.uint32)
+def treinar_e_extrair():
+    print("--- FASE 1: TREINO RÁPIDO DO MODELO (PYTORCH) ---")
+    transform = transforms.Compose([transforms.ToTensor()])
+    train_dataset = datasets.MNIST(root='./data', train=True, download=True, transform=transform)
+    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
     
-    w_blob = bytearray()
-    b_blob = bytearray()
-    configs = []
-    
-    w_off, b_off = 0, 0
-    
-    # Recalcula expected
-    input_bkp = curr_in.copy()
+    model = MLP_Model()
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=0.002) # LR inicial levemente maior
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.5) # Reduz o LR pela metade a cada 5 épocas
 
-    for i in range(len(NETWORK_SHAPE)-1):
-        ni, no = NETWORK_SHAPE[i], NETWORK_SHAPE[i+1]
-        w = np.random.randint(0, 0xFFFFFFFF, size=(no, ni), dtype=np.uint32)
-        b = np.random.randint(-100, 100, size=no, dtype=np.int32)
-        
-        exp = npu_layer_lane0(curr_in, w, b, Q_MULT, Q_SHIFT, Q_ZP, Q_RELU)
-        
-        configs.append((ni, no, w_off, b_off, Q_MULT, Q_SHIFT, Q_ZP, Q_RELU))
-        w_blob.extend(w.tobytes()); b_blob.extend(b.tobytes())
-        w_off += len(w.tobytes()); b_off += len(b)
-        curr_in = exp
-
-    final_exp = curr_in
-    curr_in = input_bkp # Restaura input para envio
-
-    # --- Carga de Dados Pesados (Safe para mandar em burst pois o FPGA só lê isso no inicio) ---
-    print("📤 Enviando Blobs (Pesos/Bias/Input)...")
-    ser.write(b'L'); ser.write(struct.pack('<I', len(w_blob))); ser.write(w_blob); ser.read(1)
-    ser.write(b'B'); ser.write(struct.pack('<I', len(b_blob))); ser.write(b_blob); ser.read(1)
-    
-    # Reenvia Input Inicial Real
-    ser.write(b'I'); ser.write(struct.pack('<I', curr_in.nbytes)); ser.write(curr_in.tobytes()); ser.read(1)
-
-    # --- Execução Sincronizada ---
-    print("⚡ Iniciando Execução Camada a Camada...")
-    ser.write(b'R')
-    ser.write(struct.pack('<I', len(configs)))
-
-    for i, c in enumerate(configs):
-        n_out = c[1]
-        print(f"   ➡️  Enviando Config Layer {i}...", end='')
-        
-        # 1. Envia Config da Camada Atual
-        ser.write(struct.pack('<IIIIIIII', *c))
-        
-        # 2. Espera FPGA processar (Lê 'L' e depois 'n_out' pontos)
-        # Isso garante que não mandamos a próx config enquanto FPGA está ocupado
-        print(f" Processando {n_out} neurônios...", end='', flush=True)
-        
-        # Lê até achar 'L'
-        while True:
-            ch = ser.read(1).decode('latin-1', errors='ignore')
-            if ch == 'L': break
-            if ch == '': print("❌ Timeout esperando 'L'"); return
-        
-        # Conta pontos '.'
-        dots = 0
-        while dots < n_out:
-            ch = ser.read(1).decode('latin-1', errors='ignore')
-            if ch == '.': dots += 1
-            if ch == '': print(f"❌ Timeout nos dots ({dots}/{n_out})"); return
+    epochs = 15 # Aumentado de 3 para 15
+    for epoch in range(epochs):
+        model.train()
+        running_loss = 0.0
+        for images, labels in train_loader:
+            optimizer.zero_grad()
+            loss = criterion(model(images), labels)
+            loss.backward()
+            optimizer.step()
+            running_loss += loss.item()
             
-        print(" ✅ Done.")
+        scheduler.step() # Atualiza o learning rate
+        print(f"Época {epoch+1}/{epochs} - Loss: {running_loss/len(train_loader):.4f} - LR: {scheduler.get_last_lr()[0]:.5f}")
 
-    # Espera marcador final '!'
-    print("   ⏳ Aguardando finalização...", end='')
-    while True:
-        ch = ser.read(1).decode('latin-1', errors='ignore')
-        if ch == '!': break
-    print(" OK!")
+    print("\n--- FASE 2: QUANTIZAÇÃO INT8/INT32 ---")
+    model.eval()
+    with torch.no_grad():
+        w1_float, b1_float = model.hidden_layer.weight.numpy(), model.hidden_layer.bias.numpy()
+        w2_float, b2_float = model.output_layer.weight.numpy(), model.output_layer.bias.numpy()
 
-    # --- Resultados ---
-    ser.read(8) # Ciclos
-    out_len = struct.unpack('<I', ser.read(4))[0]
-    fpga_out = np.frombuffer(ser.read(out_len*4), dtype=np.uint32)
+    w1_int8, scale_w1 = quantize_tensor(w1_float, np.int8, 127)
+    w2_int8, scale_w2 = quantize_tensor(w2_float, np.int8, 127)
+    b1_int32 = np.round(b1_float * scale_w1 * 255.0).astype(np.int32)
+    b2_int32 = np.round(b2_float * scale_w2 * 127.0).astype(np.int32)
     
-    print(f"\n📦 Resultado Final ({len(fpga_out)}): {fpga_out[:10]}...")
+    return w1_int8, b1_int32, w2_int8, b2_int32
 
-    # Check Lane 0
-    errs = 0
-    if len(fpga_out) != len(final_exp): print("Erro tamanho"); return
+def empacotar_pesos_dma(W_int8):
+    """ Agrupa pesos das colunas do Array Sistólico em palavras de 32 bits """
+    out_features, in_features = W_int8.shape
+    packed_array = []
     
-    for i in range(len(final_exp)):
-        if (fpga_out[i] & 0xFF) != (final_exp[i] & 0xFF):
-            print(f"❌ Erro {i}: Exp 0x{final_exp[i]:02X} != Rec 0x{fpga_out[i]:02X}")
-            errs += 1
-            if errs > 5: break
+    for chunk_start in range(0, out_features, 4):
+        chunk_size = min(4, out_features - chunk_start)
+        for k in range(in_features):
+            w0 = int(W_int8[chunk_start + 0, k]) & 0xFF if chunk_size > 0 else 0
+            w1 = int(W_int8[chunk_start + 1, k]) & 0xFF if chunk_size > 1 else 0
+            w2 = int(W_int8[chunk_start + 2, k]) & 0xFF if chunk_size > 2 else 0
+            w3 = int(W_int8[chunk_start + 3, k]) & 0xFF if chunk_size > 3 else 0
             
-    if errs == 0: print("\n🏆 SUCESSO! A sincronia funcionou.")
-    else: print(f"\n💀 {errs} erros.")
+            # FIX: Invertemos o empacotamento para w0 ficar no LSB [7:0]
+            val = (w3 << 24) | (w2 << 16) | (w1 << 8) | w0
+            packed_array.append(val)
+    return packed_array
 
-    ser.close()
+# ==============================================================================
+# DRIVER UART (UPLOAD E COMUNICAÇÃO)
+# ==============================================================================
+class NPUDriverEdge:
+    def __init__(self, port, baud):
+        try:
+            self.ser = serial.Serial(port, baud, timeout=2.0)
+            self.ser.reset_input_buffer()
+            print(f"[INFO] FPGA Conectada: {port} @ {baud} bps")
+        except Exception as e:
+            print(f"[ERRO CRÍTICO] Falha na Serial: {e}")
+            sys.exit(1)
 
-if __name__ == "__main__": main()
+    def upload_modelo(self, w1, b1, w2, b2):
+        print("\n--- FASE 3: UPLOAD DO MODELO PARA A RAM DO SOC (DMA) ---")
+        
+        # 1. Empacota
+        w1_packed = empacotar_pesos_dma(w1)
+        w2_packed = empacotar_pesos_dma(w2)
+        
+        # 2. Upload W1 (0xAA)
+        print("Enviando W1 (100 KB)... ", end="", flush=True)
+        self.ser.write(struct.pack('>B', 0xAA))
+        for val in w1_packed: self.ser.write(struct.pack('>I', val & 0xFFFFFFFF))
+        assert self.ser.read(1) == b'A'
+        print("OK")
+
+        # 3. Upload B1 (0xBB)
+        print("Enviando B1 (512 Bytes)... ", end="", flush=True)
+        self.ser.write(struct.pack('>B', 0xBB))
+        for val in b1: self.ser.write(struct.pack('>i', val))
+        assert self.ser.read(1) == b'B'
+        print("OK")
+
+        # 4. Upload W2 (0xCC)
+        print("Enviando W2 (1.5 KB)... ", end="", flush=True)
+        self.ser.write(struct.pack('>B', 0xCC))
+        for val in w2_packed: self.ser.write(struct.pack('>I', val & 0xFFFFFFFF))
+        assert self.ser.read(1) == b'C'
+        print("OK")
+
+        # 5. Upload B2 (0xDD) - Preenchido até múltiplos de 4 (12 posições)
+        print("Enviando B2... ", end="", flush=True)
+        b2_padded = np.pad(b2, (0, 12 - len(b2)), mode='constant')
+        self.ser.write(struct.pack('>B', 0xDD))
+        for val in b2_padded: self.ser.write(struct.pack('>i', val))
+        assert self.ser.read(1) == b'D'
+        print("OK")
+        
+    def inferir(self, image_int8):
+        self.ser.write(struct.pack('>B', 0xFF))
+        self.ser.write(image_int8.tobytes())
+        res = self.ser.read(10)
+        return struct.unpack('>10b', res) # 10 signed bytes
+
+    def close(self): 
+        self.ser.close()
+
+# ==============================================================================
+# INTERFACE GRÁFICA TKINTER
+# ==============================================================================
+class EdgeAI_App:
+    def __init__(self, driver):
+        self.driver = driver
+        self.janela = tk.Tk()
+        self.janela.title("Edge AI: Inferência SoC RISC-V + NPU")
+        
+        self.canvas_size = 280
+        self.imagem_virtual = Image.new("L", (self.canvas_size, self.canvas_size), color=0)
+        self.draw = ImageDraw.Draw(self.imagem_virtual)
+
+        tk.Label(self.janela, text="Desenhe o dígito (O SoC fará o resto):", font=("Consolas", 12)).pack(pady=5)
+
+        self.cv = tk.Canvas(self.janela, width=self.canvas_size, height=self.canvas_size, bg="black")
+        self.cv.pack(pady=10)
+        self.cv.bind("<B1-Motion>", self.pintar)
+
+        frame_botoes = tk.Frame(self.janela)
+        frame_botoes.pack(pady=5)
+        tk.Button(frame_botoes, text="Inferir SoC", command=self.executar, font=("Consolas", 12), bg="#4CAF50", fg="white").pack(side=tk.LEFT, padx=10)
+        tk.Button(frame_botoes, text="Limpar", command=self.limpar, font=("Consolas", 12)).pack(side=tk.RIGHT, padx=10)
+
+        self.lbl_resultado = tk.Label(self.janela, text="Hardware Pronto.", font=("Consolas", 14))
+        self.lbl_resultado.pack(pady=10)
+
+    def pintar(self, event):
+        x1, y1, x2, y2 = (event.x - 12), (event.y - 12), (event.x + 12), (event.y + 12)
+        self.cv.create_oval(x1, y1, x2, y2, fill="white", outline="white")
+        self.draw.ellipse([x1, y1, x2, y2], fill=255)
+
+    def limpar(self):
+        self.cv.delete("all")
+        self.draw.rectangle([0, 0, self.canvas_size, self.canvas_size], fill=0)
+        self.lbl_resultado.config(text="Hardware Pronto.", fg="black")
+
+    def executar(self):
+        bbox = self.imagem_virtual.getbbox()
+        if not bbox: return
+
+        # Pre-processamento Local
+        img_cropped = self.imagem_virtual.crop(bbox)
+        width, height = img_cropped.size
+        ratio = 20.0 / max(width, height)
+        new_width, new_height = int(width * ratio), int(height * ratio)
+
+        img_resized = img_cropped.resize((new_width, new_height), Image.Resampling.LANCZOS)
+        img_28x28 = Image.new("L", (28, 28), color=0)
+        img_28x28.paste(img_resized, ((28 - new_width) // 2, (28 - new_height) // 2))
+
+        img_npu = np.clip(np.array(img_28x28).flatten() // 2, 0, 127).astype(np.int8)
+
+        # Envia apenas Entradas -> Recebe Saídas
+        try:
+            start_t = time.time()
+            logits = self.driver.inferir(img_npu)
+            latencia = (time.time() - start_t) * 1000
+            predicao = np.argmax(logits)
+
+            self.lbl_resultado.config(text=f"Predição SoC: {predicao}\nLatência Total (UART+SoC+NPU): {latencia:.1f} ms", fg="green")
+        except Exception as e:
+            self.lbl_resultado.config(text=f"Erro de Conexão: {e}", fg="red")
+
+    def iniciar(self):
+        self.janela.protocol("WM_DELETE_WINDOW", self.on_fechar)
+        self.janela.mainloop()
+        
+    def on_fechar(self):
+        self.driver.close()
+        self.janela.destroy()
+
+if __name__ == "__main__":
+    w1, b1, w2, b2 = treinar_e_extrair()
+    driver = NPUDriverEdge(SERIAL_PORT, BAUD_RATE)
+    driver.upload_modelo(w1, b1, w2, b2)
+    
+    print("\n[INFO] Rede armazenada no SoC com Sucesso. Abrindo Interface...")
+    app = EdgeAI_App(driver)
+    app.iniciar()
