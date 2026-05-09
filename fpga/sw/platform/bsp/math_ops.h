@@ -17,5 +17,7 @@ int32_t  __modsi3(int32_t a, int32_t b);
 
 // Operações de 64 bits
 int64_t  __muldi3(int64_t a, int64_t b);
+uint64_t __udivdi3(uint64_t n, uint64_t d);
+uint64_t __umoddi3(uint64_t n, uint64_t d);
 
 #endif /* MATH_OPS_H */
