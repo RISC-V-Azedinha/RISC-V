@@ -27,10 +27,10 @@ O processo de síntese executa as seguintes transformações:
 1. **Análise semântica**: O sintetizador verifica a descrição VHDL, realizando inferência de circuitos combinacionais e sequenciais a partir de expressões booleanas e estruturas `process`.
 
 2. **Mapeamento em primitivas**: Os módulos VHDL são mapeados nas primitivas disponíveis na FPGA Xilinx Artix-7:
-   * **LUTs (Look-Up Tables)**: Funções booleanas de até 6 entradas que implementam lógica combinacional
-   * **Flip-Flops (FFs)**: Elementos de armazenamento para lógica sequencial (registradores)
-   * **MUXEs**: Seletores implementados via LUTs ou recursos dedicados
-   * **Carry Chains**: Caminhos de propagação rápida para operações aritméticas
+    * **LUTs (Look-Up Tables)**: Funções booleanas de até 6 entradas que implementam lógica combinacional
+    * **Flip-Flops (FFs)**: Elementos de armazenamento para lógica sequencial (registradores)
+    * **MUXEs**: Seletores implementados via LUTs ou recursos dedicados
+    * **Carry Chains**: Caminhos de propagação rápida para operações aritméticas
 
 3. **Inferência de memórias**: O sintetizador reconhece padrões de descrição de memórias (arrays, sinais com índice) e os mapeia em dois tipos distintos de recursos. A **LUTRAM** (RAM distribuída) utiliza as LUTs da malha lógica comum da FPGA, sendo adequada para estruturas pequenas como FIFOs curtas ou registradores de deslocamento com memória. Já a **BRAM** (Block RAM) consiste em blocos de silício dedicados com alta densidade, sendo a escolha ideal para a memória principal, bootloader ou qualquer estrutura que exija grande capacidade de armazenamento.
 
@@ -157,9 +157,9 @@ A diretiva `IOSTANDARD LVCMOS33` define o padrão de tensão para os pinos de en
 
 * **LVCMOS33**: Low-Voltage CMOS com tensão de 3.3V
 * Este padrão é definido porque:
-  1. A placa Nexys 4 utiliza tensão de alimentação de 3.3V para I/O
-  2. Os transceptores USB-UART (FTDI) operam em 3.3V
-  3. LEDs e chaves pull-up/pull-down da placa são compatíveis com 3.3V
+    1. A placa Nexys 4 utiliza tensão de alimentação de 3.3V para I/O
+    2. Os transceptores USB-UART (FTDI) operam em 3.3V
+    3. LEDs e chaves pull-up/pull-down da placa são compatíveis com 3.3V
 
 Utilizar um padrão incompatível resultaria em níveis lógicos incorretos, podendo danificar componentes ou causar falhas de comunicação.
 
@@ -252,16 +252,16 @@ O protocolo implementado segue uma sequência de handshake:
 2. **Aguarda Bootloader**: O SoC, ao inicializar, transmite a string "[BOOT]" via UART indicando que está pronto para receber firmware
 
 3. **Handshake**:
-   * Host envia Magic Word `0xCAFEBABE`
-   * Bootloader confirma com `!`
+    * Host envia Magic Word `0xCAFEBABE`
+    * Bootloader confirma com `!`
 
 4. **Transmissão do Tamanho**:
-   * Host envia tamanho do binário (4 bytes, little-endian)
-   * Formato: `struct.pack('<I', file_size)`
+    * Host envia tamanho do binário (4 bytes, little-endian)
+    * Formato: `struct.pack('<I', file_size)`
 
 5. **Transferência do Binário**:
-   * Dados enviados em blocos de 64 bytes
-   * ACK visual: bootloader envia `.` a cada 1KB recebido
+    * Dados enviados em blocos de 64 bytes
+    * ACK visual: bootloader envia `.` a cada 1KB recebido
 
 6. **Confirmação**: Bootloader envia `>` ao final da transmissão bem-sucedida
 

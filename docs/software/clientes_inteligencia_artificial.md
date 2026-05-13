@@ -34,12 +34,12 @@ L --> M[Predição Final + Métricas]
 
 ### Interpretação do Pipeline
 
-  Etapa                    Responsável
-  ------------------------ -------------
-  Treinamento              Host (CPU)
-  Preparação de dados      Host
-  Execução da inferência   FPGA
-  Validação e métricas     Host
+| Etapa | Responsável |
+| ------ | ----------- |
+| Treinamento | Host (CPU) |
+| Preparação de dados | Host |
+| Execução da inferência | FPGA |
+| Validação e métricas | Host |
 
 O hardware atua como um acelerador especializado, enquanto o Host
 executa tarefas de alto nível.
@@ -56,23 +56,15 @@ opcionais.
 
 ### 2.1 Tabela Oficial de Opcodes
 
-  --------------------------------------------------------------------------
-  Opcode   ASCII   Direção      Função                    Payload
-  -------- ------- ------------ ------------------------- ------------------
-  0x50     P       Host → FPGA  Sincronização             nenhum
-
-  0x4C     L       Host → FPGA  Upload de pesos           tamanho + dados
-
-  0x43     C       Host → FPGA  Configuração NPU          parâmetros
-
-  0x54     T       Host → FPGA  Configurar tiling         dimensões
-
-  0x49     I       Host → FPGA  Enviar input              vetor de entrada
-
-  0x42     B       Host → FPGA  Executar inferência       flags
-
-  0x4B     K       FPGA → Host  ACK (OK)                  nenhum
-  --------------------------------------------------------------------------
+| Opcode | ASCII | Direção | Função | Payload |
+| ------ | ----- | ------- | ------ | ------- |
+| 0x50 | P | Host → FPGA | Sincronização | nenhum |
+| 0x4C | L | Host → FPGA | Upload de pesos | tamanho + dados |
+| 0x43 | C | Host → FPGA | Configuração NPU | parâmetros |
+| 0x54 | T | Host → FPGA | Configurar tiling | dimensões |
+| 0x49 | I | Host → FPGA | Enviar input | vetor de entrada |
+| 0x42 | B | Host → FPGA | Executar inferência | flags |
+| 0x4B | K | FPGA → Host | ACK (OK) | nenhum |
 
 ### 2.2 Estrutura Geral do Pacote
 

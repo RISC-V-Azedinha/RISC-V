@@ -130,24 +130,24 @@ type t_state is (
 **Fluxo de Estados:**
 
 1. **S_IF (Instruction Fetch):** 
-   - PC é enviado para memória de instruções
-   - Instrução é armazenada no IR
-   - PC é incrementado para PC+4
+    - PC é enviado para memória de instruções
+    - Instrução é armazenada no IR
+    - PC é incrementado para PC+4
 
 2. **S_ID (Instruction Decode):**
-   - Instrução é decodificada
-   - Registradores rs1 e rs2 são lidos para os registradores A e B
-   - Imediato é gerado
+    - Instrução é decodificada
+    - Registradores rs1 e rs2 são lidos para os registradores A e B
+    - Imediato é gerado
 
 3. **S_EX_\* (Execution):**
-   - A ALU executa a operação conforme o tipo de instrução
-   - Cada variante (ALU, ADDR, BR, JAL, etc.) configura a ALU de forma diferente
+    - A ALU executa a operação conforme o tipo de instrução
+    - Cada variante (ALU, ADDR, BR, JAL, etc.) configura a ALU de forma diferente
 
 4. **S_MEM_RD / S_MEM_WR (Memory Access):**
-   - Acesso à memória de dados para loads e stores
+    - Acesso à memória de dados para loads e stores
 
 5. **S_WB_\* (Write-Back):**
-   - Resultado é escrito no registrador de destino
+    - Resultado é escrito no registrador de destino
 
 Em uma **FSM do tipo Moore**, os sinais de saída dependem exclusivamente do **estado atual**, e não diretamente das entradas, o que torna o comportamento do controle mais estável e alinhado à divisão do processamento em ciclos bem definidos.
 
@@ -344,14 +344,3 @@ A arquitetura de Harvard Modificada é mantida, com barramentos separados para I
 | **Complexidade de controle** | Baixa | Média-Alta |
 
 ---
-
-## 5. Conclusão
-
-A microarquitetura multiciclo representa um compromisso entre simplicidade de controle (herdada do monociclo) e desempenho (proporcional à frequência de operação). Ao dividir a execução em múltiplos ciclos e reutilizar recursos de hardware no tempo, o processador pode atingir frequencies significativamente mais altas que o monociclo, mantendo uma complexidade controlável.
-
-A implementação do protocolo handshake ready/valid garante que o processador pode funcionar corretamente com memórias reais de latência variável, algo impossível no modelo monociclo.
-
-## Referências
-
-* JENSEN, J. J. How the AXI-style ready/valid handshake works. Disponível em: <https://vhdlwhiz.com/how-the-axi-style-ready-valid-handshake-works/>.
-* AMD Technical Information Portal. 7 Series FPGAs Memory Resources. Disponível em: <https://docs.amd.com/v/u/en-US/ug473_7Series_Memory_Resources>.

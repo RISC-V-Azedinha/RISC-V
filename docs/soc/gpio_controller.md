@@ -177,11 +177,3 @@ O GPIO Controller implementa um protocolo **handshake com latência 1** para com
 3. **Sem máscaras individuais:** Escrita afeta todos os 16 bits simultaneamente
 
 ---
-
-## 9. Referências
-
-- **RTL Source:** `rtl/perips/gpio/gpio_controller.vhd`
-- **Testbench:** `sim/perips/test_gpio_controller.py`
-- **IEEE Std 1076:** VHDL Language Reference Manual
-
----
