@@ -312,11 +312,3 @@ Esta analogia ajuda a entender por que não precisamos "limpar" a interrupção 
 
 ---
 
-## 11. Referências
-
-- **RTL Source:** `rtl/perips/uart/uart_controller.vhd`
-- **Testbench:** `sim/perips/test_uart_controller.py`
-- **IEEE Std 1076:** VHDL Language Reference Manual
-
----
-

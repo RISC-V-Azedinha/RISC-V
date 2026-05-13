@@ -240,18 +240,18 @@ O processo completo pode ser visualizado como uma cascata de estágios:
 1. **Reset Hardware**: O processador inicia no endereço de boot definido pelo hardware do SoC (conforme descrito na seção 1.1).
 
 2. **Startup Assembly** (crt0.s/start.s):
-   - Inicializa `sp` para o topo da RAM
-   - Opcionalmente limpa `.bss`
-   - Chama `main()`
+    - Inicializa `sp` para o topo da RAM
+    - Opcionalmente limpa `.bss`
+    - Chama `main()`
 
 3. **Bootloader C** (boot.c):
-   - Espera magic word via UART
-   - Recebe tamanho do programa
-   - Grava binário na RAM a partir de `0x80000800`
-   - Salta para o endereço da aplicação
+    - Espera magic word via UART
+    - Recebe tamanho do programa
+    - Grava binário na RAM a partir de `0x80000800`
+    - Salta para o endereço da aplicação
 
 4. **Aplicação do Usuário**:
-   - Executa a partir de `main()`
-   - Pode usar a pilha pré-configurada e acessar periféricos normalmente
+    - Executa a partir de `main()`
+    - Pode usar a pilha pré-configurada e acessar periféricos normalmente
 
 Esta arquitetura de boot em dois estágios — startup mínimo em Assembly seguido de bootloader completo em C — é um padrão amplamente adotado em sistemas embarcados porque equilibra a necessidade de código de inicialização robusto com a flexibilidade de um ambiente de programação de alto nível para a lógica de boot.

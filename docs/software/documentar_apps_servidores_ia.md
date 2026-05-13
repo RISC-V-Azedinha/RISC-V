@@ -281,18 +281,3 @@ O sistema evidencia dois paradigmas distintos:
 - **Hardware-accelerated:** delegação para periférico especializado.
 
 ---
-
-# 5. Conclusão
-
-As aplicações de demonstração validam o funcionamento do SoC RISC-V em diferentes dimensões:
-
-- capacidade computacional (benchmark, fractal);
-- integração de periféricos (pong);
-- comunicação (UART).
-
-Os servidores de IA expandem essa validação para cenários reais de processamento, demonstrando de forma clara o impacto arquitetural da escolha entre:
-
-- execução em software (MLP);
-- aceleração por hardware (NPU).
-
-Esse contraste evidencia o conceito fundamental de **co-design hardware-software**, no qual decisões de arquitetura impactam diretamente desempenho, eficiência e complexidade do sistema.

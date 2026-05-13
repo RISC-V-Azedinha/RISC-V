@@ -419,7 +419,7 @@ Total para 256 KB: 65.536 × 10 ≈ 655.360 ciclos de CPU
 
     A arquitetura RV32I_Zicsr deste SoC é uma **FSM multi-cycle** (não pipeline), onde cada instrução consome múltiplos ciclos de clock. O **memory wall** (gargalo de von Neumann) é o fenômeno onde a velocidade da memória não acompanha a velocidade do processador, criando um limite de desempenho fundamental.
 
-    !!! note 
+    !!! abstract 
 
         Para benchmarks reais de throughput de memória, consulte: [NPU Benchmark](https://risc-v-azedinha.github.io/NPU/hardware/benchmark/) e [Systolic Array](https://risc-v-azedinha.github.io/NPU/hardware/systolic_array/).
 
@@ -707,7 +707,7 @@ O **bus_interconnect** realiza a decodificação de endereços e roteamento de d
 3. Roteia os sinais de endereço, dados e controle
 4. Multiplexa o dado de resposta ao master
 
-!!! info Mais informações sobre o barramento em [Barramento: Mestres e Escravos ](barramento.md).
-
+!!! info 
+    Mais informações sobre o barramento em [Barramento: Mestres e Escravos ](barramento.md).
 
 

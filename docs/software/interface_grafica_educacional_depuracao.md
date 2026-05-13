@@ -117,6 +117,3 @@ O módulo `debug_controller.vhd` interpreta os comandos e executa:
 
 ---
 
-## Conclusão
-
-A interface gráfica atua como camada de integração entre usuário, software e hardware, permitindo abstração, controle e depuração do sistema embarcado de forma educacional e estruturada.

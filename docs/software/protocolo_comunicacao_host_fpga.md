@@ -152,8 +152,8 @@ primeiro.
 Consequentemente, o Host deve respeitar essa ordem durante a
 serialização para garantir a correta reconstrução dos dados na FPGA.
 
-!!! warning Diferenças de endianness entre transmissor e receptor
-resultam em interpretação incorreta dos valores numéricos.
+!!! warning 
+    Diferenças de endianness entre transmissor e receptor resultam em interpretação incorreta dos valores numéricos.
 
 ------------------------------------------------------------------------
 
@@ -167,13 +167,13 @@ limites e tipos de operação.
 
     [HEADER][COMANDO][TAMANHO][PAYLOAD][CHECKSUM]
 
-  Campo      Função
-  ---------- --------------------------------
-  HEADER     Indica início do frame
-  COMANDO    Tipo de operação
-  TAMANHO    Quantidade de bytes do payload
-  PAYLOAD    Dados serializados
-  CHECKSUM   Verificação de integridade
+| Campo     | Função                                 |
+|-----------|----------------------------------------|
+| HEADER    | Indica início do frame                 |
+| COMANDO   | Tipo de operação                       |
+| TAMANHO   | Quantidade de bytes do payload         |
+| PAYLOAD   | Dados serializados                     |
+| CHECKSUM  | Verificação de integridade             |
 
 Esse formato permite que o hardware:
 
