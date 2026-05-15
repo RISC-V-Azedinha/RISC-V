@@ -12,11 +12,9 @@ BAUD = 921600
 
 def run_benchmark(ser, k_dim, sparsity):
     """ Envia o comando de benchmark para o SoC e retorna os ciclos """
-    # Comando 'B' (1 byte), Dimensão K (4 bytes uint32), Esparsidade (1 byte uint8)
     cmd = struct.pack('>B I B', ord('B'), k_dim, sparsity)
     ser.write(cmd)
     
-    # Aguarda a resposta: 2 valores de 64-bits (8 bytes cada = 16 bytes no total)
     res = ser.read(16)
     if len(res) == 16:
         cpu_cycles, npu_cycles = struct.unpack('>Q Q', res)
@@ -28,16 +26,14 @@ def run_benchmark(ser, k_dim, sparsity):
 def main():
     try:
         ser = serial.Serial(PORT, BAUD, timeout=5)
-        time.sleep(1) # Aguarda o boot do SoC
+        time.sleep(1)
         print("Ligado com sucesso ao SoC RISC-V.")
     except Exception as e:
         print(f"Erro ao tentar ligar à porta série: {e}")
         return
 
-    # Valores de K a testar (Avanço exponencial para cobrir todas as ordens de grandeza)
     K_VALUES = [4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192]
     
-    # Dicionários para guardar os resultados extraídos
     results_dense = {'cpu': [], 'npu': [], 'speedup': []}
     results_sparse = {'cpu': [], 'npu': [], 'speedup': []}
 
@@ -46,7 +42,6 @@ def main():
     print("-" * 65)
 
     for k in K_VALUES:
-        # 1. Teste Denso (0% de Zeros) - Pior cenário para a CPU
         cpu_d, npu_d = run_benchmark(ser, k, sparsity=0)
         sp_d = cpu_d / npu_d if npu_d > 0 else 0
         
@@ -54,7 +49,6 @@ def main():
         results_dense['npu'].append(npu_d)
         results_dense['speedup'].append(sp_d)
 
-        # 2. Teste Esparso (80% de Zeros) - Melhor cenário para a CPU
         cpu_s, npu_s = run_benchmark(ser, k, sparsity=80)
         sp_s = cpu_s / npu_s if npu_s > 0 else 0
         
@@ -62,40 +56,40 @@ def main():
         results_sparse['npu'].append(npu_s)
         results_sparse['speedup'].append(sp_s)
 
-        # Imprime o progresso no terminal
         print(f"{k:<6} | {cpu_d:<12} | {npu_d:<12} | {sp_d:>6.1f}x | {cpu_s:<15}")
 
     ser.close()
 
     # =========================================================================
-    # ANÁLISE ARQUITETURAL AUTOMATIZADA (Cálculo do K_sat e Limites)
+    # ANÁLISE ARQUITETURAL AUTOMATIZADA
     # =========================================================================
-    # 1. Encontrar o Speedup Máximo Empírico (Teto do Memory Wall)
     max_speedup_dense = max(results_dense['speedup'])
+    speedups = results_dense['speedup']
     
-    # 2. Calcular o Threshold de 90% (Regime Estacionário)
+    # 1. Calcular K* (Saturação a 90%)
     threshold_90 = max_speedup_dense * 0.90
-    
-    # 3. Descobrir o K_sat automático
-    k_sat = K_VALUES[-1] # Default fallback
-    for k, sp in zip(K_VALUES, results_dense['speedup']):
+    k_star = K_VALUES[-1]
+    for k, sp in zip(K_VALUES, speedups):
         if sp >= threshold_90:
-            k_sat = k
+            k_star = k
             break
             
-    # 4. Imprimir o relatório para o terminal (Ideal para copiar para o TCC)
+    # 2. Calcular K_inflex (Inflexão - Ponto onde a aceleração diminui)
+    taxas_variacao = [speedups[i+1] - speedups[i] for i in range(len(speedups)-1)]
+    idx_max_variacao = taxas_variacao.index(max(taxas_variacao))
+    k_inflex = K_VALUES[idx_max_variacao + 1]
+
     print("\n" + "="*65)
     print(" ANÁLISE ARQUITETURAL AUTOMÁTICA")
     print("="*65)
     print(f" -> Speedup Assintótico Máximo : {max_speedup_dense:.1f}x (Teto do Barramento)")
     print(f" -> Limite de Saturação (90%)  : {threshold_90:.1f}x")
-    print(f" -> K de Saturação (K_sat)     : {k_sat}")
-    print(f" -> Conclusão: Matrizes maiores que K={k_sat} entram no regime")
-    print(f"               'Memory-Bound', onde o DMA limita o desempenho.")
+    print(f" -> K_inflex (Desaceleração)   : {k_inflex} (Início da pressão da memória)")
+    print(f" -> K* (Saturação atingida)    : {k_star} (Regime dominado por memória)")
     print("="*65)
 
     # =========================================================================
-    # PLOTAGEM DOS GRÁFICOS (DESIGN MINIMALISTA E ACADÉMICO)
+    # PLOTAGEM DOS GRÁFICOS
     # =========================================================================
     print("\nA processar os gráficos para exportação...")
     
@@ -121,57 +115,43 @@ def main():
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(18, 5.5))
 
     # -------------------------------------------------------------------------
-    # Gráfico (a): Eficiência do Acelerador e Muro da Memória
+    # Gráfico (a): Eficiência do Acelerador
     # -------------------------------------------------------------------------
-    # 1. Cálculo de Operações
     macs = np.array(K_VALUES) * 16
     tp_npu = macs / np.array(results_dense['npu'])
 
-    # 2. O Teto Teórico e o Teto Empírico (Extraído automaticamente)
     teto_teorico = 16.0
     npu_max_empirico = np.max(tp_npu)
     
-    # Reta do Hardware Ideal
     ax1.axhline(y=teto_teorico, color='#d32f2f', linestyle='--', linewidth=2, label='Teto Sistólico (16 MACs/ciclo)')
-    
-    # Reta do Hardware Atual (Limitado pelo Barramento)
     ax1.axhline(y=npu_max_empirico, color='#2ca02c', linestyle='-.', linewidth=1.5, alpha=0.8, label=f'Teto Empírico (~{npu_max_empirico:.2f} MACs/ciclo)')
     
-    # 3. Curva Real da NPU
     ax1.plot(K_VALUES, tp_npu, marker='^', markersize=6, linewidth=2.5, color=c_npu, label='Desempenho Real (NPU)')
-    
-    # 4. Sombreamento do Muro da Memória
     ax1.fill_between(K_VALUES, npu_max_empirico, teto_teorico, color='#ef9a9a', alpha=0.2, hatch='\\\\')
     
-    # Anotação: Ponto médio logarítmico para ficar exatamente no meio da área hachurada
     y_texto_inanicao = npu_max_empirico * ((teto_teorico / npu_max_empirico) ** 0.5)
     ax1.text(32, y_texto_inanicao, 'Zona de Inanição de Dados\n(Gargalo do Barramento DMA)', color='#c62828', 
              fontsize=10, fontweight='bold', ha='center',
              bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="none", alpha=0.8))
 
     ax1.set_xscale('log', base=2)
-    
-    # CORREÇÃO: Voltando para a escala logarítmica para não achatar os dados pequenos!
     ax1.set_yscale('log', base=10) 
-    
-    # Eixo Y com bastante "respiro" em cima e embaixo
     ax1.set_ylim(ymin=0.01, ymax=40.0) 
 
     ax1.set_xlabel('Dimensão da Matriz ($K$)')
     ax1.set_ylabel('Vazão Sustentada (MACs/ciclo)')
     ax1.set_title('(a) Eficiência da NPU e Muro da Memória', pad=12, fontweight='bold')
-    
-    # CORREÇÃO: Legenda movida para o canto superior esquerdo (longe dos dados)
     ax1.legend(loc='lower right', fontsize=9.5)
 
     # -------------------------------------------------------------------------
-    # Gráfico (b): Speedup e Memory Wall (Dinâmico)
+    # Gráfico (b): Speedup com Linhas Verticais e Legenda
     # -------------------------------------------------------------------------
     ax2.plot(K_VALUES, results_dense['speedup'], marker='o', markersize=4, linewidth=1.5, color=c_sp_densa, label='Speedup (Densa)')
     ax2.plot(K_VALUES, results_sparse['speedup'], marker='s', markersize=4, linewidth=1.5, linestyle='--', color=c_sp_esparsa, label='Speedup (Esparsa)')
     
-    # === LINHA DINÂMICA DO K_SAT ===
-    ax2.axvline(x=k_sat, color='#e53935', linestyle=':', linewidth=2, alpha=0.7, label=f'Memory Wall ($K_{{sat}} = {k_sat}$)')
+    # Linhas verticais com labels passando diretamente para a legenda
+    ax2.axvline(x=k_inflex, color='#8e44ad', linestyle='-.', linewidth=2, alpha=0.7, label=f'Inflexão ($K_{{inflex}}={k_inflex}$)')
+    ax2.axvline(x=k_star, color='#c62828', linestyle=':', linewidth=2, alpha=0.7, label=f'Saturação ($K^*={k_star}$)')
 
     ax2.set_xscale('log', base=2)
     ax2.set_xlabel('Dimensão da Matriz ($K$)')
