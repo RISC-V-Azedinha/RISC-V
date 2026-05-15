@@ -7,3 +7,9 @@ files = [
 files = [
     "rtl/multi_cycle/**/*.vhd"
 ]
+
+[library.work]
+files = [
+    "rtl/soc/**/*.vhd",
+    "rtl/perips/**/*.vhd"
+]

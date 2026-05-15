@@ -10,10 +10,9 @@
 -- ╚═════╝ ╚═╝     ╚═╝╚═╝  ╚═╝
 --                            
 -- Descrição : Controlador DMA Simples 1D (Mem-to-Mem / Mem-to-IP)
---             Suporta modo de destino fixo (para FIFOs) ou incremental.
+--             Adaptado para a nova Crossbar Interconnect com Dual-Master (Read/Write).
 --
--- Autor     : [André Maiolini]
--- Data      : [18/01/2026]   
+-- Autor     : André Maiolini
 --
 ------------------------------------------------------------------------------------------------------------------
 
@@ -26,13 +25,10 @@ use ieee.numeric_std.all;
 -------------------------------------------------------------------------------------------------------------------
 
 entity dma_controller is
-
     port (
-
         -- ========================================================================================================
         -- Sinais de Controle (Globais)
         -- ========================================================================================================
-
         clk_i       : in  std_logic;
         rst_i       : in  std_logic;
         soc_en_i    : in  std_logic;
@@ -40,7 +36,6 @@ entity dma_controller is
         -- ========================================================================================================
         -- Interface Slave (Configuração pela CPU)
         -- ========================================================================================================
-        
         cfg_addr_i  : in  std_logic_vector(3 downto 0);  -- Apenas offset (4 regs)
         cfg_data_i  : in  std_logic_vector(31 downto 0);
         cfg_data_o  : out std_logic_vector(31 downto 0);
@@ -49,26 +44,25 @@ entity dma_controller is
         cfg_rdy_o   : out std_logic;
 
         -- ========================================================================================================
-        -- Interface Master (Acesso ao Barramento)
+        -- Interface Master 1: READ (Source)
         -- ========================================================================================================
-        
-        -- A decisão sobre o uso do barramento em configuração multi-master bus,
-        -- será decidida pelo bus_arbiter
+        m_rd_addr_o : out std_logic_vector(31 downto 0);
+        m_rd_vld_o  : out std_logic;
+        m_rd_data_i : in  std_logic_vector(31 downto 0);
+        m_rd_rdy_i  : in  std_logic;
 
-        m_addr_o    : out std_logic_vector(31 downto 0);
-        m_data_o    : out std_logic_vector(31 downto 0);
-        m_data_i    : in  std_logic_vector(31 downto 0);
-        m_we_o      : out std_logic;
-        m_vld_o     : out std_logic;
-        m_rdy_i     : in  std_logic;
+        -- ========================================================================================================
+        -- Interface Master 2: WRITE (Destination)
+        -- ========================================================================================================
+        m_wr_addr_o : out std_logic_vector(31 downto 0);
+        m_wr_data_o : out std_logic_vector(31 downto 0);
+        m_wr_we_o   : out std_logic;
+        m_wr_vld_o  : out std_logic;
+        m_wr_rdy_i  : in  std_logic;
         
         -- Interrupção (sinal de interrupção)
         irq_done_o  : out std_logic
-
-        -- ========================================================================================================
-
     );
-
 end entity;
 
 -------------------------------------------------------------------------------------------------------------------
@@ -123,18 +117,18 @@ begin
                 end case;
             end if;
 
-            -- FIX: Limpeza automática do r_busy se a CPU enviar Start com Count = 0
+            -- Limpeza automática do r_busy se a CPU enviar Start com Count = 0
             if r_busy = '1' and r_count = 0 and current_state = IDLE then
                 r_busy <= '0';
             end if;
 
-            -- 3. Captura de Dados da RAM
-            if current_state = READ_REQ and m_rdy_i = '1' then
-                r_data_buffer <= m_data_i;
+            -- 3. Captura de Dados da RAM (Porta de Leitura)
+            if current_state = READ_REQ and m_rd_rdy_i = '1' then
+                r_data_buffer <= m_rd_data_i;
             end if;
 
-            -- 4. Atualização de endereços e contadores "On-the-Fly"
-            if current_state = WRITE_REQ and m_rdy_i = '1' then
+            -- 4. Atualização de endereços e contadores "On-the-Fly" (Porta de Escrita)
+            if current_state = WRITE_REQ and m_wr_rdy_i = '1' then
                 if r_count > 0 then
                     r_src_addr <= r_src_addr + 4;
                     if r_ctrl_fixed_dst = '0' then
@@ -161,41 +155,46 @@ begin
     cfg_rdy_o <= '1';
 
     -- ============================================================================================================
-    -- Lógica Combinacional: Próximo Estado e Saídas do Mestre
+    -- Lógica Combinacional: Próximo Estado e Saídas dos Mestres
     -- ============================================================================================================
-    process(current_state, r_busy, r_count, m_rdy_i, r_src_addr, r_dst_addr, r_data_buffer, soc_en_i)
+    process(current_state, r_busy, r_count, m_rd_rdy_i, m_wr_rdy_i, r_src_addr, r_dst_addr, r_data_buffer, soc_en_i)
     begin
-        next_state <= current_state;
-        m_vld_o    <= '0';
-        m_we_o     <= '0';
-        m_addr_o   <= (others => '0');
-        m_data_o   <= (others => '0');
-        irq_done_o <= '0';
+        next_state  <= current_state;
+        
+        -- Sinais Default Master Read
+        m_rd_vld_o  <= '0';
+        m_rd_addr_o <= (others => '0');
+        
+        -- Sinais Default Master Write
+        m_wr_vld_o  <= '0';
+        m_wr_we_o   <= '0';
+        m_wr_addr_o <= (others => '0');
+        m_wr_data_o <= (others => '0');
+        
+        irq_done_o  <= '0';
 
         case current_state is
             
             when IDLE =>
-                -- FIX: Usar /= '0' garante que valores 'U' do simulador não congelem a máquina
                 if r_busy = '1' and r_count > 0 and soc_en_i /= '0' then
                     next_state <= READ_REQ;
                 end if;
 
             when READ_REQ =>
-                m_addr_o <= std_logic_vector(r_src_addr);
-                m_vld_o  <= '1';
-                m_we_o   <= '0'; 
+                m_rd_addr_o <= std_logic_vector(r_src_addr);
+                m_rd_vld_o  <= '1';
                 
-                if m_rdy_i = '1' then
+                if m_rd_rdy_i = '1' then
                     next_state <= WRITE_REQ;
                 end if;
 
             when WRITE_REQ =>
-                m_addr_o <= std_logic_vector(r_dst_addr);
-                m_data_o <= r_data_buffer;
-                m_vld_o  <= '1';
-                m_we_o   <= '1'; 
+                m_wr_addr_o <= std_logic_vector(r_dst_addr);
+                m_wr_data_o <= r_data_buffer;
+                m_wr_vld_o  <= '1';
+                m_wr_we_o   <= '1'; 
 
-                if m_rdy_i = '1' then
+                if m_wr_rdy_i = '1' then
                     if r_count <= 1 then
                         next_state <= IDLE;
                         irq_done_o <= '1';

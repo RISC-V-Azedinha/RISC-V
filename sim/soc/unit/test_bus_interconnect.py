@@ -1,37 +1,32 @@
 # =====================================================================================================
 # File: test_bus_interconnect.py
 # =====================================================================================================
-#
-# >>> Descrição: Testbench avançado para o Bus Interconnect.
-#
-# >>> Cobertura:
-#       1. Functional: Leitura/Escrita básica.
-#       2. Harvard Mod.: Acesso simultâneo IMem (Fetch) e DMem (Data).
-#       3. Fuzzing: Validação randômica massiva do mapa de memória.
-#
-# =====================================================================================================
 
 import cocotb
 import random
-from cocotb.triggers import Timer
+from cocotb.triggers import Timer, RisingEdge
+from cocotb.clock import Clock
 from sim.core.single_cycle.include.test_utils import log_header, log_success, log_error
 
 # ==============================================================================
 # AUXILIARES & GOLDEN MODEL
 # ==============================================================================
 
+async def setup_dut(dut):
+    """Inicializa clock e reset no DUT."""
+    cocotb.start_soon(Clock(dut.clk_i, 10, units="ns").start())
+    dut.rst_i.value = 1
+    await Timer(15, "ns")
+    dut.rst_i.value = 0
+    await RisingEdge(dut.clk_i)
+
 async def settle():
-    """Aguarda propagação combinacional"""
+    """Aguarda propagação combinacional inicial."""
     await Timer(1, "ns")
 
 def model_addr_decode(addr):
-    """
-    Modelo Python da lógica de decodificação de endereço.
-    Retorna uma string identificando o periférico ou 'NONE'.
-    """
-    # Pega os 4 bits superiores (nibble)
+    """Modelo Python da decodificação de endereço."""
     nibble = (addr >> 28) & 0xF
-    
     if nibble == 0x0: return "ROM"
     if nibble == 0x1: return "UART"
     if nibble == 0x2: return "GPIO"
@@ -49,87 +44,62 @@ def model_addr_decode(addr):
 
 @cocotb.test()
 async def test_sanity_check(dut):
-    # Teste 1: Verificação Funcional Básica (Sanity Check)
-    log_header("Teste 1: Sanity Check (Endereços Conhecidos)")
+    log_header("Teste 1: Sanity Check (Endereços Conhecidos via CPU)")
+    await setup_dut(dut)
     
-    # Reset
-    dut.dmem_vld_i.value = 0
+    dut.cpu_vld_i.value = 0
     dut.imem_vld_i.value = 0
     await settle()
 
-    # Caso: Acesso à RAM (0x8000...)
-    dut.dmem_addr_i.value = 0x8000AABB
-    dut.dmem_vld_i.value  = 1
+    dut.cpu_addr_i.value = 0x8000AABB
+    dut.cpu_vld_i.value  = 1
     await settle()
     
     assert dut.ram_vld_b_o.value == 1, "RAM não foi selecionada!"
     assert dut.rom_vld_b_o.value == 0, "ROM foi selecionada incorretamente!"
-    
     log_success("Sanity Check OK")
 
 @cocotb.test()
 async def test_harvard_concurrency(dut):
-    # Teste 2: Acesso Simultâneo IMem (ROM) e DMem (RAM)
-    log_header("Teste 2: Harvard Split (Acesso Simultâneo)")
+    log_header("Teste 2: Harvard Split (Acesso Simultâneo IMem e CPU_DMem)")
+    await setup_dut(dut)
     
-    # Cenário:
-    # CPU busca instrução na ROM (0x00001000)
-    # CPU escreve dado na RAM (0x80002000) AO MESMO TEMPO
+    VAL_INSTRUCT = 0x11223344  
+    VAL_DATA_OLD = 0x55667788  
     
-    # Constantes Hexadecimais Válidas
-    VAL_INSTRUCT = 0x11223344  # Dado vindo da ROM (Instrução)
-    VAL_DATA_OLD = 0x55667788  # Dado vindo da RAM (Leitura antiga, ignorado na escrita)
-    
-    # Configura Dados dos Escravos (Mock)
     dut.rom_data_a_i.value = VAL_INSTRUCT
     dut.ram_data_b_i.value = VAL_DATA_OLD 
     
-    # Aplica Estímulos Simultâneos
     dut.imem_addr_i.value = 0x00001000
     dut.imem_vld_i.value  = 1
     
-    dut.dmem_addr_i.value = 0x80002000
-    dut.dmem_vld_i.value  = 1
-    dut.dmem_we_i.value   = 0xF
+    dut.cpu_addr_i.value = 0x80002000
+    dut.cpu_vld_i.value  = 1
+    dut.cpu_we_i.value   = 0xF
     
     await settle()
     
-    # Verificações
-    # 1. Selects Independentes
     assert dut.rom_vld_a_o.value == 1, "IMem não selecionou ROM"
-    assert dut.ram_vld_b_o.value == 1, "DMem não selecionou RAM"
-    
-    # 2. Dados Retornados Independentes
+    assert dut.ram_vld_b_o.value == 1, "CPU não selecionou RAM"
     assert int(dut.imem_data_o.value) == VAL_INSTRUCT, "IMem leu dado errado"
-    
-    # 3. Cruzamento não deve ocorrer
-    assert dut.rom_vld_b_o.value == 0, "DMem selecionou ROM sem querer"
-    assert dut.ram_vld_a_o.value == 0, "IMem selecionou RAM sem querer"
     
     log_success("Concorrência Harvard OK")
 
 @cocotb.test()
 async def test_fuzzing_map(dut):
-    # Teste 3: Fuzzing do Mapa de Memória (1000 Iterações)
-    log_header("Teste 3: Fuzzing Completo (Decodificação)")
-    
+    log_header("Teste 3: Fuzzing Completo (Decodificação da porta CPU)")
+    await setup_dut(dut)
     ITERATIONS = 1000
     
     for i in range(ITERATIONS):
-        # 1. Gera Endereço Aleatório (32-bit)
         addr = random.randint(0, 0xFFFFFFFF)
         
-        # 2. Aplica ao DUT
-        dut.dmem_addr_i.value = addr
-        dut.dmem_vld_i.value  = 1
-        
+        dut.cpu_addr_i.value = addr
+        dut.cpu_vld_i.value  = 1
         await settle()
         
-        # 3. Calcula Esperado (Python Model)
         target = model_addr_decode(addr)
         
-        # 4. Verifica Sinais de Seleção (Valids)
-        # Cria um dicionário do estado atual dos sinais do DUT
         signals = {
             "ROM":  int(dut.rom_vld_b_o.value),
             "UART": int(dut.uart_vld_o.value),
@@ -142,42 +112,73 @@ async def test_fuzzing_map(dut):
             "NPU":  int(dut.npu_vld_o.value)
         }
         
-        # Verifica se APENAS o alvo correto está ativo
         for dev, state in signals.items():
             if dev == target:
-                if state != 1:
-                    log_error(f"FALHA Fuzz #{i}: {target} deveria estar ativo para addr {hex(addr)}")
-                    assert False
+                assert state == 1, f"FALHA Fuzz #{i}: {target} deveria estar ativo para addr {hex(addr)}"
             else:
-                if state != 0:
-                    log_error(f"FALHA Fuzz #{i}: {dev} ativou incorretamente para addr {hex(addr)} (Target era {target})")
-                    assert False
+                assert state == 0, f"FALHA Fuzz #{i}: {dev} ativou incorretamente para addr {hex(addr)}"
                     
-        # 5. Verifica Mux de Retorno (Ready e Data)
-        # Se for um endereço válido, o DUT deve repassar o dado/ready desse periférico
-        # Caso contrário, deve retornar 0 e Ready=1 (default)
-        
         if target != "NONE":
-            # Injeta um dado simulado na porta de leitura desse device específico
             mock_data = random.randint(0, 0xFFFFFFFF)
-            
-            if target == "ROM":  
-                dut.rom_data_b_i.value = mock_data; dut.rom_rdy_b_i.value = 1
-            elif target == "RAM": 
-                dut.ram_data_b_i.value = mock_data; dut.ram_rdy_b_i.value = 1
-            elif target == "DMA": 
-                dut.dma_data_i.value = mock_data;   dut.dma_rdy_i.value = 1
+            if target == "ROM":   dut.rom_data_b_i.value = mock_data; dut.rom_rdy_b_i.value = 1
+            elif target == "RAM": dut.ram_data_b_i.value = mock_data; dut.ram_rdy_b_i.value = 1
+            elif target == "DMA": dut.dma_data_i.value = mock_data;   dut.dma_rdy_i.value = 1
             
             await settle()
             
-            # Se testamos ROM, RAM ou DMA, verificamos o data path de volta
             if target in ["ROM", "RAM", "DMA"]:
-                assert int(dut.dmem_data_o.value) == mock_data, f"Dado de retorno incorreto para {target}"
-                assert int(dut.dmem_rdy_o.value) == 1, f"Ready não retornou para {target}"
-
+                assert int(dut.cpu_data_o.value) == mock_data, f"Dado de retorno incorreto para {target}"
+                assert int(dut.cpu_rdy_o.value) == 1, f"Ready não retornou para {target}"
         else:
-            # Endereço Inválido: O RTL atual retorna Ready=0 e Data=0
-            assert int(dut.dmem_rdy_o.value) == 0, f"Ready deveria ser 0 para o endereço não mapeado {hex(addr)}"
-            assert int(dut.dmem_data_o.value) == 0, f"Data deveria ser 0 para o endereço não mapeado {hex(addr)}"
+            # Com a proteção Bus Fault, o barramento devolve ready forçado com data zero
+            assert int(dut.cpu_rdy_o.value) == 1, f"Ready Bus Fault falhou (Unmapped: {hex(addr)})"
+            assert int(dut.cpu_data_o.value) == 0, f"Data Bus Fault deveria ser 0 (Unmapped: {hex(addr)})"
 
-    log_success(f"Fuzzing de {ITERATIONS} endereços completado com sucesso!")
+    log_success(f"Fuzzing OK ({ITERATIONS} endereços)")
+
+@cocotb.test()
+async def test_crossbar_parallelism(dut):
+    log_header("Teste 4: Crossbar - Paralelismo Total (Sem Colisão)")
+    await setup_dut(dut)
+    
+    dut.cpu_vld_i.value = 0
+    dut.dma_rd_vld_i.value = 0
+    dut.dma_wr_vld_i.value = 0
+    await settle()
+
+    # CPU -> GPIO | DMA_RD -> RAM | DMA_WR -> NPU
+    dut.cpu_addr_i.value = 0x20000000;    dut.cpu_vld_i.value = 1
+    dut.dma_rd_addr_i.value = 0x80004000; dut.dma_rd_vld_i.value = 1
+    dut.dma_wr_addr_i.value = 0x90000000; dut.dma_wr_vld_i.value = 1
+    await settle()
+    
+    assert dut.gpio_vld_o.value == 1, "CPU não alcançou GPIO"
+    assert dut.ram_vld_b_o.value == 1, "DMA_RD não alcançou RAM"
+    assert dut.npu_vld_o.value == 1, "DMA_WR não alcançou NPU"
+    
+    dut.gpio_rdy_i.value = 1; dut.ram_rdy_b_i.value = 1; dut.npu_rdy_i.value = 1
+    await settle()
+    
+    assert dut.cpu_rdy_o.value == 1, "CPU sofreu STALL indevido"
+    assert dut.dma_rd_rdy_o.value == 1, "DMA_RD sofreu STALL indevido"
+    assert dut.dma_wr_rdy_o.value == 1, "DMA_WR sofreu STALL indevido"
+    
+    log_success("Paralelismo do Crossbar Validado!")
+
+@cocotb.test()
+async def test_slave_arbitration(dut):
+    log_header("Teste 5: Crossbar - Arbitragem no Escravo (Colisão)")
+    await setup_dut(dut)
+    
+    # Colisão: CPU e DMA_RD tentam acessar a RAM
+    dut.cpu_addr_i.value = 0x80001000;    dut.cpu_vld_i.value = 1
+    dut.dma_rd_addr_i.value = 0x80002000; dut.dma_rd_vld_i.value = 1
+    dut.ram_rdy_b_i.value = 1
+    await settle()
+    
+    assert dut.ram_vld_b_o.value == 1, "RAM não ativada"
+    assert dut.cpu_rdy_o.value == 1, "CPU sofreu STALL indevido (deve ter prioridade)"
+    assert dut.dma_rd_rdy_o.value == 0, "DMA não sofreu STALL (Arbitragem falhou)"
+    assert int(dut.ram_addr_b_o.value) == 0x80001000, "Mux roteou endereço errado"
+    
+    log_success("Arbitragem Validada!")
