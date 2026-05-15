@@ -46,7 +46,7 @@ proc read_dir {dir pattern} {
     if {[file exists $dir]} {
         set files [glob -nocomplain -directory $dir $pattern]
         if {[llength $files] > 0} {
-            read_vhdl $files
+            read_vhdl -vhdl2008 $files
         }
     }
 }

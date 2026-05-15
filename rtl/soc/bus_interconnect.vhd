@@ -10,8 +10,8 @@
 --  ╚═════╝  ╚═════╝ ╚══════╝ 
 -- 
 -- Descrição : Interconectador de Barramento (Crossbar) para o SoC RISC-V.
---             Arquitetura Dual-Master + Sticky Arbitration para periféricos
---             multiciclo de latência variável. Proteção contra Bus Fault incluída.
+--             Arquitetura Dual-Master + Sticky Arbitration refatorada usando
+--             Records e Arrays (VHDL-2008).
 -- 
 ------------------------------------------------------------------------------------------------------------------
 
@@ -28,7 +28,7 @@ entity bus_interconnect is
         rst_i               : in  std_logic;
 
         -- ========================================================================================
-        -- INTERFACE CORE: IMem (Instruções - Porta A)
+        -- INTERFACE CORE: IMem (Instruções - Porta A) - Bypassa o Crossbar principal
         -- ========================================================================================
         imem_addr_i         : in  std_logic_vector(31 downto 0);
         imem_data_o         : out std_logic_vector(31 downto 0);
@@ -38,7 +38,6 @@ entity bus_interconnect is
         -- ========================================================================================
         -- INTERFACE CROSSBAR: MESTRES DE DADOS (Portas B)
         -- ========================================================================================
-        
         -- Master 0: CPU
         cpu_addr_i          : in  std_logic_vector(31 downto 0);
         cpu_data_i          : in  std_logic_vector(31 downto 0);
@@ -63,7 +62,6 @@ entity bus_interconnect is
         -- ========================================================================================
         -- INTERFACES DOS ESCRAVOS
         -- ========================================================================================
-
         -- Boot ROM
         rom_addr_a_o        : out std_logic_vector(31 downto 0);
         rom_data_a_i        : in  std_logic_vector(31 downto 0);
@@ -146,26 +144,51 @@ end entity;
 
 architecture rtl of bus_interconnect is
 
+    -- ========================================================================================
+    -- DEFINIÇÕES DE TIPOS E ABSTRAÇÕES
+    -- ========================================================================================
     type slave_t is (SLV_NONE, SLV_ROM, SLV_RAM, SLV_UART, SLV_GPIO, SLV_VGA, SLV_NPU, SLV_DMA, SLV_CLINT, SLV_PLIC);
     type master_id_t is (MST_NONE, MST_CPU, MST_DMA_RD, MST_DMA_WR);
 
-    -- Sinais de Decodificação Alvo
-    signal imem_slv   : slave_t;
-    signal cpu_slv    : slave_t;
-    signal dma_rd_slv : slave_t;
-    signal dma_wr_slv : slave_t;
-    signal cpu_we_bit : std_logic;
+    -- Subtipos válidos para usar como índices de Array
+    subtype valid_slave_t is slave_t range SLV_ROM to SLV_PLIC;
+    subtype valid_master_t is master_id_t range MST_CPU to MST_DMA_WR;
 
-    -- Trava Sequencial (Locks)
-    signal rom_owner_reg,   rom_owner_comb   : master_id_t;
-    signal ram_owner_reg,   ram_owner_comb   : master_id_t;
-    signal uart_owner_reg,  uart_owner_comb  : master_id_t;
-    signal gpio_owner_reg,  gpio_owner_comb  : master_id_t;
-    signal vga_owner_reg,   vga_owner_comb   : master_id_t;
-    signal npu_owner_reg,   npu_owner_comb   : master_id_t;
-    signal dma_owner_reg,   dma_owner_comb   : master_id_t;
-    signal clint_owner_reg, clint_owner_comb : master_id_t;
-    signal plic_owner_reg,  plic_owner_comb  : master_id_t;
+    -- Records para encapsular os sinais do barramento
+    type bus_req_t is record
+        addr : std_logic_vector(31 downto 0);
+        data : std_logic_vector(31 downto 0);
+        we   : std_logic_vector(3 downto 0);
+        vld  : std_logic;
+    end record;
+
+    type bus_rsp_t is record
+        data : std_logic_vector(31 downto 0);
+        rdy  : std_logic;
+    end record;
+
+    -- Arrays de Barramento indexados pelos Enums
+    type master_req_arr_t is array (valid_master_t) of bus_req_t;
+    type master_rsp_arr_t is array (valid_master_t) of bus_rsp_t;
+    
+    type slave_req_arr_t  is array (valid_slave_t) of bus_req_t;
+    type slave_rsp_arr_t  is array (valid_slave_t) of bus_rsp_t;
+
+    type owner_arr_t is array (valid_slave_t) of master_id_t;
+
+    -- ========================================================================================
+    -- SINAIS INTERNOS
+    -- ========================================================================================
+    signal m_req : master_req_arr_t;
+    signal m_rsp : master_rsp_arr_t;
+    signal s_req : slave_req_arr_t;
+    signal s_rsp : slave_rsp_arr_t;
+
+    -- Registros de Arbitragem (Locks)
+    signal owner_reg, owner_comb : owner_arr_t;
+
+    -- Decodificador do IMEM
+    signal imem_slv : slave_t;
 
     -- Função de decodificação de memória
     function decodifica(addr : std_logic_vector(31 downto 0)) return slave_t is
@@ -188,18 +211,11 @@ architecture rtl of bus_interconnect is
 
 begin
 
-    -- ============================================================================================================
-    -- DECODIFICAÇÃO DE ENDEREÇOS (CROSSBAR IN)
-    -- ============================================================================================================
-    imem_slv   <= decodifica(imem_addr_i)  when imem_vld_i = '1'   else SLV_NONE;
-    cpu_slv    <= decodifica(cpu_addr_i)   when cpu_vld_i = '1'    else SLV_NONE;
-    dma_rd_slv <= decodifica(dma_rd_addr_i) when dma_rd_vld_i = '1' else SLV_NONE;
-    dma_wr_slv <= decodifica(dma_wr_addr_i) when dma_wr_vld_i = '1' else SLV_NONE;
-    cpu_we_bit <= '1' when cpu_we_i /= "0000" else '0';
-
-    -- ============================================================================================================
-    -- IMEM (FETCH) - Caminho Exclusivo e Isolado
-    -- ============================================================================================================
+    -- ========================================================================================
+    -- 1. IMEM (FETCH) - Caminho Exclusivo e Isolado
+    -- ========================================================================================
+    imem_slv     <= decodifica(imem_addr_i) when imem_vld_i = '1' else SLV_NONE;
+    
     rom_addr_a_o <= imem_addr_i;
     ram_addr_a_o <= imem_addr_i;
     rom_vld_a_o  <= imem_vld_i when imem_slv = SLV_ROM else '0';
@@ -211,202 +227,169 @@ begin
     imem_rdy_o   <= rom_rdy_a_i  when imem_slv = SLV_ROM else
                     ram_rdy_a_i  when imem_slv = SLV_RAM else '0';
 
-    -- ============================================================================================================
-    -- RESOLUÇÃO DE ARBITRAGEM (COMBINACIONAL)
-    -- ============================================================================================================
-    rom_owner_comb <= rom_owner_reg when rom_owner_reg /= MST_NONE else MST_CPU when (cpu_vld_i='1' and cpu_slv=SLV_ROM) else MST_DMA_RD when (dma_rd_vld_i='1' and dma_rd_slv=SLV_ROM) else MST_DMA_WR when (dma_wr_vld_i='1' and dma_wr_slv=SLV_ROM) else MST_NONE;
-    ram_owner_comb <= ram_owner_reg when ram_owner_reg /= MST_NONE else MST_CPU when (cpu_vld_i='1' and cpu_slv=SLV_RAM) else MST_DMA_RD when (dma_rd_vld_i='1' and dma_rd_slv=SLV_RAM) else MST_DMA_WR when (dma_wr_vld_i='1' and dma_wr_slv=SLV_RAM) else MST_NONE;
-    uart_owner_comb <= uart_owner_reg when uart_owner_reg /= MST_NONE else MST_CPU when (cpu_vld_i='1' and cpu_slv=SLV_UART) else MST_DMA_RD when (dma_rd_vld_i='1' and dma_rd_slv=SLV_UART) else MST_DMA_WR when (dma_wr_vld_i='1' and dma_wr_slv=SLV_UART) else MST_NONE;
-    gpio_owner_comb <= gpio_owner_reg when gpio_owner_reg /= MST_NONE else MST_CPU when (cpu_vld_i='1' and cpu_slv=SLV_GPIO) else MST_DMA_RD when (dma_rd_vld_i='1' and dma_rd_slv=SLV_GPIO) else MST_DMA_WR when (dma_wr_vld_i='1' and dma_wr_slv=SLV_GPIO) else MST_NONE;
-    vga_owner_comb <= vga_owner_reg when vga_owner_reg /= MST_NONE else MST_CPU when (cpu_vld_i='1' and cpu_slv=SLV_VGA) else MST_DMA_RD when (dma_rd_vld_i='1' and dma_rd_slv=SLV_VGA) else MST_DMA_WR when (dma_wr_vld_i='1' and dma_wr_slv=SLV_VGA) else MST_NONE;
-    npu_owner_comb <= npu_owner_reg when npu_owner_reg /= MST_NONE else MST_CPU when (cpu_vld_i='1' and cpu_slv=SLV_NPU) else MST_DMA_RD when (dma_rd_vld_i='1' and dma_rd_slv=SLV_NPU) else MST_DMA_WR when (dma_wr_vld_i='1' and dma_wr_slv=SLV_NPU) else MST_NONE;
-    dma_owner_comb <= dma_owner_reg when dma_owner_reg /= MST_NONE else MST_CPU when (cpu_vld_i='1' and cpu_slv=SLV_DMA) else MST_DMA_RD when (dma_rd_vld_i='1' and dma_rd_slv=SLV_DMA) else MST_DMA_WR when (dma_wr_vld_i='1' and dma_wr_slv=SLV_DMA) else MST_NONE;
-    clint_owner_comb<= clint_owner_reg when clint_owner_reg /= MST_NONE else MST_CPU when (cpu_vld_i='1' and cpu_slv=SLV_CLINT) else MST_DMA_RD when (dma_rd_vld_i='1' and dma_rd_slv=SLV_CLINT) else MST_DMA_WR when (dma_wr_vld_i='1' and dma_wr_slv=SLV_CLINT) else MST_NONE;
-    plic_owner_comb <= plic_owner_reg when plic_owner_reg /= MST_NONE else MST_CPU when (cpu_vld_i='1' and cpu_slv=SLV_PLIC) else MST_DMA_RD when (dma_rd_vld_i='1' and dma_rd_slv=SLV_PLIC) else MST_DMA_WR when (dma_wr_vld_i='1' and dma_wr_slv=SLV_PLIC) else MST_NONE;
+    -- ========================================================================================
+    -- 2. MAPEAMENTO: ENTRADAS FÍSICAS -> ARRAYS DE MESTRES
+    -- ========================================================================================
+    -- Master 0: CPU
+    m_req(MST_CPU).addr <= cpu_addr_i;
+    m_req(MST_CPU).data <= cpu_data_i;
+    m_req(MST_CPU).we   <= cpu_we_i;
+    m_req(MST_CPU).vld  <= cpu_vld_i;
+    cpu_data_o          <= m_rsp(MST_CPU).data;
+    cpu_rdy_o           <= m_rsp(MST_CPU).rdy;
 
-    -- ============================================================================================================
-    -- REGISTRO DE TRAVA DE TRANSAÇÃO (SEQUENCIAL)
-    -- ============================================================================================================
+    -- Master 1: DMA Read
+    m_req(MST_DMA_RD).addr <= dma_rd_addr_i;
+    m_req(MST_DMA_RD).data <= (others => '0');
+    m_req(MST_DMA_RD).we   <= "0000";
+    m_req(MST_DMA_RD).vld  <= dma_rd_vld_i;
+    dma_rd_data_o          <= m_rsp(MST_DMA_RD).data;
+    dma_rd_rdy_o           <= m_rsp(MST_DMA_RD).rdy;
+
+    -- Master 2: DMA Write
+    m_req(MST_DMA_WR).addr <= dma_wr_addr_i;
+    m_req(MST_DMA_WR).data <= dma_wr_data_i;
+    m_req(MST_DMA_WR).we   <= (others => dma_wr_we_i); -- Replicado para os 4 bytes
+    m_req(MST_DMA_WR).vld  <= dma_wr_vld_i;
+    dma_wr_rdy_o           <= m_rsp(MST_DMA_WR).rdy;
+
+    -- ========================================================================================
+    -- 3. MAPEAMENTO: SAÍDAS FÍSICAS <- ARRAYS DE ESCRAVOS
+    -- ========================================================================================
+    -- Respostas dos Escravos (Para o Crossbar)
+    s_rsp(SLV_ROM).data   <= rom_data_b_i; s_rsp(SLV_ROM).rdy   <= rom_rdy_b_i;
+    s_rsp(SLV_RAM).data   <= ram_data_b_i; s_rsp(SLV_RAM).rdy   <= ram_rdy_b_i;
+    s_rsp(SLV_UART).data  <= uart_data_i;  s_rsp(SLV_UART).rdy  <= uart_rdy_i;
+    s_rsp(SLV_GPIO).data  <= gpio_data_i;  s_rsp(SLV_GPIO).rdy  <= gpio_rdy_i;
+    s_rsp(SLV_VGA).data   <= vga_data_i;   s_rsp(SLV_VGA).rdy   <= vga_rdy_i;
+    s_rsp(SLV_NPU).data   <= npu_data_i;   s_rsp(SLV_NPU).rdy   <= npu_rdy_i;
+    s_rsp(SLV_DMA).data   <= dma_data_i;   s_rsp(SLV_DMA).rdy   <= dma_rdy_i;
+    s_rsp(SLV_CLINT).data <= clint_data_i; s_rsp(SLV_CLINT).rdy <= clint_rdy_i;
+    s_rsp(SLV_PLIC).data  <= plic_data_i;  s_rsp(SLV_PLIC).rdy  <= plic_rdy_i;
+
+    -- Pedidos para os Escravos (Do Crossbar, fatiando os endereços corretamente)
+    rom_addr_b_o  <= s_req(SLV_ROM).addr;
+    rom_vld_b_o   <= s_req(SLV_ROM).vld;
+
+    ram_addr_b_o  <= s_req(SLV_RAM).addr;
+    ram_data_b_o  <= s_req(SLV_RAM).data;
+    ram_we_b_o    <= s_req(SLV_RAM).we;
+    ram_vld_b_o   <= s_req(SLV_RAM).vld;
+
+    uart_addr_o   <= s_req(SLV_UART).addr(3 downto 0);
+    uart_data_o   <= s_req(SLV_UART).data;
+    uart_we_o     <= '1' when s_req(SLV_UART).we /= "0000" else '0';
+    uart_vld_o    <= s_req(SLV_UART).vld;
+
+    gpio_addr_o   <= s_req(SLV_GPIO).addr(3 downto 0);
+    gpio_data_o   <= s_req(SLV_GPIO).data;
+    gpio_we_o     <= '1' when s_req(SLV_GPIO).we /= "0000" else '0';
+    gpio_vld_o    <= s_req(SLV_GPIO).vld;
+
+    vga_addr_o    <= s_req(SLV_VGA).addr(16 downto 0);
+    vga_data_o    <= s_req(SLV_VGA).data;
+    vga_we_o      <= '1' when s_req(SLV_VGA).we /= "0000" else '0';
+    vga_vld_o     <= s_req(SLV_VGA).vld;
+
+    npu_addr_o    <= s_req(SLV_NPU).addr;
+    npu_data_o    <= s_req(SLV_NPU).data;
+    npu_we_o      <= '1' when s_req(SLV_NPU).we /= "0000" else '0';
+    npu_vld_o     <= s_req(SLV_NPU).vld;
+
+    dma_addr_o    <= s_req(SLV_DMA).addr(3 downto 0);
+    dma_data_o    <= s_req(SLV_DMA).data;
+    dma_we_o      <= '1' when s_req(SLV_DMA).we /= "0000" else '0';
+    dma_vld_o     <= s_req(SLV_DMA).vld;
+
+    clint_addr_o  <= s_req(SLV_CLINT).addr(4 downto 0);
+    clint_data_o  <= s_req(SLV_CLINT).data;
+    clint_we_o    <= '1' when s_req(SLV_CLINT).we /= "0000" else '0';
+    clint_vld_o   <= s_req(SLV_CLINT).vld;
+
+    plic_addr_o   <= s_req(SLV_PLIC).addr(23 downto 0);
+    plic_data_o   <= s_req(SLV_PLIC).data;
+    plic_we_o     <= '1' when s_req(SLV_PLIC).we /= "0000" else '0';
+    plic_vld_o    <= s_req(SLV_PLIC).vld;
+
+
+    -- ========================================================================================
+    -- 4. O CORAÇÃO DO CROSSBAR: ROTEAMENTO E ARBITRAGEM COMBINACIONAL (VHDL-2008 'all')
+    -- ========================================================================================
+    process(all) 
+        variable target  : slave_t;
+        variable v_owner : owner_arr_t; -- VARIÁVEL: Atualiza imediatamente no laço!
+    begin
+        -- Estado padrão: Desconecta todos os escravos e carrega o lock atual para a variável
+        for s in valid_slave_t loop
+            s_req(s).addr <= (others => '0');
+            s_req(s).data <= (others => '0');
+            s_req(s).we   <= (others => '0');
+            s_req(s).vld  <= '0';
+            
+            v_owner(s)    := owner_reg(s); -- Inicializa a variável com o estado sequencial
+        end loop;
+
+        -- Estado padrão: Mestres recebem rdy='1' e data=0 (Evita deadlock em bus fault)
+        for m in valid_master_t loop
+            m_rsp(m).data <= (others => '0');
+            if m_req(m).vld = '1' then
+                m_rsp(m).rdy <= '0'; -- Aguarda ser atendido
+            else
+                m_rsp(m).rdy <= '1'; -- Mestre ocioso
+            end if;
+        end loop;
+
+        -- Resolução de Acessos (Prioridade fixa: CPU -> DMA_RD -> DMA_WR)
+        for m in valid_master_t loop
+            if m_req(m).vld = '1' then
+                target := decodifica(m_req(m).addr);
+
+                if target /= SLV_NONE then
+                    -- AVALIA A VARIÁVEL: Se a CPU pegou, o DMA já vai enxergar ocupado!
+                    if v_owner(target) = MST_NONE or v_owner(target) = m then
+                        
+                        v_owner(target) := m;                -- Atualiza a variável NA HORA
+                        s_req(target)   <= m_req(m);         -- Conecta os sinais de ida
+                        m_rsp(m)        <= s_rsp(target);    -- Conecta os sinais de volta
+                        
+                    end if;
+                else
+                    -- Bus Fault: Acesso a endereço não mapeado
+                    m_rsp(m).rdy <= '1';
+                end if;
+            end if;
+        end loop;
+
+        -- Por fim, descarrega o resultado final da variável para o sinal que alimenta os registradores
+        for s in valid_slave_t loop
+            owner_comb(s) <= v_owner(s);
+        end loop;
+        
+    end process;
+
+    -- ========================================================================================
+    -- 5. TRAVA SEQUENCIAL (STICKY LOCK)
+    -- ========================================================================================
     process(clk_i, rst_i)
     begin
         if rst_i = '1' then
-            rom_owner_reg <= MST_NONE; ram_owner_reg <= MST_NONE; uart_owner_reg <= MST_NONE;
-            gpio_owner_reg <= MST_NONE; vga_owner_reg <= MST_NONE; npu_owner_reg <= MST_NONE;
-            dma_owner_reg <= MST_NONE; clint_owner_reg <= MST_NONE; plic_owner_reg <= MST_NONE;
+            owner_reg <= (others => MST_NONE);
         elsif rising_edge(clk_i) then
-            if rom_owner_comb /= MST_NONE then   if rom_rdy_b_i = '0' then rom_owner_reg <= rom_owner_comb;     else rom_owner_reg <= MST_NONE; end if; else rom_owner_reg <= MST_NONE; end if;
-            if ram_owner_comb /= MST_NONE then   if ram_rdy_b_i = '0' then ram_owner_reg <= ram_owner_comb;     else ram_owner_reg <= MST_NONE; end if; else ram_owner_reg <= MST_NONE; end if;
-            if uart_owner_comb /= MST_NONE then  if uart_rdy_i = '0' then uart_owner_reg <= uart_owner_comb;   else uart_owner_reg <= MST_NONE; end if; else uart_owner_reg <= MST_NONE; end if;
-            if gpio_owner_comb /= MST_NONE then  if gpio_rdy_i = '0' then gpio_owner_reg <= gpio_owner_comb;   else gpio_owner_reg <= MST_NONE; end if; else gpio_owner_reg <= MST_NONE; end if;
-            if vga_owner_comb /= MST_NONE then   if vga_rdy_i = '0' then vga_owner_reg <= vga_owner_comb;     else vga_owner_reg <= MST_NONE; end if; else vga_owner_reg <= MST_NONE; end if;
-            if npu_owner_comb /= MST_NONE then   if npu_rdy_i = '0' then npu_owner_reg <= npu_owner_comb;     else npu_owner_reg <= MST_NONE; end if; else npu_owner_reg <= MST_NONE; end if;
-            if dma_owner_comb /= MST_NONE then   if dma_rdy_i = '0' then dma_owner_reg <= dma_owner_comb;     else dma_owner_reg <= MST_NONE; end if; else dma_owner_reg <= MST_NONE; end if;
-            if clint_owner_comb /= MST_NONE then if clint_rdy_i = '0' then clint_owner_reg <= clint_owner_comb; else clint_owner_reg <= MST_NONE; end if; else clint_owner_reg <= MST_NONE; end if;
-            if plic_owner_comb /= MST_NONE then  if plic_rdy_i = '0' then plic_owner_reg <= plic_owner_comb;   else plic_owner_reg <= MST_NONE; end if; else plic_owner_reg <= MST_NONE; end if;
+            for s in valid_slave_t loop
+                if owner_comb(s) /= MST_NONE then
+                    -- Se o periférico ainda não terminou a transação (wait state), retém a trava
+                    if s_rsp(s).rdy = '0' then
+                        owner_reg(s) <= owner_comb(s);
+                    else
+                        owner_reg(s) <= MST_NONE;
+                    end if;
+                else
+                    owner_reg(s) <= MST_NONE;
+                end if;
+            end loop;
         end if;
     end process;
-
-    -- ============================================================================================================
-    -- ROTEAMENTO PARA OS ESCRAVOS
-    -- ============================================================================================================
-
-    -- RAM
-    process(ram_owner_comb, cpu_addr_i, cpu_we_i, cpu_data_i, dma_rd_addr_i, dma_wr_addr_i, dma_wr_we_i, dma_wr_data_i)
-    begin
-        ram_vld_b_o <= '0'; ram_addr_b_o <= (others => '0'); ram_we_b_o <= "0000"; ram_data_b_o <= (others => '0');
-        if ram_owner_comb = MST_CPU then
-            ram_vld_b_o <= '1'; ram_addr_b_o <= cpu_addr_i; ram_we_b_o <= cpu_we_i; ram_data_b_o <= cpu_data_i;
-        elsif ram_owner_comb = MST_DMA_RD then
-            ram_vld_b_o <= '1'; ram_addr_b_o <= dma_rd_addr_i; ram_we_b_o <= "0000"; ram_data_b_o <= (others => '0');
-        elsif ram_owner_comb = MST_DMA_WR then
-            ram_vld_b_o <= '1'; ram_addr_b_o <= dma_wr_addr_i; ram_we_b_o <= (others => dma_wr_we_i); ram_data_b_o <= dma_wr_data_i;
-        end if;
-    end process;
-
-    -- ROM
-    process(rom_owner_comb, cpu_addr_i, dma_rd_addr_i, dma_wr_addr_i)
-    begin
-        rom_vld_b_o <= '0'; rom_addr_b_o <= (others => '0');
-        if rom_owner_comb = MST_CPU then rom_vld_b_o <= '1'; rom_addr_b_o <= cpu_addr_i;
-        elsif rom_owner_comb = MST_DMA_RD then rom_vld_b_o <= '1'; rom_addr_b_o <= dma_rd_addr_i;
-        elsif rom_owner_comb = MST_DMA_WR then rom_vld_b_o <= '1'; rom_addr_b_o <= dma_wr_addr_i; end if;
-    end process;
-
-    -- NPU
-    process(npu_owner_comb, cpu_addr_i, cpu_we_bit, cpu_data_i, dma_rd_addr_i, dma_wr_addr_i, dma_wr_we_i, dma_wr_data_i)
-    begin
-        npu_vld_o <= '0'; npu_addr_o <= (others => '0'); npu_we_o <= '0'; npu_data_o <= (others => '0');
-        if npu_owner_comb = MST_CPU then
-            npu_vld_o <= '1'; npu_addr_o <= cpu_addr_i; npu_we_o <= cpu_we_bit; npu_data_o <= cpu_data_i;
-        elsif npu_owner_comb = MST_DMA_RD then
-            npu_vld_o <= '1'; npu_addr_o <= dma_rd_addr_i; npu_we_o <= '0'; npu_data_o <= (others => '0');
-        elsif npu_owner_comb = MST_DMA_WR then
-            npu_vld_o <= '1'; npu_addr_o <= dma_wr_addr_i; npu_we_o <= dma_wr_we_i; npu_data_o <= dma_wr_data_i;
-        end if;
-    end process;
-
-    -- UART
-    process(uart_owner_comb, cpu_addr_i, cpu_we_bit, cpu_data_i, dma_rd_addr_i, dma_wr_addr_i, dma_wr_we_i, dma_wr_data_i)
-    begin
-        uart_vld_o <= '0'; uart_addr_o <= (others => '0'); uart_we_o <= '0'; uart_data_o <= (others => '0');
-        if uart_owner_comb = MST_CPU then uart_vld_o <= '1'; uart_addr_o <= cpu_addr_i(3 downto 0); uart_we_o <= cpu_we_bit; uart_data_o <= cpu_data_i;
-        elsif uart_owner_comb = MST_DMA_RD then uart_vld_o <= '1'; uart_addr_o <= dma_rd_addr_i(3 downto 0); uart_we_o <= '0'; uart_data_o <= (others => '0');
-        elsif uart_owner_comb = MST_DMA_WR then uart_vld_o <= '1'; uart_addr_o <= dma_wr_addr_i(3 downto 0); uart_we_o <= dma_wr_we_i; uart_data_o <= dma_wr_data_i; end if;
-    end process;
-
-    -- GPIO
-    process(gpio_owner_comb, cpu_addr_i, cpu_we_bit, cpu_data_i, dma_rd_addr_i, dma_wr_addr_i, dma_wr_we_i, dma_wr_data_i)
-    begin
-        gpio_vld_o <= '0'; gpio_addr_o <= (others => '0'); gpio_we_o <= '0'; gpio_data_o <= (others => '0');
-        if gpio_owner_comb = MST_CPU then gpio_vld_o <= '1'; gpio_addr_o <= cpu_addr_i(3 downto 0); gpio_we_o <= cpu_we_bit; gpio_data_o <= cpu_data_i;
-        elsif gpio_owner_comb = MST_DMA_RD then gpio_vld_o <= '1'; gpio_addr_o <= dma_rd_addr_i(3 downto 0); gpio_we_o <= '0'; gpio_data_o <= (others => '0');
-        elsif gpio_owner_comb = MST_DMA_WR then gpio_vld_o <= '1'; gpio_addr_o <= dma_wr_addr_i(3 downto 0); gpio_we_o <= dma_wr_we_i; gpio_data_o <= dma_wr_data_i; end if;
-    end process;
-
-    -- VGA
-    process(vga_owner_comb, cpu_addr_i, cpu_we_bit, cpu_data_i, dma_rd_addr_i, dma_wr_addr_i, dma_wr_we_i, dma_wr_data_i)
-    begin
-        vga_vld_o <= '0'; vga_addr_o <= (others => '0'); vga_we_o <= '0'; vga_data_o <= (others => '0');
-        if vga_owner_comb = MST_CPU then vga_vld_o <= '1'; vga_addr_o <= cpu_addr_i(16 downto 0); vga_we_o <= cpu_we_bit; vga_data_o <= cpu_data_i;
-        elsif vga_owner_comb = MST_DMA_RD then vga_vld_o <= '1'; vga_addr_o <= dma_rd_addr_i(16 downto 0); vga_we_o <= '0'; vga_data_o <= (others => '0');
-        elsif vga_owner_comb = MST_DMA_WR then vga_vld_o <= '1'; vga_addr_o <= dma_wr_addr_i(16 downto 0); vga_we_o <= dma_wr_we_i; vga_data_o <= dma_wr_data_i; end if;
-    end process;
-
-    -- DMA CONFIG
-    process(dma_owner_comb, cpu_addr_i, cpu_we_bit, cpu_data_i, dma_rd_addr_i, dma_wr_addr_i, dma_wr_we_i, dma_wr_data_i)
-    begin
-        dma_vld_o <= '0'; dma_addr_o <= (others => '0'); dma_we_o <= '0'; dma_data_o <= (others => '0');
-        if dma_owner_comb = MST_CPU then dma_vld_o <= '1'; dma_addr_o <= cpu_addr_i(3 downto 0); dma_we_o <= cpu_we_bit; dma_data_o <= cpu_data_i;
-        elsif dma_owner_comb = MST_DMA_RD then dma_vld_o <= '1'; dma_addr_o <= dma_rd_addr_i(3 downto 0); dma_we_o <= '0'; dma_data_o <= (others => '0');
-        elsif dma_owner_comb = MST_DMA_WR then dma_vld_o <= '1'; dma_addr_o <= dma_wr_addr_i(3 downto 0); dma_we_o <= dma_wr_we_i; dma_data_o <= dma_wr_data_i; end if;
-    end process;
-
-    -- CLINT
-    process(clint_owner_comb, cpu_addr_i, cpu_we_bit, cpu_data_i, dma_rd_addr_i, dma_wr_addr_i, dma_wr_we_i, dma_wr_data_i)
-    begin
-        clint_vld_o <= '0'; clint_addr_o <= (others => '0'); clint_we_o <= '0'; clint_data_o <= (others => '0');
-        if clint_owner_comb = MST_CPU then clint_vld_o <= '1'; clint_addr_o <= cpu_addr_i(4 downto 0); clint_we_o <= cpu_we_bit; clint_data_o <= cpu_data_i;
-        elsif clint_owner_comb = MST_DMA_RD then clint_vld_o <= '1'; clint_addr_o <= dma_rd_addr_i(4 downto 0); clint_we_o <= '0'; clint_data_o <= (others => '0');
-        elsif clint_owner_comb = MST_DMA_WR then clint_vld_o <= '1'; clint_addr_o <= dma_wr_addr_i(4 downto 0); clint_we_o <= dma_wr_we_i; clint_data_o <= dma_wr_data_i; end if;
-    end process;
-
-    -- PLIC
-    process(plic_owner_comb, cpu_addr_i, cpu_we_bit, cpu_data_i, dma_rd_addr_i, dma_wr_addr_i, dma_wr_we_i, dma_wr_data_i)
-    begin
-        plic_vld_o <= '0'; plic_addr_o <= (others => '0'); plic_we_o <= '0'; plic_data_o <= (others => '0');
-        if plic_owner_comb = MST_CPU then plic_vld_o <= '1'; plic_addr_o <= cpu_addr_i(23 downto 0); plic_we_o <= cpu_we_bit; plic_data_o <= cpu_data_i;
-        elsif plic_owner_comb = MST_DMA_RD then plic_vld_o <= '1'; plic_addr_o <= dma_rd_addr_i(23 downto 0); plic_we_o <= '0'; plic_data_o <= (others => '0');
-        elsif plic_owner_comb = MST_DMA_WR then plic_vld_o <= '1'; plic_addr_o <= dma_wr_addr_i(23 downto 0); plic_we_o <= dma_wr_we_i; plic_data_o <= dma_wr_data_i; end if;
-    end process;
-
-    -- ============================================================================================================
-    -- SINAIS DE RETORNO (DATA E READY) PARA OS MESTRES
-    -- ============================================================================================================
-
-    -- Retorno CPU
-    cpu_data_o <= rom_data_b_i   when cpu_slv = SLV_ROM and rom_owner_comb = MST_CPU else
-                  ram_data_b_i   when cpu_slv = SLV_RAM and ram_owner_comb = MST_CPU else
-                  uart_data_i    when cpu_slv = SLV_UART and uart_owner_comb = MST_CPU else
-                  gpio_data_i    when cpu_slv = SLV_GPIO and gpio_owner_comb = MST_CPU else
-                  vga_data_i     when cpu_slv = SLV_VGA and vga_owner_comb = MST_CPU else
-                  npu_data_i     when cpu_slv = SLV_NPU and npu_owner_comb = MST_CPU else
-                  dma_data_i     when cpu_slv = SLV_DMA and dma_owner_comb = MST_CPU else
-                  clint_data_i   when cpu_slv = SLV_CLINT and clint_owner_comb = MST_CPU else
-                  plic_data_i    when cpu_slv = SLV_PLIC and plic_owner_comb = MST_CPU else
-                  (others => '0');
-                  
-    cpu_rdy_o  <= rom_rdy_b_i    when cpu_slv = SLV_ROM and rom_owner_comb = MST_CPU else
-                  ram_rdy_b_i    when cpu_slv = SLV_RAM and ram_owner_comb = MST_CPU else
-                  uart_rdy_i     when cpu_slv = SLV_UART and uart_owner_comb = MST_CPU else
-                  gpio_rdy_i     when cpu_slv = SLV_GPIO and gpio_owner_comb = MST_CPU else
-                  vga_rdy_i      when cpu_slv = SLV_VGA and vga_owner_comb = MST_CPU else
-                  npu_rdy_i      when cpu_slv = SLV_NPU and npu_owner_comb = MST_CPU else
-                  dma_rdy_i      when cpu_slv = SLV_DMA and dma_owner_comb = MST_CPU else
-                  clint_rdy_i    when cpu_slv = SLV_CLINT and clint_owner_comb = MST_CPU else
-                  plic_rdy_i     when cpu_slv = SLV_PLIC and plic_owner_comb = MST_CPU else
-                  '1'            when cpu_vld_i = '1' and cpu_slv = SLV_NONE else -- EVITA DEADLOCK (Bus Fault Virtual)
-                  '0'            when cpu_vld_i = '1' else 
-                  '1';
-
-    -- Retorno DMA Read
-    dma_rd_data_o <= rom_data_b_i when dma_rd_slv = SLV_ROM and rom_owner_comb = MST_DMA_RD else
-                     ram_data_b_i when dma_rd_slv = SLV_RAM and ram_owner_comb = MST_DMA_RD else
-                     uart_data_i  when dma_rd_slv = SLV_UART and uart_owner_comb = MST_DMA_RD else
-                     gpio_data_i  when dma_rd_slv = SLV_GPIO and gpio_owner_comb = MST_DMA_RD else
-                     vga_data_i   when dma_rd_slv = SLV_VGA and vga_owner_comb = MST_DMA_RD else
-                     npu_data_i   when dma_rd_slv = SLV_NPU and npu_owner_comb = MST_DMA_RD else
-                     dma_data_i   when dma_rd_slv = SLV_DMA and dma_owner_comb = MST_DMA_RD else
-                     clint_data_i when dma_rd_slv = SLV_CLINT and clint_owner_comb = MST_DMA_RD else
-                     plic_data_i  when dma_rd_slv = SLV_PLIC and plic_owner_comb = MST_DMA_RD else
-                     (others => '0');
-                     
-    dma_rd_rdy_o  <= rom_rdy_b_i  when dma_rd_slv = SLV_ROM and rom_owner_comb = MST_DMA_RD else
-                     ram_rdy_b_i  when dma_rd_slv = SLV_RAM and ram_owner_comb = MST_DMA_RD else
-                     uart_rdy_i   when dma_rd_slv = SLV_UART and uart_owner_comb = MST_DMA_RD else
-                     gpio_rdy_i   when dma_rd_slv = SLV_GPIO and gpio_owner_comb = MST_DMA_RD else
-                     vga_rdy_i    when dma_rd_slv = SLV_VGA and vga_owner_comb = MST_DMA_RD else
-                     npu_rdy_i    when dma_rd_slv = SLV_NPU and npu_owner_comb = MST_DMA_RD else
-                     dma_rdy_i    when dma_rd_slv = SLV_DMA and dma_owner_comb = MST_DMA_RD else
-                     clint_rdy_i  when dma_rd_slv = SLV_CLINT and clint_owner_comb = MST_DMA_RD else
-                     plic_rdy_i   when dma_rd_slv = SLV_PLIC and plic_owner_comb = MST_DMA_RD else
-                     '1'          when dma_rd_vld_i = '1' and dma_rd_slv = SLV_NONE else
-                     '0'          when dma_rd_vld_i = '1' else 
-                     '1';
-
-    -- Retorno DMA Write
-    dma_wr_rdy_o  <= rom_rdy_b_i  when dma_wr_slv = SLV_ROM and rom_owner_comb = MST_DMA_WR else
-                     ram_rdy_b_i  when dma_wr_slv = SLV_RAM and ram_owner_comb = MST_DMA_WR else
-                     uart_rdy_i   when dma_wr_slv = SLV_UART and uart_owner_comb = MST_DMA_WR else
-                     gpio_rdy_i   when dma_wr_slv = SLV_GPIO and gpio_owner_comb = MST_DMA_WR else
-                     vga_rdy_i    when dma_wr_slv = SLV_VGA and vga_owner_comb = MST_DMA_WR else
-                     npu_rdy_i    when dma_wr_slv = SLV_NPU and npu_owner_comb = MST_DMA_WR else
-                     dma_rdy_i    when dma_wr_slv = SLV_DMA and dma_owner_comb = MST_DMA_WR else
-                     clint_rdy_i  when dma_wr_slv = SLV_CLINT and clint_owner_comb = MST_DMA_WR else
-                     plic_rdy_i   when dma_wr_slv = SLV_PLIC and plic_owner_comb = MST_DMA_WR else
-                     '1'          when dma_wr_vld_i = '1' and dma_wr_slv = SLV_NONE else
-                     '0'          when dma_wr_vld_i = '1' else 
-                     '1';
 
 end architecture; -- rtl
 
-------------------------------------------------------------------------------------------------------
+-- ========================================================================================
