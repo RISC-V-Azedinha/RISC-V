@@ -121,43 +121,48 @@ def main():
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(18, 5.5))
 
     # -------------------------------------------------------------------------
-    # Gráfico (a): Eficiência e Gargalo de Memória (VISUAL DE IMPACTO)
+    # Gráfico (a): Eficiência do Acelerador e Muro da Memória
     # -------------------------------------------------------------------------
     # 1. Cálculo de Operações
     macs = np.array(K_VALUES) * 16
-    tp_cpu_dense = macs / np.array(results_dense['cpu'])
-    tp_cpu_sparse = macs / np.array(results_sparse['cpu'])
     tp_npu = macs / np.array(results_dense['npu'])
 
-    # 2. Curvas Base da CPU
-    ax1.plot(K_VALUES, tp_cpu_dense, marker='o', markersize=4, linewidth=1.5, color=c_cpu_densa, label='CPU (Densa)')
-    ax1.plot(K_VALUES, tp_cpu_sparse, marker='s', markersize=4, linewidth=1.5, linestyle='--', color=c_cpu_esparsa, label='CPU (Esparsa)')
-    
-    # 3. O Teto Teórico e a NPU
+    # 2. O Teto Teórico e o Teto Empírico (Extraído automaticamente)
     teto_teorico = 16.0
-    ax1.axhline(y=teto_teorico, color='#d32f2f', linestyle='--', linewidth=2, label='Teto do Silício (16 MACs/ciclo)')
-    ax1.plot(K_VALUES, tp_npu, marker='^', markersize=6, linewidth=2.5, color=c_npu, label='NPU (Real alcançado)')
+    npu_max_empirico = np.max(tp_npu)
     
-    # 4. O PULO DO GATO: Sombrear o desperdício causado pelo Memory Wall
-    ax1.fill_between(K_VALUES, tp_npu, teto_teorico, color='#ef9a9a', alpha=0.2, hatch='\\\\')
+    # Reta do Hardware Ideal
+    ax1.axhline(y=teto_teorico, color='#d32f2f', linestyle='--', linewidth=2, label='Teto Sistólico (16 MACs/ciclo)')
     
-    # Anotação cravada no meio do desperdício
-    ax1.text(32, 1.2, 'Zona de Inanição de Dados\n(~92.5% de ciclos ociosos)', color='#c62828', 
+    # Reta do Hardware Atual (Limitado pelo Barramento)
+    ax1.axhline(y=npu_max_empirico, color='#2ca02c', linestyle='-.', linewidth=1.5, alpha=0.8, label=f'Teto Empírico (~{npu_max_empirico:.2f} MACs/ciclo)')
+    
+    # 3. Curva Real da NPU
+    ax1.plot(K_VALUES, tp_npu, marker='^', markersize=6, linewidth=2.5, color=c_npu, label='Desempenho Real (NPU)')
+    
+    # 4. Sombreamento do Muro da Memória
+    ax1.fill_between(K_VALUES, npu_max_empirico, teto_teorico, color='#ef9a9a', alpha=0.2, hatch='\\\\')
+    
+    # Anotação: Ponto médio logarítmico para ficar exatamente no meio da área hachurada
+    y_texto_inanicao = npu_max_empirico * ((teto_teorico / npu_max_empirico) ** 0.5)
+    ax1.text(32, y_texto_inanicao, 'Zona de Inanição de Dados\n(Gargalo do Barramento DMA)', color='#c62828', 
              fontsize=10, fontweight='bold', ha='center',
              bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="none", alpha=0.8))
 
     ax1.set_xscale('log', base=2)
-    ax1.set_yscale('log', base=10)
     
-    # NOVIDADE: Dar um 'respiro' no eixo Y para as linhas não colarem no fundo ou no topo
-    ax1.set_ylim(ymin=0.0002, ymax=7.0) 
+    # CORREÇÃO: Voltando para a escala logarítmica para não achatar os dados pequenos!
+    ax1.set_yscale('log', base=10) 
+    
+    # Eixo Y com bastante "respiro" em cima e embaixo
+    ax1.set_ylim(ymin=0.01, ymax=40.0) 
 
     ax1.set_xlabel('Dimensão da Matriz ($K$)')
-    ax1.set_ylabel('Vazão (MACs/ciclo)')
-    ax1.set_title('(a) Eficiência e Muro da Memória', pad=12, fontweight='bold')
+    ax1.set_ylabel('Vazão Sustentada (MACs/ciclo)')
+    ax1.set_title('(a) Eficiência da NPU e Muro da Memória', pad=12, fontweight='bold')
     
-    # NOVIDADE: Legenda movida para o meio, onde há espaço em branco
-    ax1.legend(loc='center right', fontsize=9.5)
+    # CORREÇÃO: Legenda movida para o canto superior esquerdo (longe dos dados)
+    ax1.legend(loc='lower right', fontsize=9.5)
 
     # -------------------------------------------------------------------------
     # Gráfico (b): Speedup e Memory Wall (Dinâmico)

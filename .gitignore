@@ -41,3 +41,4 @@ venv/
 site/
 mnist.npz
 data/
+figura_benchmark_tcc.png
