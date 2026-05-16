@@ -1,22 +1,42 @@
 # =====================================================================================================
 # File: test_uart_controller.py
 # =====================================================================================================
-#
-# >>> Descrição: Testbench de Integração para o UART Controller.
-#     Dividido em testes específicos para o caminho de TX e RX.
-#
+# 
+# CONSIDERAÇÕES DE VERIFICAÇÃO E COBERTURA:
+# 
+# 1. Cobertura do Caminho de Transmissão (TX Path):
+#    - Simula a escrita da CPU no registrador de dados (0x0).
+#    - Verifica se a flag TX_BUSY levanta imediatamente para impedir sobrescritas acidentais.
+#    - Decodifica passivamente a forma de onda serial gerada no pino físico `uart_tx_pin` 
+#      (Start bit, 8 bits de dados, Stop bit) respeitando a latência do Baud Rate (115200 bps).
+#    - Garante que a flag TX_BUSY é baixada apenas após a transmissão completa do bit de parada.
+# 
+# 2. Cobertura do Caminho de Recepção (RX Path):
+#    - Injeta uma forma de onda serial assíncrona (bit a bit) no pino físico `uart_rx_pin`.
+#    - Verifica se o controlador (Over-sampling) identifica o dado e levanta a flag RX_READY.
+#    - Valida se a CPU consegue ler o byte exato armazenado na FIFO.
+#    - Testa a integridade da FIFO exigindo que a CPU envie o comando de POP (escrita em 0x4) 
+#      para limpar a flag, validando a separação entre leitura destrutiva e não-destrutiva.
+# 
+# 3. Cobertura do Bug de Double Write (Edge Guard):
+#    - Focado na correção da anomalia temporal do barramento onde a CPU mantém o 'vld_i' 
+#      por um ciclo extra após receber o 'rdy_o' (latência de pipeline).
+#    - O teste força esse ciclo "cego". Se a UART for sensível a nível, ela acusará 'rdy_o' = 1 
+#      no segundo ciclo e gravará lixo duplicado na FIFO.
+#    - A simulação falha estritamente se o pulso de Ready não for atômico (exato 1 ciclo de clock).
+# 
 # =====================================================================================================
 
 import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import RisingEdge, Timer, ReadOnly
+from cocotb.triggers import RisingEdge, Timer, ReadOnly, FallingEdge
 from sim.core.single_cycle.include.test_utils import log_header, log_info, log_success, log_error, log_console
 
 # =====================================================================================================
 # CONFIGURAÇÕES GLOBAIS
 # =====================================================================================================
 
-CLK_PERIOD_NS = 10
+CLK_PERIOD_NS  = 10
 CYCLES_PER_BIT = 868 # 100 MHz / 115200 baud = 868.055... ciclos 
 BIT_PERIOD_NS  = CYCLES_PER_BIT * CLK_PERIOD_NS
 
@@ -92,7 +112,7 @@ async def cpu_read(dut, addr):
     return val
 
 async def sniff_tx_pin(dut):
-    """Monitora o pino TX físico"""
+    """Monitora passivamente o pino TX físico e decodifica os bits"""
     while dut.uart_tx_pin.value == 1: await RisingEdge(dut.clk)
     
     # Pula para o meio do primeiro bit de dados (Start + 0.5 Data)
@@ -106,7 +126,7 @@ async def sniff_tx_pin(dut):
     return byte_val
 
 async def drive_rx_pin(dut, byte_val):
-    """Injeta dados no pino RX físico"""
+    """Injeta dados seriais simulando um host externo no pino RX físico"""
     dut.uart_rx_pin.value = 0 # Start
     await Timer(BIT_PERIOD_NS, unit="ns")
     for i in range(8):
@@ -151,9 +171,7 @@ async def test_uart_tx_path(dut):
             
         # 5. Espera Busy baixar
         # O sniffer retorna no MEIO do stop bit. Precisamos esperar o resto dele.
-        # Antes era 1000ns, agora vamos esperar 1 bit inteiro (8680ns) para garantir.
-        
-        await Timer(int(BIT_PERIOD_NS), unit="ns")   # <--- CORREÇÃO AQUI
+        await Timer(int(BIT_PERIOD_NS), unit="ns")
         
         status = await cpu_read(dut, ADDR_STAT)
         if (status & 1):
@@ -197,9 +215,10 @@ async def test_uart_rx_path(dut):
             log_error(f"Mismatch! Pino: 0x{char_rx:02X} -> CPU: 0x{val:02X}")
             assert False
 
+        # 5. Comando de POP da FIFO
         await cpu_write(dut, ADDR_STAT, 0x01) 
 
-        # 5. CPU Checa se Status limpou
+        # 6. CPU Checa se Status limpou
         status = await cpu_read(dut, ADDR_STAT)
         if (status & 2):
             log_error("Flag RX_READY não limpou após leitura e POP!")
@@ -208,3 +227,55 @@ async def test_uart_rx_path(dut):
         await Timer(1000, unit="ns")
 
     log_success("Caminho RX verificado com sucesso.")
+
+# =====================================================================================================
+# TESTE 3: VALIDAÇÃO DO HANDSHAKE ATÔMICO (TDD)
+# =====================================================================================================
+
+@cocotb.test()
+async def test_uart_double_write_bug(dut):
+    """
+    TDD: Verifica se a UART escreve duas vezes na FIFO de TX
+    devido à falta do Edge Guard no handshake.
+    """
+    log_header("Teste 3: Double Write na FIFO de TX (UART)")
+    
+    # Inicializa perfeitamente o DUT (Relógio e Reset)
+    await setup_dut(dut)
+    
+    # 1. CPU inicia a transação de escrita (TX) - Offset 0x0
+    dut.addr_i.value = 0x0
+    dut.data_i.value = 0xAA
+    dut.we_i.value   = 1
+    dut.vld_i.value  = 1
+    
+    # 2. CPU aguarda a UART responder
+    while True:
+        await RisingEdge(dut.clk)
+        await ReadOnly()
+        if int(dut.rdy_o.value) == 1:
+            break
+            
+    # 3. CICLO CEGO: CPU viu RDY=1 nesta borda, mas só vai baixar o VLD no próximo ciclo.
+    await RisingEdge(dut.clk)
+    await ReadOnly()
+    
+    # Verifica o tempo que o rdy_o ficou em alto no ciclo "fantasma"
+    rdy_no_ciclo_cego = int(dut.rdy_o.value)
+    
+    await FallingEdge(dut.clk)
+    
+    # CPU finalmente abaixa o VLD
+    dut.vld_i.value = 0
+    dut.we_i.value  = 0
+    
+    # Espera alguns ciclos para a lógica interna acomodar
+    for _ in range(3):
+        await RisingEdge(dut.clk)
+        
+    # 4. VERIFICAÇÃO DO BUG
+    if rdy_no_ciclo_cego == 1:
+        log_error("BUG DETECTADO: O rdy_o durou 2 ciclos seguidos! A FIFO deve ter ingerido 0xAA duplicado.")
+        assert False, "Violação de Handshake: rdy_o estendido indevidamente (Level-sensitive)."
+        
+    log_success("Edge Guard validado na UART! Pulso atômico de 1 ciclo confirmado.")
