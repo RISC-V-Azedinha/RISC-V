@@ -148,11 +148,11 @@ architecture rtl of bus_interconnect is
     -- DEFINIÇÕES DE TIPOS E ABSTRAÇÕES
     -- ========================================================================================
     type slave_t is (SLV_NONE, SLV_ROM, SLV_RAM, SLV_UART, SLV_GPIO, SLV_VGA, SLV_NPU, SLV_DMA, SLV_CLINT, SLV_PLIC);
-    type master_id_t is (MST_NONE, MST_CPU, MST_DMA_RD, MST_DMA_WR);
+    type master_id_t is (MST_NONE, MST_DMA_RD, MST_DMA_WR, MST_CPU);
 
     -- Subtipos válidos para usar como índices de Array
     subtype valid_slave_t is slave_t range SLV_ROM to SLV_PLIC;
-    subtype valid_master_t is master_id_t range MST_CPU to MST_DMA_WR;
+    subtype valid_master_t is master_id_t range MST_DMA_RD to MST_CPU;
 
     -- Records para encapsular os sinais do barramento
     type bus_req_t is record
