@@ -50,14 +50,16 @@ end entity;
 architecture rtl of gpio_controller is
 
     signal r_leds : std_logic_vector(15 downto 0);
+    signal r_rdy  : std_logic := '0'; 
 
 begin
     
-    -- Conexão física ---------------------------------------------------------------------------------------------
+    -- Conexões Físicas e Contínuas -------------------------------------------------------------------------------
 
     gpio_leds <= r_leds;
+    rdy_o     <= r_rdy;
 
-    -- Processo de Escrita (CPU -> GPIO) --------------------------------------------------------------------------
+    -- Processo de Acesso (CPU <-> GPIO) --------------------------------------------------------------------------
     
     process(clk)
     begin
@@ -67,18 +69,20 @@ begin
             if rst = '1' then
 
                 r_leds <= (others => '0');
-                rdy_o  <= '0';
+                r_rdy  <= '0';
                 data_o <= (others => '0');
             
             else
             
-                -- Default: Ready baixa se não houver valid
-                rdy_o  <= '0';
+                -- Default: Ready baixa no ciclo seguinte garantindo pulso de 1 clock
+                r_rdy  <= '0';
                 data_o <= (others => '0');
 
-                if vld_i = '1' then
+                -- EDGE GUARD: Só aceita transação se o vld estiver alto e AINDA não tivermos respondido
+                if vld_i = '1' and r_rdy = '0' then
+                    
                     -- Handshake: Resposta no próximo ciclo (Latência 1)
-                    rdy_o <= '1';
+                    r_rdy <= '1';
 
                     -- ESCRITA
                     if we_i = '1' then
