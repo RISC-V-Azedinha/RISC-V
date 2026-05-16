@@ -65,7 +65,6 @@ def model_addr_decode(addr):
     if nibble == 0x0: return "ROM"
     if nibble == 0x1: return "UART"
     if nibble == 0x2: return "GPIO"
-    if nibble == 0x3: return "VGA"
     if nibble == 0x4: return "DMA"
     if nibble == 0x5: return "CLINT" 
     if nibble == 0x6: return "PLIC"
@@ -152,7 +151,6 @@ async def test_fuzzing_map(dut):
             "ROM":  int(dut.rom_vld_b_o.value),
             "UART": int(dut.uart_vld_o.value),
             "GPIO": int(dut.gpio_vld_o.value),
-            "VGA":  int(dut.vga_vld_o.value),
             "DMA":  int(dut.dma_vld_o.value),
             "CLINT": int(dut.clint_vld_o.value), 
             "PLIC":  int(dut.plic_vld_o.value),  
@@ -175,7 +173,6 @@ async def test_fuzzing_map(dut):
             elif target == "DMA": dut.dma_data_i.value = mock_data;   dut.dma_rdy_i.value = 1
             elif target == "UART": dut.uart_data_i.value = mock_data; dut.uart_rdy_i.value = 1
             elif target == "GPIO": dut.gpio_data_i.value = mock_data; dut.gpio_rdy_i.value = 1
-            elif target == "VGA":  dut.vga_data_i.value = mock_data;  dut.vga_rdy_i.value = 1
             elif target == "NPU":  dut.npu_data_i.value = mock_data;  dut.npu_rdy_i.value = 1
             elif target == "CLINT": dut.clint_data_i.value = mock_data; dut.clint_rdy_i.value = 1
             elif target == "PLIC": dut.plic_data_i.value = mock_data; dut.plic_rdy_i.value = 1
@@ -201,7 +198,6 @@ async def test_fuzzing_map(dut):
         dut.dma_rdy_i.value = 0
         dut.uart_rdy_i.value = 0
         dut.gpio_rdy_i.value = 0
-        dut.vga_rdy_i.value = 0
         dut.npu_rdy_i.value = 0
         dut.clint_rdy_i.value = 0
         dut.plic_rdy_i.value = 0
@@ -245,9 +241,10 @@ async def test_slave_arbitration(dut):
     await settle()
     
     assert dut.ram_vld_b_o.value == 1, "RAM não ativada"
-    assert dut.cpu_rdy_o.value == 1, "CPU sofreu STALL indevido (deve ter prioridade)"
-    assert dut.dma_rd_rdy_o.value == 0, "DMA não sofreu STALL (Arbitragem falhou)"
-    assert int(dut.ram_addr_b_o.value) == 0x80001000, "Mux roteou endereço errado"
+    # Prioridade agora é do DMA: DMA_RD > DMA_WR > CPU
+    assert dut.cpu_rdy_o.value == 0, "CPU não deveria receber ready (perde prioridade para DMA)"
+    assert dut.dma_rd_rdy_o.value == 1, "DMA_RD deveria receber ready (deve ter prioridade)"
+    assert int(dut.ram_addr_b_o.value) == 0x80002000, "Mux roteou endereço errado (deve selecionar DMA_RD)"
     
     # Limpeza para evitar disparo do monitor na transição de testes
     dut.cpu_vld_i.value = 0
@@ -311,19 +308,9 @@ async def test_three_way_collision(dut):
     dut.npu_rdy_i.value = 0
     await settle()
     
-    # Avaliação Combinacional (Prioridade 1: CPU)
+    # Avaliação Combinacional (Prioridade 1: DMA_RD)
     assert dut.cpu_rdy_o.value == 0 and dut.dma_rd_rdy_o.value == 0 and dut.dma_wr_rdy_o.value == 0
-    assert int(dut.npu_addr_o.value) == 0x90000004, "CPU falhou no Priority Encoder"
-    
-    # Fim Transação CPU
-    dut.npu_rdy_i.value = 1
-    await RisingEdge(dut.clk_i)
-    dut.cpu_vld_i.value = 0
-    dut.npu_rdy_i.value = 0
-    await settle()
-    
-    # Avaliação Combinacional (Prioridade 2: DMA_RD)
-    assert int(dut.npu_addr_o.value) == 0x90000010, "DMA_RD falhou no Priority Encoder pós CPU"
+    assert int(dut.npu_addr_o.value) == 0x90000010, "DMA_RD falhou no Priority Encoder"
     
     # Fim Transação DMA_RD
     dut.npu_rdy_i.value = 1
@@ -332,12 +319,22 @@ async def test_three_way_collision(dut):
     dut.npu_rdy_i.value = 0
     await settle()
     
-    # Avaliação Combinacional (Prioridade 3: DMA_WR)
-    assert int(dut.npu_addr_o.value) == 0x90000014, "DMA_WR falhou no Priority Encoder final"
+    # Avaliação Combinacional (Prioridade 2: DMA_WR)
+    assert int(dut.npu_addr_o.value) == 0x90000014, "DMA_WR falhou no Priority Encoder pós DMA_RD"
     
     # Fim Transação DMA_WR
     dut.npu_rdy_i.value = 1
     await RisingEdge(dut.clk_i)
     dut.dma_wr_vld_i.value = 0
+    dut.npu_rdy_i.value = 0
+    await settle()
+    
+    # Avaliação Combinacional (Prioridade 3: CPU)
+    assert int(dut.npu_addr_o.value) == 0x90000004, "CPU falhou no Priority Encoder final"
+    
+    # Fim Transação CPU
+    dut.npu_rdy_i.value = 1
+    await RisingEdge(dut.clk_i)
+    dut.cpu_vld_i.value = 0
 
     log_success("Priority Encoder suportou colisão tripla perfeitamente!")
