@@ -4,6 +4,7 @@
 #
 # >>> Descrição: Testbench para o Controlador DMA (Direct Memory Access)
 #       Atualizado para a arquitetura Dual-Master (Read/Write desacoplados).
+#       Inclui suporte ao protocolo Edge Guard na interface de configuração.
 #
 # =====================================================================================================================
 
@@ -46,13 +47,17 @@ async def setup_dut(dut):
     await RisingEdge(dut.clk_i)
 
 async def cfg_write(dut, addr, data):
-    """Escreve nos registradores de configuração do DMA"""
+    """Escreve nos registradores de configuração do DMA com Handshake Síncrono (Edge Guard)"""
     dut.cfg_addr_i.value = addr
     dut.cfg_data_i.value = data
     dut.cfg_vld_i.value = 1
     dut.cfg_we_i.value = 1
     
-    await RisingEdge(dut.clk_i)
+    # Aguarda a resposta do Edge Guard garantindo que o comando não seja descartado
+    while True:
+        await RisingEdge(dut.clk_i)
+        if dut.cfg_rdy_o.value == 1:
+            break
     
     dut.cfg_vld_i.value = 0
     dut.cfg_we_i.value = 0
