@@ -1,12 +1,12 @@
-# ============================================================================================================================================================
+# =====================================================================================================================
 # File: test_gpio_controller.py
-# ============================================================================================================================================================
+# =====================================================================================================================
 #
 # >>> Descrição: Testbench para o Controlador de GPIO (General Purpose I/O).
 #       Verifica a escrita em registradores de LEDs e a leitura de registradores de Switches.
 #       Inclui testes de reset, integridade de dados e testes aleatórios.
 #
-# ============================================================================================================================================================
+# =====================================================================================================================
 
 import cocotb
 import random
@@ -206,3 +206,50 @@ async def stress_test_randomized(dut):
                 assert False
 
     log_success(f"{NUM_ITERATIONS} Iterações Aleatórias (RW) concluídas com sucesso")
+
+@cocotb.test()
+async def test_handshake_edge_guard(dut):
+    """
+    Garante que o periférico emite rdy_o por exato UM ciclo de clock
+    por requisição, mesmo que o mestre demore 1 ciclo extra para baixar o vld_i.
+    """
+    from cocotb.triggers import FallingEdge # Importação segura local
+    log_header("Teste de Integração: Edge Guard (Prevenção de Double Write)")
+    
+    cocotb.start_soon(Clock(dut.clk, 10, unit="ns").start())
+    await reset_dut(dut)
+    
+    # 1. CPU inicia a transação
+    dut.addr_i.value = ADDR_LEDS
+    dut.data_i.value = 0x5555
+    dut.we_i.value   = 1
+    dut.vld_i.value  = 1
+    
+    # 2. Aguarda o periférico levantar o rdy_o
+    while True:
+        await RisingEdge(dut.clk)
+        await ReadOnly()
+        if int(dut.rdy_o.value) == 1:
+            break
+            
+    # 3. CICLO CEGO: A CPU enxergou o rdy_o = 1.
+    # Vamos avançar para a próxima borda de subida onde a CPU AINDA segura o vld_i=1
+    await RisingEdge(dut.clk)
+    await ReadOnly()
+    
+    # Lemos o valor protegido pelo ReadOnly
+    rdy_no_ciclo_cego = int(dut.rdy_o.value)
+    
+    # Avançamos para a borda de descida (saindo do estado ReadOnly) para poder escrever
+    await FallingEdge(dut.clk)
+    
+    # Agora a CPU finalmente abaixa os sinais
+    dut.vld_i.value = 0
+    dut.we_i.value  = 0
+    
+    # 4. VERIFICAÇÃO
+    if rdy_no_ciclo_cego == 1:
+        log_error("BUG DETECTADO: O rdy_o durou 2 ciclos seguidos! A máquina de estados re-engatilhou a escrita.")
+        assert False, "Violação de Handshake: rdy_o estendido indevidamente (Level-sensitive)."
+        
+    log_success("Edge Guard validado! O rdy_o durou exato 1 ciclo e a escrita foi atômica.")
