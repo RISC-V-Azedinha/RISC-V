@@ -10,7 +10,7 @@
 -- ╚═════╝ ╚═╝     ╚═╝╚═╝  ╚═╝
 --                            
 -- Descrição : Controlador DMA Avançado 1D (Mem-to-Mem / Mem-to-IP)
---             [ATUALIZADO: Decoupled Burst de Escrita sem Ciclos de Stall]
+--             [ATUALIZADO: FIFO 32-words / Decoupled Burst de Escrita]
 --
 -- Autor     : André Maiolini
 --
@@ -57,11 +57,12 @@ architecture rtl of dma_controller is
     signal r_ctrl_fixed_dst : std_logic;
     signal r_busy           : std_logic;
 
-    type fifo_t is array (0 to 7) of std_logic_vector(31 downto 0);
+    -- Aumento da profundidade da FIFO para 32 posições
+    type fifo_t is array (0 to 31) of std_logic_vector(31 downto 0);
     signal r_fifo       : fifo_t;
-    signal r_fifo_wr    : unsigned(2 downto 0);
-    signal r_fifo_rd    : unsigned(2 downto 0);
-    signal r_fifo_count : unsigned(3 downto 0);
+    signal r_fifo_wr    : unsigned(4 downto 0); -- 2^5 = 32 posições
+    signal r_fifo_rd    : unsigned(4 downto 0);
+    signal r_fifo_count : unsigned(5 downto 0); -- Necessita de 6 bits para contar de 0 até 32
 
     signal s_rd_req : std_logic;
     signal s_wr_req : std_logic;
@@ -73,8 +74,9 @@ begin
 
     cfg_rdy_o <= r_cfg_rdy;
 
-    -- Requisições de Barramento ativas continuamente baseadas no estado da FIFO interna (Elastic Buffer)
-    s_rd_req <= '1' when (r_busy = '1' and r_rd_count > 0 and r_fifo_count < 8 and soc_en_i /= '0') else '0';
+    -- Requisições de Barramento ativas continuamente baseadas no estado da FIFO interna
+    -- Limite de leitura alterado para < 32
+    s_rd_req <= '1' when (r_busy = '1' and r_rd_count > 0 and r_fifo_count < 32 and soc_en_i /= '0') else '0';
     s_wr_req <= '1' when (r_busy = '1' and r_wr_count > 0 and r_fifo_count > 0 and soc_en_i /= '0') else '0';
 
     m_rd_vld_o  <= s_rd_req;
