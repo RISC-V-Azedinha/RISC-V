@@ -76,6 +76,7 @@ architecture rtl of vga_peripheral is
     -- Sinal para o dado alinhado
 
     signal s_data_aligned : std_logic_vector(7 downto 0);  -- Dado alinhado para escrita na VRAM
+    signal r_rdy          : std_logic := '0';              -- Sinal de Ready interno para handshake
 
     -- Sinais para coordenadas escaladas
 
@@ -91,7 +92,10 @@ architecture rtl of vga_peripheral is
 begin
 
     -- O sinal de escrita só é real se o mestre disser que a transação é VÁLIDA
-    s_vram_we <= we_i and vld_i;
+    s_vram_we <= we_i and vld_i and not r_rdy;
+    
+    -- Atribuição contínua para a saída do barramento
+    rdy_o <= r_rdy;
 
     -- LÓGICA DE ALINHAMENTO (MUX) --------------------------------------------------------------------------------
 
@@ -173,26 +177,26 @@ begin
         begin
             if rising_edge(clk) then
                 if rst = '1' then
-                    rdy_o  <= '0';
+                    r_rdy  <= '0';
                     data_o <= (others => '0');
                 else
-                    -- Default
-                    rdy_o  <= '0';
+                    -- Default (Pulso de 1 ciclo)
+                    r_rdy  <= '0';
                     data_o <= (others => '0');
 
-                    if vld_i = '1' then
-                        -- Handshake: Resposta no ciclo T+1
-                        rdy_o <= '1';
+                    -- EDGE GUARD: Executa se for válido E ainda não foi respondido
+                    if vld_i = '1' and r_rdy = '0' then
+                        -- Handshake Atômico
+                        r_rdy <= '1';
                         
                         -- Leitura de Registradores (Ex: VSYNC)
                         if we_i = '0' then
                             if addr_i = "11111111111111111" then -- Endereço 0x1FFFF
-                                data_o <= (0 => s_vsync, others => '0'); -- Retorna bit 0 = VSYNC
+                                data_o <= (0 => s_vsync, others => '0'); 
                             end if;
                         end if;
                         
-                        -- Para escritas (WE=1), o 'rdy_o' serve apenas como ACK,
-                        -- pois a escrita na BRAM já foi engatilhada pelo s_vram_we.
+                        -- Escritas na VRAM são tratadas pelo s_vram_we combinacional.
                     end if;
                 end if;
             end if;
