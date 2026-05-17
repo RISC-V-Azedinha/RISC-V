@@ -9,7 +9,7 @@
 --   ███████║╚██████╔╝╚██████╗       ██║   ╚██████╔╝██║     
 --   ╚══════╝ ╚═════╝  ╚═════╝       ╚═╝    ╚═════╝ ╚═╝     
 -- 
--- Descrição : Top-level do SoC RISC-V. 
+-- Descrição : Top-level do SoC RISC-V.
 --             Integra o núcleo processador com memórias e periféricos reais.
 --             Arquitetura: Harvard Modificada com Crossbar e DMA Dual-Master.
 -- 
@@ -20,185 +20,154 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity soc_top is
-
     generic (
         INIT_FILE : string  := "build/fpga/boot/bootloader.hex";
-        CLK_FREQ  : integer := 100_000_000;  -- Frequência do Clock em Hz
-        BAUD_RATE : integer := 921_600       -- Taxa de Baud para a UART (bps)
+        CLK_FREQ  : integer := 100_000_000;  
+        BAUD_RATE : integer := 921_600       
     );
-    
     port (
-        -- Sinais de Controle do Sistema ------------------------------------------------
-        CLK_i       : in  std_logic;         -- Clock de sistema
-        Reset_i     : in  std_logic;         -- Sinal de Reset assíncrono ativo alto
+        CLK_i       : in  std_logic;         
+        Reset_i     : in  std_logic;         
         
-        -- Pinos Externos (Interface UART) ----------------------------------------------
-        UART_TX_o   : out std_logic;         -- Saída TX da UART
-        UART_RX_i   : in  std_logic;         -- Entrada RX da UART
-        UART_RTS_i  : in  std_logic;         -- Entrada RTS da UART 
+        UART_TX_o   : out std_logic;         
+        UART_RX_i   : in  std_logic;         
+        UART_RTS_i  : in  std_logic;         
 
-        -- Pinos Externos (Interface GPIO) ----------------------------------------------
         GPIO_LEDS_o : out std_logic_vector(15 downto 0);
         GPIO_SW_i   : in  std_logic_vector(15 downto 0);
 
-        -- Pinos Externos (Interface VGA) -----------------------------------------------
         VGA_HS_o    : out std_logic;
         VGA_VS_o    : out std_logic;
         VGA_R_o     : out std_logic_vector(3 downto 0);
         VGA_G_o     : out std_logic_vector(3 downto 0);
         VGA_B_o     : out std_logic_vector(3 downto 0)
     );
-
 end entity;
 
 architecture rtl of soc_top is
 
     -- === Sinais da CPU ==========================================================================================
+    signal s_cpu_imem_addr   : std_logic_vector(31 downto 0);
+    signal s_cpu_imem_data   : std_logic_vector(31 downto 0);
+    signal s_cpu_imem_vld    : std_logic;
+    signal s_cpu_imem_rdy    : std_logic;
 
-    -- Barramento de Instruções (IMem)
-        signal s_cpu_imem_addr   : std_logic_vector(31 downto 0);
-        signal s_cpu_imem_data   : std_logic_vector(31 downto 0);
-        signal s_cpu_imem_vld    : std_logic; 
-        signal s_cpu_imem_rdy    : std_logic;
-
-    -- Barramento de Dados (DMem)
-        signal s_cpu_dmem_addr   : std_logic_vector(31 downto 0);
-        signal s_cpu_dmem_wdata  : std_logic_vector(31 downto 0);
-        signal s_cpu_dmem_rdata  : std_logic_vector(31 downto 0);
-        signal s_cpu_dmem_we     : std_logic_vector( 3 downto 0);
-        signal s_cpu_dmem_vld    : std_logic; 
-        signal s_cpu_dmem_rdy    : std_logic;
+    signal s_cpu_dmem_addr   : std_logic_vector(31 downto 0);
+    signal s_cpu_dmem_wdata  : std_logic_vector(31 downto 0);
+    signal s_cpu_dmem_rdata  : std_logic_vector(31 downto 0);
+    signal s_cpu_dmem_we     : std_logic_vector( 3 downto 0);
+    signal s_cpu_dmem_vld    : std_logic;
+    signal s_cpu_dmem_rdy    : std_logic;
 
     -- === Sinais do DMA ==========================================================================================
+    signal s_dma_m_rd_addr   : std_logic_vector(31 downto 0);
+    signal s_dma_m_rd_data   : std_logic_vector(31 downto 0);
+    signal s_dma_m_rd_vld    : std_logic;
+    signal s_dma_m_rd_rdy    : std_logic;
 
-    -- Master Read (Acesso à Memória - Source)
-        signal s_dma_m_rd_addr   : std_logic_vector(31 downto 0);
-        signal s_dma_m_rd_data   : std_logic_vector(31 downto 0);
-        signal s_dma_m_rd_vld    : std_logic;
-        signal s_dma_m_rd_rdy    : std_logic;
+    signal s_dma_m_wr_addr   : std_logic_vector(31 downto 0);
+    signal s_dma_m_wr_data   : std_logic_vector(31 downto 0);
+    signal s_dma_m_wr_we     : std_logic;
+    signal s_dma_m_wr_vld    : std_logic;
+    signal s_dma_m_wr_rdy    : std_logic;
 
-    -- Master Write (Acesso à Memória/IP - Destino)
-        signal s_dma_m_wr_addr   : std_logic_vector(31 downto 0);
-        signal s_dma_m_wr_data   : std_logic_vector(31 downto 0);
-        signal s_dma_m_wr_we     : std_logic;
-        signal s_dma_m_wr_vld    : std_logic;
-        signal s_dma_m_wr_rdy    : std_logic;
-    
-    -- Slave (Configuração via Bus)
-        signal s_dma_s_addr      : std_logic_vector(3 downto 0);
-        signal s_dma_s_wdata     : std_logic_vector(31 downto 0);
-        signal s_dma_s_rdata     : std_logic_vector(31 downto 0);
-        signal s_dma_s_we        : std_logic;
-        signal s_dma_s_vld       : std_logic;
-        signal s_dma_s_rdy       : std_logic;
+    signal s_dma_s_addr      : std_logic_vector(3 downto 0);
+    signal s_dma_s_wdata     : std_logic_vector(31 downto 0);
+    signal s_dma_s_rdata     : std_logic_vector(31 downto 0);
+    signal s_dma_s_we        : std_logic;
+    signal s_dma_s_vld       : std_logic;
+    signal s_dma_s_rdy       : std_logic;
 
     -- === Sinais de Interconexão (Periféricos e Memórias) ========================================================
-    
-    -- Boot ROM
-        signal s_rom_addr_a, s_rom_addr_b : std_logic_vector(31 downto 0);
-        signal s_rom_data_a, s_rom_data_b : std_logic_vector(31 downto 0);
-        signal s_rom_vld_a                : std_logic; 
-        signal s_rom_rdy_a                : std_logic;
-        signal s_rom_vld_b                : std_logic;
-        signal s_rom_rdy_b                : std_logic;
+    signal s_rom_addr_a, s_rom_addr_b : std_logic_vector(31 downto 0);
+    signal s_rom_data_a, s_rom_data_b : std_logic_vector(31 downto 0);
+    signal s_rom_vld_a, s_rom_rdy_a   : std_logic;
+    signal s_rom_vld_b, s_rom_rdy_b   : std_logic;
 
-    -- RAM
-        signal s_ram_addr_a, s_ram_addr_b : std_logic_vector(31 downto 0);
-        signal s_ram_data_a, s_ram_data_b : std_logic_vector(31 downto 0);     
-        signal s_ram_data_w               : std_logic_vector(31 downto 0);     
-        signal s_ram_we_b                 : std_logic_vector( 3 downto 0);
-        signal s_ram_vld_a                : std_logic; 
-        signal s_ram_rdy_a                : std_logic;
-        signal s_ram_vld_b                : std_logic;
-        signal s_ram_rdy_b                : std_logic;
+    signal s_ram_addr_a, s_ram_addr_b : std_logic_vector(31 downto 0);
+    signal s_ram_data_a, s_ram_data_b : std_logic_vector(31 downto 0);     
+    signal s_ram_data_w               : std_logic_vector(31 downto 0);
+    signal s_ram_we_b                 : std_logic_vector( 3 downto 0);
+    signal s_ram_vld_a, s_ram_rdy_a   : std_logic;
+    signal s_ram_vld_b, s_ram_rdy_b   : std_logic;
 
-    -- UART
-        signal s_uart_addr                : std_logic_vector( 3 downto 0);
-        signal s_uart_data_rx             : std_logic_vector(31 downto 0);
-        signal s_uart_data_tx             : std_logic_vector(31 downto 0);
-        signal s_uart_we                  : std_logic;
-        signal s_uart_vld                 : std_logic;
-        signal s_uart_rdy                 : std_logic;
+    signal s_uart_addr                : std_logic_vector( 3 downto 0);
+    signal s_uart_data_rx             : std_logic_vector(31 downto 0);
+    signal s_uart_data_tx             : std_logic_vector(31 downto 0);
+    signal s_uart_we                  : std_logic;
+    signal s_uart_vld, s_uart_rdy     : std_logic;
 
-    -- GPIO
-        signal s_gpio_addr    : std_logic_vector(3 downto 0);
-        signal s_gpio_data_rx : std_logic_vector(31 downto 0);                 
-        signal s_gpio_data_tx : std_logic_vector(31 downto 0);                 
-        signal s_gpio_we      : std_logic;
-        signal s_gpio_vld     : std_logic;
-        signal s_gpio_rdy     : std_logic;
+    signal s_gpio_addr                : std_logic_vector(3 downto 0);
+    signal s_gpio_data_rx             : std_logic_vector(31 downto 0);                 
+    signal s_gpio_data_tx             : std_logic_vector(31 downto 0);
+    signal s_gpio_we                  : std_logic;
+    signal s_gpio_vld, s_gpio_rdy     : std_logic;
 
-    -- VGA
-        signal s_vga_addr    : std_logic_vector(16 downto 0);
-        signal s_vga_data_rx : std_logic_vector(31 downto 0);                  
-        signal s_vga_data_tx : std_logic_vector(31 downto 0);                  
-        signal s_vga_we      : std_logic;
-        signal s_vga_vld     : std_logic;
-        signal s_vga_rdy     : std_logic;
+    signal s_vga_addr                 : std_logic_vector(16 downto 0);
+    signal s_vga_data_rx              : std_logic_vector(31 downto 0);                  
+    signal s_vga_data_tx              : std_logic_vector(31 downto 0);
+    signal s_vga_we                   : std_logic;
+    signal s_vga_vld, s_vga_rdy       : std_logic;
 
-    -- NPU 
-        signal s_npu_addr     : std_logic_vector(31 downto 0);
-        signal s_npu_data_rx  : std_logic_vector(31 downto 0);                 
-        signal s_npu_data_tx  : std_logic_vector(31 downto 0);                 
-        signal s_npu_we       : std_logic;
-        signal s_npu_vld      : std_logic;
-        signal s_npu_rst_n    : std_logic;
-        signal s_npu_rdy      : std_logic;
+    signal s_npu_addr                 : std_logic_vector(31 downto 0);
+    signal s_npu_data_rx              : std_logic_vector(31 downto 0);                 
+    signal s_npu_data_tx              : std_logic_vector(31 downto 0);
+    signal s_npu_we                   : std_logic;
+    signal s_npu_vld, s_npu_rdy       : std_logic;
+    signal s_npu_rst_n                : std_logic;
 
-    -- CLINT 
-        signal s_clint_addr    : std_logic_vector(4 downto 0);
-        signal s_clint_data_rx : std_logic_vector(31 downto 0);
-        signal s_clint_data_tx : std_logic_vector(31 downto 0);
-        signal s_clint_we      : std_logic;
-        signal s_clint_vld     : std_logic;
-        signal s_clint_rdy     : std_logic;
+    signal s_clint_addr               : std_logic_vector(4 downto 0);
+    signal s_clint_data_rx            : std_logic_vector(31 downto 0);
+    signal s_clint_data_tx            : std_logic_vector(31 downto 0);
+    signal s_clint_we                 : std_logic;
+    signal s_clint_vld, s_clint_rdy   : std_logic;
 
-    -- PLIC 
-        signal s_plic_addr     : std_logic_vector(23 downto 0);
-        signal s_plic_data_rx  : std_logic_vector(31 downto 0);
-        signal s_plic_data_tx  : std_logic_vector(31 downto 0);
-        signal s_plic_we       : std_logic;
-        signal s_plic_vld      : std_logic;
-        signal s_plic_rdy      : std_logic;
+    signal s_plic_addr                : std_logic_vector(23 downto 0);
+    signal s_plic_data_rx             : std_logic_vector(31 downto 0);
+    signal s_plic_data_tx             : std_logic_vector(31 downto 0);
+    signal s_plic_we                  : std_logic;
+    signal s_plic_vld, s_plic_rdy     : std_logic;
 
     -- === Auxiliares =============================================================================================
+    signal s_irq_external             : std_logic;
+    signal s_irq_timer                : std_logic;
+    signal s_irq_soft                 : std_logic;
 
-    -- Sinais de Interrupção
-        signal s_irq_external    : std_logic;
-        signal s_irq_timer       : std_logic;
-        signal s_irq_soft        : std_logic;
-
-    -- Sinais de Interrupção dos Periféricos
-        signal s_uart_irq        : std_logic;
-        signal s_dma_irq         : std_logic;
-        signal s_npu_irq         : std_logic;
-
-    -- Vetor de Fontes de Interrupção para o PLIC
-        signal s_plic_sources    : std_logic_vector(31 downto 0);
+    signal s_uart_irq                 : std_logic;
+    signal s_dma_irq                  : std_logic;
+    signal s_npu_irq                  : std_logic;
+    signal s_plic_sources             : std_logic_vector(31 downto 0);
 
     -- === Controle de DEBUG ======================================================================================
+    signal s_soc_en                   : std_logic;
+    signal s_soc_en_sys               : std_logic := '1'; -- PIPELINE: Atraso de 1 ciclo para periféricos
+    signal s_is_fetch_stage           : std_logic;
+    signal s_debug_rst                : std_logic;
+    signal s_sys_rst                  : std_logic;
 
-        signal s_soc_en          : std_logic;
-        signal s_is_fetch_stage  : std_logic;
-        signal s_debug_rst       : std_logic; 
-        signal s_sys_rst         : std_logic;
+    signal s_uart_rx_soc              : std_logic;
+    signal s_uart_rx_debug            : std_logic;
+    signal s_uart_tx_soc              : std_logic;
+    signal s_uart_tx_debug            : std_logic;
 
-    -- Sinais de multiplexação UART
-        signal s_uart_rx_soc     : std_logic;
-        signal s_uart_rx_debug   : std_logic;
-        signal s_uart_tx_soc     : std_logic;
-        signal s_uart_tx_debug   : std_logic;
-
-    -- Sinais de Leitura de Registradores (Debug)
-        signal s_debug_reg_addr  : std_logic_vector(4 downto 0);
-        signal s_debug_reg_data  : std_logic_vector(31 downto 0);
+    signal s_debug_reg_addr           : std_logic_vector(4 downto 0);
+    signal s_debug_reg_data           : std_logic_vector(31 downto 0);
 
 begin
 
     -- ============================================================================================================
+    -- PIPELINE DO SINAL DE DEBUG (QUEBRA O CRITICAL PATH)
+    -- ============================================================================================================
+    process(CLK_i)
+    begin
+        if rising_edge(CLK_i) then
+            s_soc_en_sys <= s_soc_en;
+        end if;
+    end process;
+
+    -- ============================================================================================================
     -- CONTROLE DE RESET E INTERRUPÇÕES
     -- ============================================================================================================
-
     s_sys_rst <= Reset_i OR s_debug_rst;
 
     s_plic_sources <= (
@@ -211,15 +180,15 @@ begin
     -- ============================================================================================================
     -- MULTIPLEXAÇÃO FÍSICA DE DEBUG VIA RTS
     -- ============================================================================================================
-    
-    s_uart_rx_soc   <= UART_RX_i when UART_RTS_i = '0' else '1'; 
+    s_uart_rx_soc   <= UART_RX_i when UART_RTS_i = '0' else '1';
     s_uart_rx_debug <= UART_RX_i when UART_RTS_i = '1' else '1';
-    UART_TX_o       <= s_uart_tx_debug when (UART_RTS_i = '1' or s_soc_en = '0') else s_uart_tx_soc;
+    
+    -- O TX usa o sinal system-level pipelined para prevenir timing violations na board
+    UART_TX_o       <= s_uart_tx_debug when (UART_RTS_i = '1' or s_soc_en_sys = '0') else s_uart_tx_soc;
 
     -- ============================================================================================================
     -- DEBUG CONTROLLER
     -- ============================================================================================================
-    
     U_DEBUG: entity work.debug_controller
         generic map (
             CLK_FREQ         => CLK_FREQ,
@@ -242,12 +211,11 @@ begin
     -- ============================================================================================================
     -- NÚCLEO PROCESSADOR (CPU)
     -- ============================================================================================================
-
     U_CORE: entity work.processor_top
         port map (
             CLK_i               => CLK_i,
             Reset_i             => s_sys_rst,
-            soc_en_i            => s_soc_en,
+            soc_en_i            => s_soc_en, -- MANTÉM COMBINACIONAL para travagem instantânea do PC
             is_fetch_stage_o    => s_is_fetch_stage,
             debug_reg_addr_i    => s_debug_reg_addr,
             debug_reg_data_o    => s_debug_reg_data,
@@ -269,12 +237,11 @@ begin
     -- ============================================================================================================
     -- DMA CONTROLLER (Dual-Master)
     -- ============================================================================================================
-    
     U_DMA: entity work.dma_controller
         port map (
             clk_i       => CLK_i,
             rst_i       => s_sys_rst,
-            soc_en_i    => s_soc_en,
+            soc_en_i    => s_soc_en_sys, -- PIPELINE: Resolve a Violação de Timing de -4.271ns
             
             -- Slave (Config)
             cfg_addr_i  => s_dma_s_addr,
@@ -303,7 +270,6 @@ begin
     -- ============================================================================================================
     -- HUB DE INTERCONEXÃO (CROSSBAR INTERCONNECT)
     -- ============================================================================================================
-    
     U_BUS: entity work.bus_interconnect
         port map (
             -- Sinais Globais
@@ -346,7 +312,7 @@ begin
             -- Interface RAM
             ram_addr_a_o => s_ram_addr_a, ram_data_a_i => s_ram_data_a,
             ram_addr_b_o => s_ram_addr_b, ram_data_b_i => s_ram_data_b,
-            ram_data_b_o => s_ram_data_w,                               
+            ram_data_b_o => s_ram_data_w,                      
             ram_we_b_o   => s_ram_we_b,
             ram_vld_a_o  => s_ram_vld_a,  ram_rdy_a_i  => s_ram_rdy_a,
             ram_vld_b_o  => s_ram_vld_b,  ram_rdy_b_i  => s_ram_rdy_b,
@@ -434,7 +400,7 @@ begin
 
     U_CLINT: entity work.clint
         port map (
-            clk_i => CLK_i, rst_i => s_sys_rst, soc_en_i => s_soc_en, addr_i => s_clint_addr, data_i => s_clint_data_tx, data_o => s_clint_data_rx, we_i => s_clint_we, vld_i => s_clint_vld, rdy_o => s_clint_rdy, irq_timer_o => s_irq_timer, irq_soft_o => s_irq_soft
+            clk_i => CLK_i, rst_i => s_sys_rst, soc_en_i => s_soc_en_sys, addr_i => s_clint_addr, data_i => s_clint_data_tx, data_o => s_clint_data_rx, we_i => s_clint_we, vld_i => s_clint_vld, rdy_o => s_clint_rdy, irq_timer_o => s_irq_timer, irq_soft_o => s_irq_soft
         );
 
     U_PLIC: entity work.plic
@@ -446,7 +412,7 @@ begin
 
     U_NPU: entity work.npu_top
         port map (
-            clk => CLK_i, rst_n => s_npu_rst_n, soc_en_i => s_soc_en, vld_i => s_npu_vld, we_i => s_npu_we, addr_i => s_npu_addr, data_i => s_npu_data_tx, data_o => s_npu_data_rx, rdy_o => s_npu_rdy, irq_done_o => s_npu_irq
+            clk => CLK_i, rst_n => s_npu_rst_n, soc_en_i => s_soc_en_sys, vld_i => s_npu_vld, we_i => s_npu_we, addr_i => s_npu_addr, data_i => s_npu_data_tx, data_o => s_npu_data_rx, rdy_o => s_npu_rdy, irq_done_o => s_npu_irq
         );
 
 end architecture;
