@@ -56,6 +56,11 @@ entity datapath is
         CLK_i              : in  std_logic;                           -- Clock principal
         Reset_i            : in  std_logic;                           -- Sinal de reset síncrono
 
+        -- Sinais para o Debug Controller
+
+        dbg_boot_addr_i    : in  std_logic_vector(31 downto 0);       -- Endereço de boot (configuravel)
+        dbg_reg_clr_i      : in  std_logic;                           -- Limpa o banco de registradores
+
         -- Barramento de Memória de Instruções (IMEM)
 
         IMem_addr_o        : out std_logic_vector(31 downto 0);       -- Endereço para a IMEM (saída do PC)
@@ -280,7 +285,7 @@ begin
             begin
                 if rising_edge(CLK_i) then
                     if Reset_i = '1' then
-                        r_PC <= BOOT_ADDR;
+                        r_PC <= dbg_boot_addr_i; -- Pode ser alterado via Debugger Externo
                     else 
                         if Control_i.pc_write = '1' then
                             r_PC <= s_pc_next;
@@ -310,6 +315,7 @@ begin
             U_REG_FILE: entity work.reg_file
                 port map (
                     clk_i        => CLK_i,                            -- Clock do processador
+                    clr_i        => dbg_reg_clr_i,                    -- Limpa o banco de registradores
                     RegWrite_i   => Control_i.reg_write,              -- Habilita escrita no banco de registradores
                     ReadAddr1_i  => r_IR(19 downto 15),               -- rs1 (bits [19:15]) - 5 bits
                     ReadAddr2_i  => r_IR(24 downto 20),               -- rs2 (bits [24:20]) - 5 bits

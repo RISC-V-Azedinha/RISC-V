@@ -11,8 +11,9 @@ import threading
 PORTA = '/dev/ttyUSB1' 
 BAUD_RATE = 921600
 
-# Ajuste para o endereço real onde o seu bootloader escreve a RAM
-RAM_START_ADDR = 0x80000800  
+# Endereços do SoC
+BOOTLOADER_ADDR = 0x00000000
+RAM_START_ADDR  = 0x80000800  
 
 # ==========================================
 # PALETA DE CORES (ANSI)
@@ -87,13 +88,38 @@ class Debugger:
         time.sleep(0.02)
         return f"{C.CYAN}[>] Step: 1 instrução executada.{C.RESET}"
 
-    def reset(self):
-        if not self.halted: return f"{C.YELLOW}[!] Pause a CPU ('h') antes de dar reset.{C.RESET}"
-        self.ser.write(b'\x04')
+    # Método interno para liberar a CPU em execução (usado no Boot e Fibo)
+    def _reset_run(self):
+        self.ser.write(b'\x04') 
         time.sleep(0.05)
         self.ser.rts = True
         self.halted = False
-        return f"{C.GREEN}[*] Target Resetado. Executando BootROM...{C.RESET}"
+
+    def reset(self):
+        if not self.halted: return f"{C.YELLOW}[!] Pause a CPU ('h') antes de dar reset.{C.RESET}"
+        self.ser.write(b'\x08') # Opcode 0x08 = Reset Halt (Volta ao início e pausa)
+        time.sleep(0.05)
+        return f"{C.CYAN}[*] Target Resetado. CPU congelada no início (Modo Step).{C.RESET}"
+
+    def goto_bootloader(self):
+        if not self.halted: self.halt()
+        
+        # 1. Aponta o boot para a ROM 
+        addr_bytes = BOOTLOADER_ADDR.to_bytes(4, byteorder='little')
+        self.ser.write(b'\x09') 
+        time.sleep(0.01)
+        self.ser.write(addr_bytes)
+        
+        # 2. Dá um Reset Run (O Bootloader precisa ficar rodando para ouvir a UART)
+        self._reset_run()
+        
+        return f"{C.GREEN}[*] Modo Bootloader ativado (ROM). Aguardando novo código...{C.RESET}"
+
+    def clr_regs(self):
+        if not self.halted: return f"{C.YELLOW}[!] Pause a CPU antes de limpar registradores.{C.RESET}"
+        self.ser.write(b'\x0A') 
+        time.sleep(0.05)
+        return f"{C.GREEN}[*] Banco de Registradores zerado (Hardware Clear).{C.RESET}"
 
     def set_bkp(self, addr_int):
         if not self.halted: return f"{C.YELLOW}[!] Pause a CPU antes de configurar um Breakpoint.{C.RESET}"
@@ -109,69 +135,66 @@ class Debugger:
         return f"{C.GREEN}[*] Hardware Breakpoint desativado.{C.RESET}"
 
     def inject_fibo(self):
-        if not self.halted:
-            self.halt()
-            time.sleep(0.1)
-
-        # 1. Arma a armadilha no início da RAM
-        self.set_bkp(RAM_START_ADDR)
+        if not self.halted: self.halt()
         
-        # Limpa o buffer de entrada para não ler lixo antigo
+        # 1. Entra no modo bootloader via helper
+        self.goto_bootloader()
+        time.sleep(0.2) 
         self.ser.reset_input_buffer()
         
-        # 2. Reseta o SoC (Acorda o Bootloader) e libera a UART (RTS = True)
-        # O reset() interno envia o 0x04 e coloca self.ser.rts = True
-        self.reset()
-        
-        # Dá um pequeno tempo para o Bootloader da ROM inicializar e mandar o "BOOT"
-        time.sleep(0.2) 
-        self.ser.reset_input_buffer() # Limpa o "BOOT\r\n" do buffer para ler o ACK limpo
-        
-        # 3. Envia a Magic Word do protocolo do Bootloader
+        # 2. Magic Word do Bootloader
         self.ser.write(b'\xCA\xFE\xBA\xBE')
         
-        # 4. Aguarda o ACK (!)
+        # 3. Aguarda ACK (!)
         start_time = time.time()
         ack = b''
         while time.time() - start_time < 2.0:
             if self.ser.in_waiting:
                 ack = self.ser.read(1)
-                if ack == b'!':
-                    break
+                if ack == b'!': break
                     
         if ack != b'!':
-            # Se falhar, retoma o controle pro debugger não travar a porta
             self.halt()
             return f"{C.RED}[ERRO] Sem resposta do Bootloader (ACK='!'). Recebido: {ack}{C.RESET}"
 
-        # 5. Payload Fibonacci (RV32I Machine Code - Otimizado e Sem Delay)
+        # 4. Payload Fibonacci (RV32I Machine Code)
         payload = bytearray([
-            0x37, 0x04, 0x00, 0x20,  # 00: lui  s0, 0x20000      (s0 = 0x20000000)
+            0x37, 0x04, 0x00, 0x20,  # 00: lui  s0, 0x20000      
             0x93, 0x04, 0xe0, 0x02,  # 04: li   s1, 46
-            0x93, 0x02, 0x00, 0x00,  # 08: li   t0, 0            <-- main_loop
+            0x93, 0x02, 0x00, 0x00,  # 08: li   t0, 0            
             0x13, 0x03, 0x10, 0x00,  # 0C: li   t1, 1
             0x93, 0x03, 0x10, 0x00,  # 10: li   t2, 1
-            0x23, 0x20, 0x54, 0x00,  # 14: sw   t0, 0(s0)        <-- fib_loop (CORRIGIDO: rs1 = x8)
+            0x23, 0x20, 0x54, 0x00,  # 14: sw   t0, 0(s0)        
             0xb3, 0x8e, 0x62, 0x00,  # 18: add  t4, t0, t1
             0x93, 0x02, 0x03, 0x00,  # 1C: mv   t0, t1
             0x13, 0x83, 0x0e, 0x00,  # 20: mv   t1, t4
             0x93, 0x83, 0x13, 0x00,  # 24: addi t2, t2, 1
-            0xe3, 0x96, 0x93, 0xfe,  # 28: bne  t2, s1, fib_loop (salta -20 bytes)
-            0x6f, 0xf0, 0xdf, 0xfd   # 2C: j    main_loop        (salta -36 bytes, CORRIGIDO)
+            0xe3, 0x96, 0x93, 0xfe,  # 28: bne  t2, s1, fib_loop 
+            0x6f, 0xf0, 0xdf, 0xfd   # 2C: j    main_loop        
         ])
 
-        # 6. Envia o tamanho do payload (UInt32 Little Endian)
+        # 5. Envia o tamanho do payload e o código de máquina
         self.ser.write(struct.pack('<I', len(payload)))
         time.sleep(0.05)
-
-        # 7. Envia o código de máquina
         self.ser.write(payload)
-
-        # Agora o Bootloader vai receber os bytes, gravar na RAM e executar o "jr".
-        # Quando o PC bater em 0x10000, o Hardware Breakpoint vai disparar sozinho, 
-        # a thread do _bkp_listener vai pegar o 0xBB e a tela vai atualizar!
         
-        return f"{C.GREEN}[*] Handshake OK! Fibonacci injetado. Aguardando a armadilha do Breakpoint...{C.RESET}"
+        # 6. Aguarda a gravação na RAM
+        time.sleep(0.5) 
+        
+        # 7. Retoma o controle absoluto do hardware
+        self.halt()
+        
+        # 8. Aponta o PC para a RAM e limpa o lixo
+        addr_bytes = RAM_START_ADDR.to_bytes(4, byteorder='little')
+        self.ser.write(b'\x09') 
+        time.sleep(0.01)
+        self.ser.write(addr_bytes)
+        self.clr_regs()
+        
+        # 9. Dá o Reset Halt (Volta para a RAM e congela)
+        self.reset()
+        
+        return f"{C.GREEN}[+] Fibonacci Injetado! Registradores Limpos. PC = 0x{RAM_START_ADDR:08X} (Modo Step).{C.RESET}"
 
     def get_regs_display(self):
         if not self.halted: return ""
@@ -214,12 +237,13 @@ class Debugger:
 # ==========================================
 def draw_dashboard(dbg, status_msg):
     os.system('clear' if os.name == 'posix' else 'cls')
-    print(f"{C.GRAY}=" * 58 + f"{C.RESET}")
+    print(f"{C.GRAY}=" * 61 + f"{C.RESET}")
     print(f" 🛠️  {C.BOLD}RISC-V EDU DEBUGGER {C.GRAY}(RV32I_Zicsr SoC){C.RESET}")
-    print(f"{C.GRAY}=" * 58 + f"{C.RESET}")
-    print(f" {C.CYAN}[h]{C.RESET} Halt   │ {C.CYAN}[r]{C.RESET} Resume │ {C.CYAN}[s]{C.RESET} Step     │ {C.CYAN}[rst]{C.RESET} Reset")
-    print(f" {C.CYAN}[b]{C.RESET} Set BKP│ {C.CYAN}[c]{C.RESET} Clr BKP│ {C.CYAN}[fibo]{C.RESET} Test Fibo│ {C.CYAN}[q]{C.RESET} Quit")
-    print(f"{C.GRAY}=" * 58 + f"{C.RESET}")
+    print(f"{C.GRAY}=" * 61 + f"{C.RESET}")
+    print(f" {C.CYAN}[h]{C.RESET} Halt   │ {C.CYAN}[r]{C.RESET} Resume │ {C.CYAN}[s]{C.RESET} Step    │ {C.CYAN}[rst]{C.RESET} Reset")
+    print(f" {C.CYAN}[b]{C.RESET} Set BKP│ {C.CYAN}[c]{C.RESET} Clr BKP│ {C.CYAN}[cr]{C.RESET} Clr Regs│ {C.CYAN}[boot]{C.RESET} Bootloader")
+    print(f" {C.CYAN}[fibo]{C.RESET} Fibo │ {C.CYAN}[q]{C.RESET} Quit")
+    print(f"{C.GRAY}=" * 61 + f"{C.RESET}")
     
     if dbg.halted:
         print(dbg.get_regs_display())
@@ -229,12 +253,12 @@ def draw_dashboard(dbg, status_msg):
         print(f"             {C.GRAY}Digite 'h' para pausar e inspecionar{C.RESET}")
         print("\n" * 7)
         
-    print(f"{C.GRAY}=" * 58 + f"{C.RESET}")
+    print(f"{C.GRAY}=" * 61 + f"{C.RESET}")
     if status_msg:
         print(f" >> Status: {status_msg}")
     else:
         print(f" >> Status: {C.GRAY}Aguardando comando...{C.RESET}")
-    print(f"{C.GRAY}=" * 58 + f"{C.RESET}")
+    print(f"{C.GRAY}=" * 61 + f"{C.RESET}")
 
 # ==========================================
 # LOOP PRINCIPAL
@@ -248,7 +272,7 @@ def main():
             draw_dashboard(dbg, status_msg)
             
             try:
-                raw_input = input(f"{C.CYAN}(-DBG) > {C.RESET}").strip().lower().split()
+                raw_input = input(f"{C.CYAN}(-DBG) > {C.RESET}").strip().split()
             except EOFError:
                 break
                 
@@ -256,7 +280,7 @@ def main():
                 status_msg = ""
                 continue
                 
-            cmd = raw_input[0]
+            cmd = raw_input[0].lower()
             
             if cmd in ['h', 'halt']:
                 status_msg = dbg.halt()
@@ -266,23 +290,27 @@ def main():
                 status_msg = dbg.step()
             elif cmd in ['rst', 'reset']:
                 status_msg = dbg.reset()
-            elif cmd in ['fibo']:
-                status_msg = dbg.inject_fibo()
+            elif cmd in ['cr', 'clrregs']:
+                status_msg = dbg.clr_regs()
+            elif cmd in ['boot']:
+                status_msg = dbg.goto_bootloader()
             elif cmd in ['b', 'bkp']:
                 if len(raw_input) > 1:
                     try:
                         addr = int(raw_input[1], 16)
                         status_msg = dbg.set_bkp(addr)
                     except ValueError:
-                        status_msg = f"{C.RED}[!] Endereço inválido. Use formato Hex (ex: b 0x10000){C.RESET}"
+                        status_msg = f"{C.RED}[!] Endereço inválido. Use Hex (ex: b 0x10054){C.RESET}"
                 else:
-                    status_msg = f"{C.RED}[!] Faltou o endereço. Ex: b 0x10000{C.RESET}"
+                    status_msg = f"{C.RED}[!] Faltou o endereço. Ex: b 0x10054{C.RESET}"
             elif cmd in ['c', 'cb', 'clr']:
                 status_msg = dbg.clr_bkp()
+            elif cmd in ['fibo']:
+                status_msg = dbg.inject_fibo()
             elif cmd in ['q', 'exit', 'quit']:
                 break
             elif cmd in ['p', 'regs']:
-                status_msg = f"{C.GREEN}Registradores atualizados.{C.RESET}"
+                status_msg = f"{C.GREEN}Registros atualizados.{C.RESET}"
             else:
                 status_msg = f"{C.RED}Comando desconhecido: {cmd}{C.RESET}"
                 
@@ -290,7 +318,7 @@ def main():
         print(f"\n{C.YELLOW}Saindo via Ctrl+C...{C.RESET}")
     finally:
         dbg.close()
-        print(f"{C.GRAY}Conexão serial encerrada. Hardware liberado!{C.RESET}")
+        print(f"{C.GRAY}Ligação serial encerrada. Hardware liberado!{C.RESET}")
 
 if __name__ == '__main__':
     main()

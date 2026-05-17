@@ -1,80 +1,54 @@
 ------------------------------------------------------------------------------------------------------------------
 -- File: debug_controller.vhd
--- 
--- ██████╗ ███████╗██████╗ ██╗   ██╗ ██████╗ 
--- ██╔══██╗██╔════╝██╔══██╗██║   ██║██╔════╝ 
--- ██║  ██║█████╗  ██████╔╝██║   ██║██║  ███╗
--- ██║  ██║██╔══╝  ██╔══██╗██║   ██║██║   ██║
--- ██████╔╝███████╗██████╔╝╚██████╔╝╚██████╔╝
--- ╚═════╝ ╚══════╝╚═════╝  ╚═════╝  ╚═════╝ 
---     
 -- Descrição : Controlador de Debug Out-of-Band (Multiplexado).
---      Possui TX/RX independentes. Controlado pela multiplexação de RTS.
---
--- Autor     : [André Maiolini]
--- Data      : [27/02/2026]
--- 
+--             [ATUALIZADO: Opcodes Dinâmicos de Boot Address e Register Clear]
 ------------------------------------------------------------------------------------------------------------------
 
 library ieee;
 use ieee.std_logic_1164.all;      
 use ieee.numeric_std.all;
 
--------------------------------------------------------------------------------------------------------------------
--- ENTIDADE: Definição da interface do controlador de debug
--------------------------------------------------------------------------------------------------------------------
-
 entity debug_controller is
-
     generic (
         CLK_FREQ    : integer := 100_000_000;
         BAUD_RATE   : integer := 115_200
     );
     port (
-
-        -- Sinais de Controle e Sincronismo Global
         clk_i            : in  std_logic;
         rst_i            : in  std_logic;
-        
-        -- Interface Física UART (Isolada via soc_top)
         uart_rx_i        : in  std_logic;
         uart_tx_o        : out std_logic;
         uart_rts_i       : in  std_logic;
         
-        -- Controle de Estado da CPU
         is_fetch_stage_i : in  std_logic;
         soc_en_o         : out std_logic;
         debug_rst_o      : out std_logic;
         
-        -- Interface de Leitura de Registradores
+        -- NOVAS PORTAS FÍSICAS DE CONTROLE
+        dbg_boot_addr_o  : out std_logic_vector(31 downto 0);
+        dbg_reg_clr_o    : out std_logic;
+
         reg_addr_o       : out std_logic_vector(4 downto 0);
         reg_data_i       : in  std_logic_vector(31 downto 0);
         pc_i             : in  std_logic_vector(31 downto 0) 
- 
     );
-    
 end entity debug_controller;
-
--------------------------------------------------------------------------------------------------------------------
--- ARQUITETURA: Implementação do controlador de debug
--------------------------------------------------------------------------------------------------------------------
 
 architecture rtl of debug_controller is
 
     constant c_BIT_PERIOD : integer := CLK_FREQ / BAUD_RATE;
 
-    -- Opcodes do Protocolo
-    constant CMD_HALT     : std_logic_vector(7 downto 0) := x"01";
-    constant CMD_RESUME   : std_logic_vector(7 downto 0) := x"02";
-    constant CMD_STEP     : std_logic_vector(7 downto 0) := x"03";
-    constant CMD_RESET    : std_logic_vector(7 downto 0) := x"04";
-    constant CMD_SET_BKP  : std_logic_vector(7 downto 0) := x"05";
-    constant CMD_CLR_BKP  : std_logic_vector(7 downto 0) := x"06";
-    constant CMD_READ_REG : std_logic_vector(7 downto 0) := x"10";
+    constant CMD_HALT       : std_logic_vector(7 downto 0) := x"01";
+    constant CMD_RESUME     : std_logic_vector(7 downto 0) := x"02";
+    constant CMD_STEP       : std_logic_vector(7 downto 0) := x"03";
+    constant CMD_RESET_RUN  : std_logic_vector(7 downto 0) := x"04";
+    constant CMD_SET_BKP    : std_logic_vector(7 downto 0) := x"05";
+    constant CMD_CLR_BKP    : std_logic_vector(7 downto 0) := x"06";
+    constant CMD_RESET_HALT : std_logic_vector(7 downto 0) := x"08";
+    constant CMD_SET_BOOT   : std_logic_vector(7 downto 0) := x"09";
+    constant CMD_CLR_REGS   : std_logic_vector(7 downto 0) := x"0A";
+    constant CMD_READ_REG   : std_logic_vector(7 downto 0) := x"10";
 
-    -- ========================================================================
-    -- Sinais do Controlador-RX
-    -- ========================================================================
     type t_rx_state is (RX_IDLE, RX_START, RX_DATA, RX_STOP);
     signal rx_state   : t_rx_state;
     signal rx_timer   : integer range 0 to c_BIT_PERIOD;
@@ -85,9 +59,6 @@ architecture rtl of debug_controller is
     signal s_rx_data  : std_logic_vector(7 downto 0);
     signal s_rx_valid : std_logic;
 
-    -- ========================================================================
-    -- Sinais do Controlador-TX
-    -- ========================================================================
     type t_tx_state is (TX_IDLE, TX_START, TX_DATA, TX_STOP);
     signal tx_state       : t_tx_state;
     signal tx_timer       : integer range 0 to c_BIT_PERIOD;
@@ -98,14 +69,13 @@ architecture rtl of debug_controller is
     signal r_tx_data      : std_logic_vector(7 downto 0);
     signal s_tx_busy      : std_logic;
 
-    -- ========================================================================
-    -- Sinais da FSM Principal (Interlock)
-    -- ========================================================================
     type t_dbg_state is (
         IDLE, WAIT_FE, WAIT_BA, WAIT_BE, 
         ARMED_WAIT_FETCH, DEBUG_ACTIVE, STEP_EXEC, STEP_FETCH,
         DUMP_REGS, APPLY_RESET,
-        BKP_B0, BKP_B1, BKP_B2, BKP_B3
+        BKP_B0, BKP_B1, BKP_B2, BKP_B3,
+        BOOT_B0, BOOT_B1, BOOT_B2, BOOT_B3,
+        WAIT_REG_CLR
     );
     signal dbg_state : t_dbg_state;
     
@@ -113,30 +83,22 @@ architecture rtl of debug_controller is
     signal byte_idx : integer range 0 to 3;
     signal s_mux_reg_data : std_logic_vector(31 downto 0);
 
-    -- Sinais do Hardware Breakpoint
-    signal r_bkp_addr    : std_logic_vector(31 downto 0) := (others => '0');
-    signal r_bkp_en      : std_logic := '0';
-    signal r_bkp_hit     : std_logic := '0';
-    signal r_bkp_bypass  : std_logic := '0';
-    signal s_bkp_match   : std_logic;
-    signal r_soc_en      : std_logic := '1';
-    signal r_bkp_alerted : std_logic := '0';
-    signal r_bkp_delay   : integer range 0 to 2047 := 0;
+    signal r_bkp_addr       : std_logic_vector(31 downto 0) := (others => '0');
+    signal r_boot_addr      : std_logic_vector(31 downto 0) := (others => '0');
+    signal r_reset_run_flag : std_logic := '0';
+    signal r_bkp_en         : std_logic := '0';
+    signal r_bkp_hit        : std_logic := '0';
+    signal r_bkp_bypass     : std_logic := '0';
+    signal s_bkp_match      : std_logic;
+    signal r_soc_en         : std_logic := '1';
+    signal r_bkp_alerted    : std_logic := '0';
+    signal r_bkp_delay      : integer range 0 to 2047 := 0;
 
 begin
 
-    -- ========================================================================
-    -- ZERO-LATENCY HARDWARE BREAKPOINT MATCH
-    -- ========================================================================
-
+    dbg_boot_addr_o <= r_boot_addr;
     s_bkp_match <= '1' when (r_bkp_en = '1' and pc_i = r_bkp_addr and is_fetch_stage_i = '1' and r_bkp_bypass = '0') else '0';
-    
-    -- A CPU é congelada IMEDIATAMENTE (Latência Zero) se houver hit
     soc_en_o <= '0' when (r_bkp_hit = '1' or s_bkp_match = '1') else r_soc_en;
-
-    -- ========================================================================
-    -- Sincronizador RX
-    -- ========================================================================
 
     process(clk_i)
     begin
@@ -144,10 +106,6 @@ begin
             rx_sync <= rx_sync(0) & uart_rx_i;
         end if;
     end process;
-
-    -- ========================================================================
-    -- RX MACHINE
-    -- ========================================================================
 
     process(clk_i)
     begin
@@ -187,10 +145,6 @@ begin
             end if;
         end if;
     end process;
-
-    -- ========================================================================
-    -- TX MACHINE
-    -- ========================================================================
 
     process(clk_i)
     begin
@@ -233,9 +187,6 @@ begin
         end if;
     end process;
 
-    -- ========================================================================
-    -- HARDWARE BREAKPOINT MONITOR (CORRIGIDO: ELSIF)
-    -- ========================================================================
     process(clk_i)
     begin
         if rising_edge(clk_i) then
@@ -243,29 +194,23 @@ begin
                 r_bkp_hit    <= '0';
                 r_bkp_bypass <= '0';
             else
-                -- 1. Desliga o escudo assim que a instrução for concluída e o PC mudar
                 if pc_i /= r_bkp_addr then
                     r_bkp_bypass <= '0';
                 end if;
                 
-                -- 2. Comando para andar: limpa a flag de parada e liga o escudo combinacional
+                -- CMD_RESET_HALT e RUN também levantam o bypass para a CPU destravar se parada no breakpoint
                 if (dbg_state = DEBUG_ACTIVE and s_rx_valid = '1' and 
-                   (s_rx_data = CMD_RESUME or s_rx_data = CMD_STEP or s_rx_data = CMD_RESET or s_rx_data = CMD_CLR_BKP)) then
+                   (s_rx_data = CMD_RESUME or s_rx_data = CMD_STEP or s_rx_data = CMD_RESET_RUN or s_rx_data = CMD_RESET_HALT or s_rx_data = CMD_CLR_BKP)) then
         
                     r_bkp_hit    <= '0';
                     r_bkp_bypass <= '1';
                 
-                -- 3. Apenas regista o Hit se não houver ordem de desobstrução no mesmo ciclo
                 elsif s_bkp_match = '1' then
                     r_bkp_hit <= '1';
                 end if;
             end if;
         end if;
     end process;
-
-    -- ========================================================================
-    -- MAIN DEBUG FSM
-    -- ========================================================================
 
     reg_addr_o <= std_logic_vector(to_unsigned(reg_idx mod 32, 5));
     s_mux_reg_data <= pc_i when reg_idx = 32 else reg_data_i;
@@ -278,9 +223,11 @@ begin
                 dbg_state     <= IDLE;
                 r_soc_en      <= '1';
                 debug_rst_o   <= '0';
+                dbg_reg_clr_o <= '0';
                 r_tx_start    <= '0';
                 r_bkp_en      <= '0'; 
                 r_bkp_alerted <= '0';
+                r_boot_addr   <= (others => '0'); -- Retorna à ROM em hardware-reset
             else
                 r_tx_start  <= '0';
                 debug_rst_o <= '0'; 
@@ -288,6 +235,7 @@ begin
                 if uart_rts_i = '0' then
                     dbg_state <= IDLE;
                     r_soc_en  <= '1'; 
+                    dbg_reg_clr_o <= '0';
 
                     if r_bkp_hit = '1' and r_bkp_alerted = '0' then
                         if r_bkp_delay < 1500 then
@@ -305,6 +253,7 @@ begin
                         when IDLE =>
                             r_soc_en <= '1';
                             r_bkp_alerted <= '0';
+                            dbg_reg_clr_o <= '0';
                             if s_rx_valid = '1' and s_rx_data = x"CA" then dbg_state <= WAIT_FE; end if;
                         when WAIT_FE =>
                             if s_rx_valid = '1' then
@@ -332,25 +281,35 @@ begin
 
                         when DEBUG_ACTIVE =>
                             r_soc_en <= '0';
+                            dbg_reg_clr_o <= '0'; -- O pulso de Clear encerra aqui
                             if s_rx_valid = '1' then
                                 case s_rx_data is
-                                    when CMD_RESUME   => dbg_state <= IDLE;
-                                    when CMD_STEP     => dbg_state <= STEP_EXEC;
-                                    when CMD_RESET    => dbg_state <= APPLY_RESET;
-                                    when CMD_SET_BKP  => dbg_state <= BKP_B0;
-                                    when CMD_CLR_BKP  => r_bkp_en  <= '0';
-                                    when CMD_READ_REG => 
-                                        dbg_state <= DUMP_REGS;
-                                        reg_idx <= 0;
-                                        byte_idx <= 0;
+                                    when CMD_RESUME     => dbg_state <= IDLE;
+                                    when CMD_STEP       => dbg_state <= STEP_EXEC;
+                                    when CMD_RESET_RUN  => r_reset_run_flag <= '1'; dbg_state <= APPLY_RESET;
+                                    when CMD_RESET_HALT => r_reset_run_flag <= '0'; dbg_state <= APPLY_RESET;
+                                    when CMD_SET_BKP    => dbg_state <= BKP_B0;
+                                    when CMD_CLR_BKP    => r_bkp_en  <= '0';
+                                    when CMD_READ_REG   => dbg_state <= DUMP_REGS; reg_idx <= 0; byte_idx <= 0;
+                                    when CMD_SET_BOOT   => dbg_state <= BOOT_B0;
+                                    when CMD_CLR_REGS   => dbg_reg_clr_o <= '1'; dbg_state <= WAIT_REG_CLR; -- Pulso Síncrono 1 ciclo
                                     when others => null;
                                 end case;
                             end if;
+                            
+                        when WAIT_REG_CLR =>
+                            dbg_reg_clr_o <= '0';
+                            dbg_state <= DEBUG_ACTIVE;
+                            
                         when APPLY_RESET =>
                             debug_rst_o <= '1';
-                            r_soc_en    <= '0';          
-                            -- O Breakpoint sobrevive ao Reset (r_bkp_en não é limpo)
-                            dbg_state   <= DEBUG_ACTIVE;
+                            if r_reset_run_flag = '1' then
+                                r_soc_en  <= '1';
+                                dbg_state <= IDLE;
+                            else
+                                r_soc_en  <= '0';
+                                dbg_state <= DEBUG_ACTIVE;
+                            end if;
                             
                         when DUMP_REGS =>
                             r_soc_en <= '0';
@@ -385,17 +344,24 @@ begin
                                 dbg_state <= DEBUG_ACTIVE;
                             end if;
 
-                        when BKP_B0 => r_soc_en <= '0';
-                            if s_rx_valid = '1' then r_bkp_addr(7 downto 0) <= s_rx_data; dbg_state <= BKP_B1; end if;
-                        when BKP_B1 => r_soc_en <= '0'; if s_rx_valid = '1' then r_bkp_addr(15 downto 8) <= s_rx_data; dbg_state <= BKP_B2;
-                            end if;
-                        when BKP_B2 => r_soc_en <= '0'; if s_rx_valid = '1' then r_bkp_addr(23 downto 16) <= s_rx_data;
-                            dbg_state <= BKP_B3; end if;
+                        when BKP_B0 => r_soc_en <= '0'; if s_rx_valid = '1' then r_bkp_addr(7 downto 0) <= s_rx_data; dbg_state <= BKP_B1; end if;
+                        when BKP_B1 => r_soc_en <= '0'; if s_rx_valid = '1' then r_bkp_addr(15 downto 8) <= s_rx_data; dbg_state <= BKP_B2; end if;
+                        when BKP_B2 => r_soc_en <= '0'; if s_rx_valid = '1' then r_bkp_addr(23 downto 16) <= s_rx_data; dbg_state <= BKP_B3; end if;
                         when BKP_B3 => 
                             r_soc_en <= '0';
                             if s_rx_valid = '1' then 
                                 r_bkp_addr(31 downto 24) <= s_rx_data;
                                 r_bkp_en <= '1';         
+                                dbg_state <= DEBUG_ACTIVE; 
+                            end if;
+                            
+                        when BOOT_B0 => r_soc_en <= '0'; if s_rx_valid = '1' then r_boot_addr(7 downto 0) <= s_rx_data; dbg_state <= BOOT_B1; end if;
+                        when BOOT_B1 => r_soc_en <= '0'; if s_rx_valid = '1' then r_boot_addr(15 downto 8) <= s_rx_data; dbg_state <= BOOT_B2; end if;
+                        when BOOT_B2 => r_soc_en <= '0'; if s_rx_valid = '1' then r_boot_addr(23 downto 16) <= s_rx_data; dbg_state <= BOOT_B3; end if;
+                        when BOOT_B3 => 
+                            r_soc_en <= '0';
+                            if s_rx_valid = '1' then 
+                                r_boot_addr(31 downto 24) <= s_rx_data;
                                 dbg_state <= DEBUG_ACTIVE; 
                             end if;
 

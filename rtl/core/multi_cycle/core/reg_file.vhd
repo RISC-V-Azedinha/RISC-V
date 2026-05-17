@@ -32,6 +32,7 @@ entity reg_file is
 
         -- Entradas
         clk_i        : in  std_logic;                             -- Sinal de clock
+        clr_i        : in  std_logic;                             -- Limpa o banco de registradores
         RegWrite_i   : in  std_logic;                             -- Habilita escrita no banco de registradores
         ReadAddr1_i  : in  std_logic_vector(4 downto 0);          -- Endereço do primeiro registrador a ser lido (0-31) rs1
         ReadAddr2_i  : in  std_logic_vector(4 downto 0);          -- Endereço do segundo registrador a ser lido (0-31) rs2
@@ -92,8 +93,11 @@ begin
 
         if rising_edge(clk_i) then
 
+            -- O Clear zera todo o banco instantaneamente
+            if clr_i = '1' then
+                s_registers <= (others => (others => '0'));
             -- Impede a escrita no registrador zero - x0
-            if RegWrite_i = '1' and WriteAddr_i /= "00000" then
+            elsif RegWrite_i = '1' and WriteAddr_i /= "00000" then
                 s_registers(to_integer(unsigned(WriteAddr_i))) <= WriteData_i;
             end if;
 

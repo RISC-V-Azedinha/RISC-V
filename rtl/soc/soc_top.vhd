@@ -152,6 +152,8 @@ architecture rtl of soc_top is
 
     signal s_debug_reg_addr           : std_logic_vector(4 downto 0);
     signal s_debug_reg_data           : std_logic_vector(31 downto 0);
+    signal s_dbg_boot_addr            : std_logic_vector(31 downto 0);
+    signal s_dbg_reg_clr              : std_logic;
 
 begin
 
@@ -197,6 +199,8 @@ begin
         port map (
             clk_i            => CLK_i,
             rst_i            => Reset_i,
+            dbg_boot_addr_o  => s_dbg_boot_addr,
+            dbg_reg_clr_o    => s_dbg_reg_clr,
             uart_rx_i        => s_uart_rx_debug,
             uart_tx_o        => s_uart_tx_debug,
             uart_rts_i       => UART_RTS_i,
@@ -215,6 +219,8 @@ begin
         port map (
             CLK_i               => CLK_i,
             Reset_i             => s_sys_rst,
+            dbg_boot_addr_i     => s_dbg_boot_addr,
+            dbg_reg_clr_i       => s_dbg_reg_clr,
             soc_en_i            => s_soc_en, -- MANTÉM COMBINACIONAL para travagem instantânea do PC
             is_fetch_stage_o    => s_is_fetch_stage,
             debug_reg_addr_i    => s_debug_reg_addr,

@@ -107,17 +107,21 @@ def auto_reset(ser):
     ser.write(b'\xCA\xFE\xBA\xBE')
     time.sleep(0.05)
     
-    # 3. Envia o comando de Soft-Reset (0x04)
-    ser.write(b'\x04')
+    # 3. Configura Boot para 0x00000000 (ROM)
+    ser.write(b'\x09\x00\x00\x00\x00')
+    time.sleep(0.01)
+    
+    # CORREÇÃO CRÍTICA: Envia 0x08 (Reset Halt). Reseta e segura o processador congelado.
+    ser.write(b'\x08')
     time.sleep(0.05)
     
     # Limpa o buffer ANTES de soltar o processador!
     ser.reset_input_buffer()
     
-    # 4. Devolve a UART para o SoC e dá "Play" no processador
+    # 4. Devolve a UART para o SoC e dá "Play" instantâneo abrindo o canal do TX
     ser.rts = True
     
-    Log.success("Placa resetada remotamente!")
+    Log.success("Placa resetada remotamente e em sincronia!")
 
 def wait_for_bootloader(ser):
     Log.info("Aguardando sinal 'BOOT' da FPGA...")
@@ -244,9 +248,9 @@ def serial_monitor(ser):
     except KeyboardInterrupt:
         print(f"\n{Log.YELLOW}Encerrando monitor.{Log.RESET}")
 
-# ==============================================================================
+# ==============================================
 # MAIN
-# ==============================================================================
+# ==============================================
 def main():
     parser = argparse.ArgumentParser(description='FPGA Uploader & Serial Monitor')
     parser.add_argument('-p', '--port', default=DEFAULT_PORT, help=f'Porta Serial (Padrão: {DEFAULT_PORT})')
@@ -264,11 +268,10 @@ def main():
     with TerminalContext():
         ser = None
         try:
-            # IMPORTANTE: Desabilitar o controle de fluxo por hardware na porta serial
             ser = serial.Serial(args.port, args.baud, rtscts=False, dsrdtr=False, timeout=2)
-            ser.rts = True # Garante que iniciamos no modo SoC
+            ser.rts = True 
             
-            # --- O NOVO FLUXO 100% AUTOMATIZADO ---
+            # Executa a nova sincronia de reset
             auto_reset(ser)
             wait_for_bootloader(ser)
             
