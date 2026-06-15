@@ -10,25 +10,27 @@
       
       
       
+        <link rel="canonical" href="https://RISC-V-Azedinha.github.io/RISC-V/software/protocolo_comunicacao_host_fpga/">
+      
       
       
       
         
       
       
-      <link rel="icon" href="/RISC-V/assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
-        <title>RISC-V SOC</title>
+        <title>Protocolo de Comunicação Host--FPGA - RISC-V SOC</title>
       
     
     
-      <link rel="stylesheet" href="/RISC-V/assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="/RISC-V/assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -47,9 +49,9 @@
       
     
     
-      <link rel="stylesheet" href="/RISC-V/stylesheets/extra.css">
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
     
-    <script>__md_scope=new URL("/RISC-V/",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -73,6 +75,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#protocolo-de-comunicacao-host-fpga" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -83,7 +90,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="/RISC-V/." title="RISC-V SOC" class="md-header__button md-logo" aria-label="RISC-V SOC" data-md-component="logo">
+    <a href="../.." title="RISC-V SOC" class="md-header__button md-logo" aria-label="RISC-V SOC" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 17H7V7h10m4 4V9h-2V7a2 2 0 0 0-2-2h-2V3h-2v2h-2V3H9v2H7c-1.11 0-2 .89-2 2v2H3v2h2v2H3v2h2v2a2 2 0 0 0 2 2h2v2h2v-2h2v2h2v-2h2a2 2 0 0 0 2-2v-2h2v-2h-2v-2m-6 2h-2v-2h2m2-2H9v6h6z"/></svg>
@@ -103,7 +110,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              
+              Protocolo de Comunicação Host--FPGA
             
           </span>
         </div>
@@ -204,7 +211,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/RISC-V/." class="md-tabs__link">
+        <a href="../.." class="md-tabs__link">
           
   
   
@@ -224,7 +231,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/RISC-V/hardware/single-cycle/" class="md-tabs__link">
+        <a href="../../hardware/single-cycle/" class="md-tabs__link">
           
   
   
@@ -244,7 +251,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/RISC-V/software/boot/" class="md-tabs__link">
+        <a href="../boot/" class="md-tabs__link">
           
   
   
@@ -264,7 +271,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/RISC-V/soc/vga_controller/" class="md-tabs__link">
+        <a href="../../soc/vga_controller/" class="md-tabs__link">
           
   
   
@@ -284,7 +291,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/RISC-V/dev/simulation.md" class="md-tabs__link">
+        <a href="../../dev/simulation.md" class="md-tabs__link">
           
   
   
@@ -304,7 +311,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/RISC-V/apps/protocolo_comunicacao_host_fpga.md" class="md-tabs__link">
+        <a href="../../apps/protocolo_comunicacao_host_fpga.md" class="md-tabs__link">
           
   
   
@@ -338,7 +345,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="/RISC-V/." title="RISC-V SOC" class="md-nav__button md-logo" aria-label="RISC-V SOC" data-md-component="logo">
+    <a href="../.." title="RISC-V SOC" class="md-nav__button md-logo" aria-label="RISC-V SOC" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 17H7V7h10m4 4V9h-2V7a2 2 0 0 0-2-2h-2V3h-2v2h-2V3H9v2H7c-1.11 0-2 .89-2 2v2H3v2h2v2H3v2h2v2a2 2 0 0 0 2 2h2v2h2v-2h2v2h2v-2h2a2 2 0 0 0 2-2v-2h2v-2h-2v-2m-6 2h-2v-2h2m2-2H9v6h6z"/></svg>
@@ -418,7 +425,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -446,7 +453,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/intro/setup/" class="md-nav__link">
+      <a href="../../intro/setup/" class="md-nav__link">
         
   
   
@@ -474,7 +481,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/intro/quickstart.md" class="md-nav__link">
+      <a href="../../intro/quickstart.md" class="md-nav__link">
         
   
   
@@ -559,7 +566,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/hardware/single-cycle/" class="md-nav__link">
+      <a href="../../hardware/single-cycle/" class="md-nav__link">
         
   
   
@@ -587,7 +594,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/hardware/multi-cycle/" class="md-nav__link">
+      <a href="../../hardware/multi-cycle/" class="md-nav__link">
         
   
   
@@ -615,7 +622,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/hardware/interrupts/" class="md-nav__link">
+      <a href="../../hardware/interrupts/" class="md-nav__link">
         
   
   
@@ -643,7 +650,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/soc/gpio_controller/" class="md-nav__link">
+      <a href="../../soc/gpio_controller/" class="md-nav__link">
         
   
   
@@ -671,7 +678,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/soc/uart_controller/" class="md-nav__link">
+      <a href="../../soc/uart_controller/" class="md-nav__link">
         
   
   
@@ -756,7 +763,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/software/boot/" class="md-nav__link">
+      <a href="../boot/" class="md-nav__link">
         
   
   
@@ -784,7 +791,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/software/linker/" class="md-nav__link">
+      <a href="../linker/" class="md-nav__link">
         
   
   
@@ -869,7 +876,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/soc/vga_controller/" class="md-nav__link">
+      <a href="../../soc/vga_controller/" class="md-nav__link">
         
   
   
@@ -954,7 +961,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/dev/simulation.md" class="md-nav__link">
+      <a href="../../dev/simulation.md" class="md-nav__link">
         
   
   
@@ -982,7 +989,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/dev/fpga_build/" class="md-nav__link">
+      <a href="../../dev/fpga_build/" class="md-nav__link">
         
   
   
@@ -1067,7 +1074,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/apps/protocolo_comunicacao_host_fpga.md" class="md-nav__link">
+      <a href="../../apps/protocolo_comunicacao_host_fpga.md" class="md-nav__link">
         
   
   
@@ -1095,7 +1102,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/apps/interface_grafica_educacional_depuracao.md" class="md-nav__link">
+      <a href="../../apps/interface_grafica_educacional_depuracao.md" class="md-nav__link">
         
   
   
@@ -1123,7 +1130,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/apps/clientes_inteligencia_artificial.md" class="md-nav__link">
+      <a href="../../apps/clientes_inteligencia_artificial.md" class="md-nav__link">
         
   
   
@@ -1151,7 +1158,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/apps/pong.md" class="md-nav__link">
+      <a href="../../apps/pong.md" class="md-nav__link">
         
   
   
@@ -1179,7 +1186,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/apps/fractal.md" class="md-nav__link">
+      <a href="../../apps/fractal.md" class="md-nav__link">
         
   
   
@@ -1224,6 +1231,216 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#visao-geral" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Visão Geral
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#arquitetura-de-comunicacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Arquitetura de Comunicação
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Arquitetura de Comunicação">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#diagrama-geral" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagrama Geral
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#comunicacao-bidirecional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comunicação Bidirecional
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#comunicacao-serial-uart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comunicação Serial UART
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Comunicação Serial UART">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#caracteristicas-principais" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Características principais
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#serializacao-de-dados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Serialização de Dados
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#transformacao-de-dados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transformação de Dados
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Transformação de Dados">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-linearizacao-flatten" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Linearização (Flatten)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-conversao-para-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Conversão para Bytes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#endianness-ordem-dos-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Endianness (Ordem dos Bytes)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#empacotamento-de-dados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Empacotamento de Dados
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Empacotamento de Dados">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#estrutura-conceitual-do-frame" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Estrutura Conceitual do Frame
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fluxo-completo-do-sistema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fluxo Completo do Sistema
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reconstrucao-dos-dados-na-fpga" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reconstrução dos Dados na FPGA
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#limitacoes-da-comunicacao-serial" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Limitações da Comunicação Serial
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -1236,8 +1453,230 @@
               
               <article class="md-content__inner md-typeset">
                 
-  <h1>404 - Not found</h1>
+                  
 
+
+  
+  
+
+
+<h1 id="protocolo-de-comunicacao-host-fpga">Protocolo de Comunicação Host--FPGA</h1>
+<h2 id="visao-geral">Visão Geral</h2>
+<p>O sistema desenvolvido estabelece comunicação entre um computador
+hospedeiro (<strong>Host</strong>), executando ferramentas em Python, e um
+<strong>System-on-Chip (SoC)</strong> baseado na arquitetura <strong>RISC-V</strong>, implementado
+em FPGA.</p>
+<p>O objetivo dessa comunicação é permitir que dados abstratos --- como
+modelos de Inteligência Artificial pré-treinados, comandos de controle e
+informações de depuração --- sejam transmitidos do ambiente de software
+para o hardware de forma estruturada e confiável.</p>
+<p>Como o hardware digital não interpreta diretamente estruturas de alto
+nível do Python, os dados passam por um processo composto pelas
+seguintes etapas:</p>
+<ol>
+<li>serialização dos dados;</li>
+<li>empacotamento em mensagens binárias;</li>
+<li>transmissão via protocolo serial UART;</li>
+<li>reconstrução das informações no lado da FPGA.</li>
+</ol>
+<hr />
+<h2 id="arquitetura-de-comunicacao">Arquitetura de Comunicação</h2>
+<p>A comunicação entre Host e FPGA é <strong>serial, bidirecional e orientada a
+pacotes (frames)</strong>.</p>
+<h3 id="diagrama-geral">Diagrama Geral</h3>
+<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>flowchart LR
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>Host[Host Python]
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>Serializer[Serialização]
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>UART[UART Serial]
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>FPGA[SoC RISC-V]
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>Host --&gt; Serializer
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>Serializer --&gt; UART
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>UART --&gt; FPGA
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>FPGA --&gt; UART
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>UART --&gt; Host
+</span></code></pre></div>
+<p>O Host envia comandos e dados, enquanto a FPGA retorna respostas e
+resultados de execução.</p>
+<hr />
+<h3 id="comunicacao-bidirecional">Comunicação Bidirecional</h3>
+<div class="highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>sequenceDiagram
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>participant Host
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>participant FPGA
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>Host-&gt;&gt;FPGA: Envio de frame UART
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>FPGA-&gt;&gt;FPGA: Reconstrução dos dados
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>FPGA-&gt;&gt;FPGA: Execução
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>FPGA--&gt;&gt;Host: Resposta
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>Host-&gt;&gt;Host: Interpretação do resultado
+</span></code></pre></div>
+<hr />
+<h2 id="comunicacao-serial-uart">Comunicação Serial UART</h2>
+<p>A <strong>UART (Universal Asynchronous Receiver-Transmitter)</strong> é utilizada
+como meio físico de comunicação entre o computador e a FPGA.</p>
+<h3 id="caracteristicas-principais">Características principais</h3>
+<ul>
+<li>transmissão assíncrona;</li>
+<li>envio sequencial de bytes;</li>
+<li>baixo custo de implementação em hardware;</li>
+<li>suporte a comunicação full-duplex utilizando linhas TX e RX
+    independentes.</li>
+</ul>
+<p>A UART transmite apenas uma sequência contínua de bytes:</p>
+<div class="highlight"><pre><span></span><code>Byte1 → Byte2 → Byte3 → Byte4 ...
+</code></pre></div>
+<p>Assim, qualquer estrutura complexa precisa ser previamente convertida
+para esse formato por meio da serialização.</p>
+<hr />
+<h2 id="serializacao-de-dados">Serialização de Dados</h2>
+<p>Serialização é o processo de converter estruturas de dados de alto nível
+em uma sequência linear de bytes transmissíveis.</p>
+<p>Transformação geral:</p>
+<div class="highlight"><pre><span></span><code>Objeto Python → Representação Binária → Stream de Bytes
+</code></pre></div>
+<p>Esse processo permite que dados produzidos no Host sejam corretamente
+interpretados pelo processador RISC-V.</p>
+<hr />
+<h2 id="transformacao-de-dados">Transformação de Dados</h2>
+<p>O fluxo de conversão ocorre conforme o diagrama abaixo:</p>
+<div class="highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>flowchart LR
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>A[Dados Python&lt;br&gt;listas/matrizes]
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>--&gt; B[Flatten]
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>--&gt; C[Conversão para bytes]
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>--&gt; D[Empacotamento]
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>--&gt; E[UART]
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>--&gt; F[FPGA]
+</span></code></pre></div>
+<h3 id="1-linearizacao-flatten">1. Linearização (Flatten)</h3>
+<p>O hardware acessa memória <strong>linear endereçável byte a byte</strong>.\
+Assim, matrizes precisam ser convertidas em vetores sequenciais.</p>
+<p>Exemplo:</p>
+<div class="highlight"><pre><span></span><code>[a b
+ c d]
+</code></pre></div>
+<p>↓</p>
+<div class="highlight"><pre><span></span><code>[a b c d]
+</code></pre></div>
+<hr />
+<h3 id="2-conversao-para-bytes">2. Conversão para Bytes</h3>
+<p>Os valores numéricos são convertidos para sua representação binária,
+tornando-se uma sequência contínua de bytes pronta para transmissão.</p>
+<hr />
+<h2 id="endianness-ordem-dos-bytes">Endianness (Ordem dos Bytes)</h2>
+<p>Endianness define a ordem em que os bytes de um número são armazenados
+ou transmitidos.</p>
+<p>A arquitetura <strong>RISC-V</strong> utiliza tipicamente o formato
+<strong>Little-Endian</strong>, no qual o byte menos significativo é transmitido
+primeiro.</p>
+<p>Consequentemente, o Host deve respeitar essa ordem durante a
+serialização para garantir a correta reconstrução dos dados na FPGA.</p>
+<div class="admonition warning diferenças de endianness entre transmissor e receptor">
+<p class="admonition-title">Warning</p>
+</div>
+<p>resultam em interpretação incorreta dos valores numéricos.</p>
+<hr />
+<h2 id="empacotamento-de-dados">Empacotamento de Dados</h2>
+<p>Como a UART transmite apenas fluxos contínuos de bytes, é necessário
+definir uma estrutura de mensagem (frame) que permita identificar
+limites e tipos de operação.</p>
+<h3 id="estrutura-conceitual-do-frame">Estrutura Conceitual do Frame</h3>
+<div class="highlight"><pre><span></span><code>[HEADER][COMANDO][TAMANHO][PAYLOAD][CHECKSUM]
+</code></pre></div>
+<p>Campo      Função</p>
+<hr />
+<p>HEADER     Indica início do frame
+  COMANDO    Tipo de operação
+  TAMANHO    Quantidade de bytes do payload
+  PAYLOAD    Dados serializados
+  CHECKSUM   Verificação de integridade</p>
+<p>Esse formato permite que o hardware:</p>
+<ul>
+<li>sincronize a recepção;</li>
+<li>identifique o tipo de operação;</li>
+<li>determine quantos bytes devem ser lidos.</li>
+</ul>
+<hr />
+<h3 id="fluxo-completo-do-sistema">Fluxo Completo do Sistema</h3>
+<div class="highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>flowchart TB
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>User[Ação do Usuário]
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>GUI[Interface Gráfica]
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>Python[Script Host]
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>Serialize[Serialização]
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>Packet[Empacotamento]
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>UART[Envio UART]
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>FPGA[SoC RISC-V]
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>User --&gt; GUI
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>GUI --&gt; Python
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>Python --&gt; Serialize
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>Serialize --&gt; Packet
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>Packet --&gt; UART
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>UART --&gt; FPGA
+</span></code></pre></div>
+<hr />
+<h2 id="reconstrucao-dos-dados-na-fpga">Reconstrução dos Dados na FPGA</h2>
+<p>Ao receber um frame UART, o sistema embarcado executa as seguintes
+etapas:</p>
+<ol>
+<li>detecção do início da mensagem;</li>
+<li>leitura do comando recebido;</li>
+<li>recepção do payload byte a byte;</li>
+<li>reconstrução dos valores numéricos;</li>
+<li>armazenamento dos dados em memória.</li>
+</ol>
+<p>Após essa etapa, o processador RISC-V passa a operar diretamente sobre
+as informações recebidas.</p>
+<hr />
+<h2 id="limitacoes-da-comunicacao-serial">Limitações da Comunicação Serial</h2>
+<p>Apesar da simplicidade e baixo custo de implementação, a comunicação
+UART apresenta limitações inerentes:</p>
+<ul>
+<li>largura de banda reduzida quando comparada a interfaces paralelas ou
+    barramentos de alta velocidade;</li>
+<li>ausência nativa de controle avançado de fluxo;</li>
+<li>dependência de sincronização correta entre transmissor e receptor;</li>
+<li>maior latência para transferência de grandes volumes de dados.</li>
+</ul>
+<p>Ainda assim, a UART mostra-se adequada para o contexto educacional do
+projeto, oferecendo simplicidade de integração, facilidade de depuração
+e alta portabilidade entre plataformas.</p>
+
+
+
+
+
+
+
+  
+    
+  
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Last update">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="May 2, 2026 01:45:06 UTC">May 2, 2026 01:45:06</span>
+  </span>
+
+    
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
               </article>
             </div>
           
@@ -1284,12 +1723,12 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "/RISC-V/", "features": ["navigation.instant", "navigation.tabs", "navigation.footer", "navigation.tracking", "navigation.top", "toc.follow", "content.code.copy", "content.tabs.link", "search.highlight", "search.suggest", "content.tooltips"], "search": "/RISC-V/assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tabs", "navigation.footer", "navigation.tracking", "navigation.top", "toc.follow", "content.code.copy", "content.tabs.link", "search.highlight", "search.suggest", "content.tooltips"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="/RISC-V/assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
-        <script src="/RISC-V/javascripts/mathjax.js"></script>
+        <script src="../../javascripts/mathjax.js"></script>
       
         <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
       

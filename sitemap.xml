@@ -2,18 +2,78 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://RISC-V-Azedinha.github.io/RISC-V/</loc>
-         <lastmod>2026-03-14</lastmod>
+         <lastmod>2026-06-15</lastmod>
+    </url>
+    <url>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/dev/fpga_build/</loc>
+         <lastmod>2026-06-15</lastmod>
+    </url>
+    <url>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/hardware/interrupts/</loc>
+         <lastmod>2026-06-15</lastmod>
     </url>
     <url>
          <loc>https://RISC-V-Azedinha.github.io/RISC-V/hardware/multi-cycle/</loc>
-         <lastmod>2026-03-14</lastmod>
+         <lastmod>2026-06-15</lastmod>
     </url>
     <url>
          <loc>https://RISC-V-Azedinha.github.io/RISC-V/hardware/single-cycle/</loc>
-         <lastmod>2026-03-14</lastmod>
+         <lastmod>2026-06-15</lastmod>
     </url>
     <url>
          <loc>https://RISC-V-Azedinha.github.io/RISC-V/intro/setup/</loc>
-         <lastmod>2026-03-14</lastmod>
+         <lastmod>2026-06-15</lastmod>
+    </url>
+    <url>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/soc/barramento/</loc>
+         <lastmod>2026-06-15</lastmod>
+    </url>
+    <url>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/soc/debug_controller/</loc>
+         <lastmod>2026-06-15</lastmod>
+    </url>
+    <url>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/soc/gpio_controller/</loc>
+         <lastmod>2026-06-15</lastmod>
+    </url>
+    <url>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/soc/memoria_dma/</loc>
+         <lastmod>2026-06-15</lastmod>
+    </url>
+    <url>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/soc/uart_controller/</loc>
+         <lastmod>2026-06-15</lastmod>
+    </url>
+    <url>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/soc/vga_controller/</loc>
+         <lastmod>2026-06-15</lastmod>
+    </url>
+    <url>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/software/Documentar%20Apps%20e%20Servidores%20IA/</loc>
+         <lastmod>2026-06-15</lastmod>
+    </url>
+    <url>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/software/Toolchain%20e%20Build%20System/</loc>
+         <lastmod>2026-06-15</lastmod>
+    </url>
+    <url>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/software/boot/</loc>
+         <lastmod>2026-06-15</lastmod>
+    </url>
+    <url>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/software/clientes_inteligencia_artificial/</loc>
+         <lastmod>2026-06-15</lastmod>
+    </url>
+    <url>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/software/interface_grafica_educacional_depuracao/</loc>
+         <lastmod>2026-06-15</lastmod>
+    </url>
+    <url>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/software/linker/</loc>
+         <lastmod>2026-06-15</lastmod>
+    </url>
+    <url>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/software/protocolo_comunicacao_host_fpga/</loc>
+         <lastmod>2026-06-15</lastmod>
     </url>
 </urlset>

@@ -1,0 +1,2016 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Arquitetura, Drivers e Aplicações do SoC RISC-V">
+      
+      
+      
+        <link rel="canonical" href="https://RISC-V-Azedinha.github.io/RISC-V/software/Toolchain%20e%20Build%20System/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Infraestrutura de Compilação e Build System (GNU Make) - RISC-V SOC</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#infraestrutura-de-compilacao-e-build-system-gnu-make" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="RISC-V SOC" class="md-header__button md-logo" aria-label="RISC-V SOC" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 17H7V7h10m4 4V9h-2V7a2 2 0 0 0-2-2h-2V3h-2v2h-2V3H9v2H7c-1.11 0-2 .89-2 2v2H3v2h2v2H3v2h2v2a2 2 0 0 0 2 2h2v2h2v-2h2v2h2v-2h2a2 2 0 0 0 2-2v-2h2v-2h-2v-2m-6 2h-2v-2h2m2-2H9v6h6z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            RISC-V SOC
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Infraestrutura de Compilação e Build System (GNU Make)
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="indigo"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/RISC-V-Azedinha/RISC-V" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    RISC-V-Azedinha/RISC-V
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../.." class="md-tabs__link">
+          
+  
+  
+  Introdução
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../hardware/single-cycle/" class="md-tabs__link">
+          
+  
+  
+  Arquitetura de Hardware
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../boot/" class="md-tabs__link">
+          
+  
+  
+  Software
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../soc/vga_controller/" class="md-tabs__link">
+          
+  
+  
+  Periféricos
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../dev/simulation.md" class="md-tabs__link">
+          
+  
+  
+  Simulação e Verificação
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../apps/protocolo_comunicacao_host_fpga.md" class="md-tabs__link">
+          
+  
+  
+  Aplicações
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="RISC-V SOC" class="md-nav__button md-logo" aria-label="RISC-V SOC" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 17H7V7h10m4 4V9h-2V7a2 2 0 0 0-2-2h-2V3h-2v2h-2V3H9v2H7c-1.11 0-2 .89-2 2v2H3v2h2v2H3v2h2v2a2 2 0 0 0 2 2h2v2h2v-2h2v2h2v-2h2a2 2 0 0 0 2-2v-2h2v-2h-2v-2m-6 2h-2v-2h2m2-2H9v6h6z"/></svg>
+
+    </a>
+    RISC-V SOC
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/RISC-V-Azedinha/RISC-V" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    RISC-V-Azedinha/RISC-V
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introdução
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Introdução
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visão Geral
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../intro/setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Requisitos e Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../intro/quickstart.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Primeiros Passos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arquitetura de Hardware
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Arquitetura de Hardware
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/single-cycle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Microarquitetura Monociclo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/multi-cycle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Microarquitetura Multiciclo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/interrupts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Subsistema de Interrupções
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../soc/gpio_controller/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Controlador GPIO
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../soc/uart_controller/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Controlador UART
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Software
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Software
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../boot/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Processo de Boot
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../linker/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Linker Scripts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Periféricos
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Periféricos
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../soc/vga_controller/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Controlador VGA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulação e Verificação
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Simulação e Verificação
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/simulation.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ambiente de Testes (Cocotb)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/fpga_build/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fluxo de Síntese (FPGA)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Aplicações
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Aplicações
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../apps/protocolo_comunicacao_host_fpga.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Protocolo de Comunicação
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../apps/interface_grafica_educacional_depuracao.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interface Gráfica Educacional e Depuração
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../apps/clientes_inteligencia_artificial.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clientes de Inteligência Artificial
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../apps/pong.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Jogo Pong
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../apps/fractal.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Renderização de Fractal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#visao-geral" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Visão Geral
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-cadeia-de-compilacao-risc-v-cross-compilation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Cadeia de Compilação RISC-V (Cross-Compilation)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Cadeia de Compilação RISC-V (Cross-Compilation)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-pipeline-de-compilacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Pipeline de Compilação
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-etapas-do-processo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Etapas do Processo
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.2 Etapas do Processo">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pre-processamento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pré-processamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#compilacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compilação
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#montagem-assembling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Montagem (Assembling)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#linking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linking
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#saida-final" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Saída Final
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-configuracao-da-arquitetura" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Configuração da Arquitetura
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-arquitetura-modular-dos-makefiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Arquitetura Modular dos Makefiles
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Arquitetura Modular dos Makefiles">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-justificativa-da-modularidade" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Justificativa da Modularidade
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-responsabilidade-dos-modulos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Responsabilidade dos Módulos
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-configuracao-e-deteccao-de-ambiente" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Configuração e Detecção de Ambiente
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Configuração e Detecção de Ambiente">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-configmk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 config.mk
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-detectmk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 detect.mk
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-relacao-entre-configuracao-e-deteccao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Relação entre Configuração e Detecção
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-gerenciamento-de-fontes-sourcesmk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Gerenciamento de Fontes (sources.mk)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-regras-de-software-rules_swmk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Regras de Software (rules_sw.mk)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Regras de Software (rules_sw.mk)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-pipeline-de-geracao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Pipeline de Geração
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-funcionamento-interno" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Funcionamento Interno
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-recompilacao-incremental" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Recompilação Incremental
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#54-relevancia-para-o-soc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4 Relevância para o SoC
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-geracao-de-artefatos-para-hardware" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Geração de Artefatos para Hardware
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Geração de Artefatos para Hardware">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-conversao-com-objcopy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Conversão com objcopy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-formatos-gerados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Formatos Gerados
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-integracao-com-hardware" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 Integração com Hardware
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-simulacao-rules_simmk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Simulação (rules_sim.mk)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-sintese-e-fpga-rules_fpgamk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Síntese e FPGA (rules_fpga.mk)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-pontes-de-automacao-entre-software-e-hardware" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Pontes de Automação entre Software e Hardware
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="infraestrutura-de-compilacao-e-build-system-gnu-make">Infraestrutura de Compilação e Build System (GNU Make)</h1>
+<h2 id="visao-geral">Visão Geral</h2>
+<p>Esta seção documenta a infraestrutura de compilação (<em>toolchain</em>) e o sistema de automação de tarefas (<em>build system</em>) baseado em GNU Make utilizado no projeto.</p>
+<p>O objetivo é descrever, sob uma perspectiva arquitetural, como códigos-fonte escritos em C e Assembly são traduzidos em binários executáveis para a arquitetura RISC-V (RV32I), bem como explicar como o sistema orquestra as etapas de simulação e síntese do hardware.</p>
+<p>O Build System atua como um componente central de integração entre:</p>
+<ul>
+<li>o ambiente de desenvolvimento no Host (software);</li>
+<li>a arquitetura do SoC RISC-V na FPGA (hardware);</li>
+<li>os fluxos de simulação e implementação.</li>
+</ul>
+<p>Dessa forma, o sistema estabelece uma ponte direta entre software de alto nível e execução em hardware digital, viabilizando a implementação prática de sistemas embarcados.</p>
+<hr />
+<h2 id="1-cadeia-de-compilacao-risc-v-cross-compilation">1. Cadeia de Compilação RISC-V (Cross-Compilation)</h2>
+<p>O projeto utiliza o modelo de <strong>cross-compilation</strong>, no qual o código é compilado em uma arquitetura Host (x86_64) para execução em uma arquitetura distinta (RISC-V RV32I).</p>
+<p>A toolchain utilizada é baseada no compilador:</p>
+<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>riscv64-unknown-elf-gcc
+</span></code></pre></div>
+<p>e em ferramentas auxiliares como:</p>
+<div class="highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>riscv64-unknown-elf-objcopy
+</span></code></pre></div>
+<p>Esse modelo é necessário porque o processador alvo do projeto não executa nativamente no ambiente de desenvolvimento do computador hospedeiro. Assim, o Host prepara o software utilizando um compilador capaz de gerar código de máquina compatível com a ISA RISC-V RV32I.</p>
+<h3 id="11-pipeline-de-compilacao">1.1 Pipeline de Compilação</h3>
+<div class="highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>flowchart LR
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>A[C / Assembly] --&gt; B[Pré-processamento]
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>B --&gt; C[Compilação (GCC)]
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>C --&gt; D[Assembly RISC-V]
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>D --&gt; E[Montagem]
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>E --&gt; F[Objeto (.o)]
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>F --&gt; G[Linking (link.ld)]
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>G --&gt; H[Executável (.elf)]
+</span></code></pre></div>
+<h3 id="12-etapas-do-processo">1.2 Etapas do Processo</h3>
+<h4 id="pre-processamento">Pré-processamento</h4>
+<ul>
+<li>expansão de macros (<code>#define</code>);</li>
+<li>inclusão de bibliotecas (<code>#include</code>);</li>
+<li>preparação do código-fonte antes da compilação.</li>
+</ul>
+<p>Nessa etapa, o compilador resolve diretivas do pré-processador e gera uma versão expandida do código C.</p>
+<h4 id="compilacao">Compilação</h4>
+<ul>
+<li>tradução do código C para assembly RISC-V;</li>
+<li>aplicação de otimizações compatíveis com a arquitetura embarcada.</li>
+</ul>
+<p>O compilador gera uma representação em assembly alinhada à ISA escolhida, respeitando as flags de arquitetura configuradas pelo Build System.</p>
+<h4 id="montagem-assembling">Montagem (Assembling)</h4>
+<ul>
+<li>conversão do assembly em código de máquina;</li>
+<li>geração de arquivos objeto (<code>.o</code>).</li>
+</ul>
+<p>Os arquivos objeto contêm código binário parcial ainda não executável isoladamente.</p>
+<h4 id="linking">Linking</h4>
+<ul>
+<li>combinação dos objetos gerados;</li>
+<li>aplicação do script de ligação (<code>link.ld</code>);</li>
+<li>definição explícita do layout de memória do sistema.</li>
+</ul>
+<p>Nessa fase, o linker organiza seções como <code>.text</code>, <code>.data</code> e <code>.bss</code>, resolve símbolos entre módulos e posiciona o programa conforme o mapa de memória esperado pelo hardware.</p>
+<p>O <strong>layout de memória</strong> é uma etapa crítica do fluxo, pois define onde cada seção do programa será posicionada no espaço de endereçamento do SoC. Principalmente no caso da linkagem para o <em>bootloader</em>, a seção de código precisa ser alocada na <strong>Boot ROM</strong>, enquanto dados modificáveis devem ser alocados na <strong>RAM</strong>, já que a Boot ROM é uma região somente leitura (<em>read-only</em>).</p>
+<p>De forma conceitual:</p>
+<div class="highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>.text / código de inicialização → Boot ROM
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>.data / .bss / pilha           → RAM
+</span></code></pre></div>
+<p>Essa separação garante que o processador inicie a execução a partir da região correta de memória, preservando a imutabilidade da ROM e permitindo que dados sejam manipulados em RAM durante a execução.</p>
+<h4 id="saida-final">Saída Final</h4>
+<ul>
+<li>arquivo executável no formato <code>.elf</code>.</li>
+</ul>
+<p>O <code>.elf</code> contém o programa final, símbolos e metadados necessários para inspeção e conversões posteriores.</p>
+<h3 id="13-configuracao-da-arquitetura">1.3 Configuração da Arquitetura</h3>
+<p>O sistema utiliza flags específicas para garantir compatibilidade com o hardware:</p>
+<div class="highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>-march<span class="o">=</span>rv32i
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>-mabi<span class="o">=</span>ilp32
+</span></code></pre></div>
+<p>Essas configurações definem:</p>
+<ul>
+<li>o conjunto de instruções suportado (RV32I);</li>
+<li>o modelo de ABI utilizado;</li>
+<li>o layout de registradores e chamadas de função.</li>
+</ul>
+<p>Essa definição é essencial, pois qualquer divergência entre o binário gerado e a microarquitetura implementada no SoC resultaria em incompatibilidade de execução.</p>
+<hr />
+<h2 id="2-arquitetura-modular-dos-makefiles">2. Arquitetura Modular dos Makefiles</h2>
+<p>O projeto adota uma arquitetura modular baseada em múltiplos arquivos <code>.mk</code>, evitando um Makefile monolítico.</p>
+<p>Essa decisão não é apenas organizacional. Ela reflete uma separação de responsabilidades entre configuração, descoberta de ambiente, gerenciamento de fontes, regras de software, simulação e fluxo de FPGA.</p>
+<h3 id="21-justificativa-da-modularidade">2.1 Justificativa da Modularidade</h3>
+<p>A modularização evita acoplamento excessivo e permite:</p>
+<ul>
+<li>manutenção independente de componentes;</li>
+<li>reutilização de regras;</li>
+<li>escalabilidade do sistema;</li>
+<li>clareza estrutural do fluxo de build.</li>
+</ul>
+<p>Em termos de engenharia de software, essa organização reduz o custo de evolução do projeto e facilita a adaptação a novos <em>targets</em>, simuladores ou variações de hardware.</p>
+<h3 id="22-responsabilidade-dos-modulos">2.2 Responsabilidade dos Módulos</h3>
+<table>
+<thead>
+<tr>
+<th>Arquivo</th>
+<th>Responsabilidade</th>
+<th>Seção relacionada</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>makefile</code></td>
+<td>Ponto de entrada do Build System; agrega os módulos <code>.mk</code> e expõe os principais <em>targets</em> para o usuário.</td>
+<td><a href="#2-arquitetura-modular-dos-makefiles">Arquitetura Modular dos Makefiles</a></td>
+</tr>
+<tr>
+<td><code>mk/config.mk</code></td>
+<td>Centraliza variáveis globais, caminhos da toolchain, flags de compilação e nomes de artefatos.</td>
+<td><a href="#3-configuracao-e-deteccao-de-ambiente">Configuração e Detecção de Ambiente</a></td>
+</tr>
+<tr>
+<td><code>mk/detect.mk</code></td>
+<td>Detecta o ambiente local, localiza ferramentas como <code>riscv64-unknown-elf-gcc</code> e ajusta variáveis dinâmicas.</td>
+<td><a href="#3-configuracao-e-deteccao-de-ambiente">Configuração e Detecção de Ambiente</a></td>
+</tr>
+<tr>
+<td><code>mk/sources.mk</code></td>
+<td>Organiza os caminhos dos arquivos-fonte de software e hardware, evitando duplicação de listas no Makefile principal.</td>
+<td><a href="#4-gerenciamento-de-fontes-sourcesmk">Gerenciamento de Fontes</a></td>
+</tr>
+<tr>
+<td><code>mk/rules_sw.mk</code></td>
+<td>Define as regras de compilação, montagem, linkedição e geração dos artefatos de software para o SoC.</td>
+<td><a href="#5-regras-de-software-rules_swmk">Regras de Software</a></td>
+</tr>
+<tr>
+<td><code>mk/rules_sim.mk</code></td>
+<td>Define o fluxo de simulação, integrando binários e arquivos de memória ao ambiente de validação.</td>
+<td><a href="#7-simulacao-rules_simmk">Simulação</a></td>
+</tr>
+<tr>
+<td><code>mk/rules_fpga.mk</code></td>
+<td>Define o fluxo de síntese, geração de bitstream, geração de arquivos de configuração de memória, programação da FPGA e upload para memória flash quando aplicável.</td>
+<td><a href="#8-sintese-e-fpga-rules_fpgamk">Síntese e FPGA</a></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="3-configuracao-e-deteccao-de-ambiente">3. Configuração e Detecção de Ambiente</h2>
+<h3 id="31-configmk">3.1 <code>config.mk</code></h3>
+<p>O arquivo <code>config.mk</code> centraliza parâmetros fundamentais do Build System. Entre suas responsabilidades estão:</p>
+<ul>
+<li>definir caminhos da toolchain RISC-V;</li>
+<li>configurar flags como <code>-march=rv32i</code> e <code>-mabi=ilp32</code>;</li>
+<li>padronizar nomes de artefatos gerados;</li>
+<li>manter valores reutilizados por múltiplos módulos.</li>
+</ul>
+<p>Na prática, esse arquivo estabelece o contexto global do build e garante consistência entre todas as etapas.</p>
+<h3 id="32-detectmk">3.2 <code>detect.mk</code></h3>
+<p>O arquivo <code>detect.mk</code> é responsável por:</p>
+<ul>
+<li>localizar automaticamente ferramentas como <code>riscv64-unknown-elf-gcc</code>;</li>
+<li>detectar o ambiente do sistema operacional;</li>
+<li>configurar variáveis dinâmicas do build.</li>
+</ul>
+<p>Esse mecanismo evita dependências rígidas de caminhos fixos e torna o sistema mais portátil entre diferentes máquinas de desenvolvimento.</p>
+<h3 id="33-relacao-entre-configuracao-e-deteccao">3.3 Relação entre Configuração e Detecção</h3>
+<p>A combinação entre <code>config.mk</code> e <code>detect.mk</code> permite que o projeto:</p>
+<ul>
+<li>descubra a toolchain disponível no ambiente;</li>
+<li>propague essas informações para as regras de compilação;</li>
+<li>mantenha o build reproduzível.</li>
+</ul>
+<p>Essa arquitetura é especialmente importante em ambientes acadêmicos e de laboratório, nos quais diferentes máquinas podem possuir instalações distintas das ferramentas.</p>
+<hr />
+<h2 id="4-gerenciamento-de-fontes-sourcesmk">4. Gerenciamento de Fontes (<code>sources.mk</code>)</h2>
+<p>O arquivo <code>sources.mk</code> centraliza a definição dos arquivos do projeto.</p>
+<p>Funções principais:</p>
+<ul>
+<li>organização de arquivos <code>.c</code>, <code>.s</code> e VHDL;</li>
+<li>definição de diretórios de entrada;</li>
+<li>abstração da estrutura do projeto para o Make;</li>
+<li>simplificação da expansão automática do conjunto de fontes.</li>
+</ul>
+<p>Ao separar essa responsabilidade, o projeto evita espalhar listas de arquivos ao longo de múltiplos módulos, o que melhora legibilidade e manutenção.</p>
+<hr />
+<h2 id="5-regras-de-software-rules_swmk">5. Regras de Software (<code>rules_sw.mk</code>)</h2>
+<p>O arquivo <code>rules_sw.mk</code> implementa o fluxo de compilação do software embarcado e constitui o núcleo do processo de geração do programa executado pelo SoC.</p>
+<h3 id="51-pipeline-de-geracao">5.1 Pipeline de Geração</h3>
+<div class="highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>flowchart LR
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>SRC[Arquivos .c / .s]
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>--&gt; OBJ[Arquivos .o]
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>--&gt; ELF[Executável .elf]
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>--&gt; BIN[Arquivo .bin]
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>--&gt; HEX[Arquivo .hex]
+</span></code></pre></div>
+<h3 id="52-funcionamento-interno">5.2 Funcionamento Interno</h3>
+<p>No <code>rules_sw.mk</code>, são definidas regras do tipo:</p>
+<div class="highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nf">target</span><span class="o">:</span><span class="w"> </span><span class="n">depend</span>ê<span class="n">ncias</span>
+</span></code></pre></div>
+<p>Esse é o mecanismo fundamental do GNU Make. Cada alvo (<em>target</em>) depende de um conjunto de arquivos ou artefatos anteriores. Quando uma dependência muda, o alvo correspondente é reconstruído.</p>
+<p>No contexto do projeto:</p>
+<ul>
+<li>arquivos <code>.c</code> são compilados em <code>.o</code>;</li>
+<li>arquivos <code>.s</code> são montados diretamente em <code>.o</code>;</li>
+<li>o linker combina os objetos usando <code>link.ld</code>;</li>
+<li>o resultado é um arquivo <code>.elf</code>;</li>
+<li>o <code>.elf</code> é convertido em artefatos adequados ao hardware.</li>
+</ul>
+<h3 id="53-recompilacao-incremental">5.3 Recompilação Incremental</h3>
+<p>O GNU Make utiliza:</p>
+<ul>
+<li>timestamps dos arquivos;</li>
+<li>grafo de dependências;</li>
+</ul>
+<p>para recompilar apenas os artefatos afetados por alterações.</p>
+<p>Exemplos:</p>
+<ul>
+<li>alteração em um arquivo <code>.c</code> → recompilação do <code>.o</code> correspondente;</li>
+<li>alteração em um <code>.o</code> → relink do <code>.elf</code>;</li>
+<li>alteração em headers ou dependências comuns → recompilação dos módulos afetados.</li>
+</ul>
+<p>Esse comportamento é essencial para reduzir tempo de build e tornar o fluxo de desenvolvimento viável.</p>
+<h3 id="54-relevancia-para-o-soc">5.4 Relevância para o SoC</h3>
+<p>No caso deste projeto, <code>rules_sw.mk</code> não é apenas uma camada genérica de compilação. Ele conecta diretamente o software C/Assembly às necessidades concretas do hardware digital, preparando binários que serão usados para inicializar memória e executar código no processador RISC-V.</p>
+<hr />
+<h2 id="6-geracao-de-artefatos-para-hardware">6. Geração de Artefatos para Hardware</h2>
+<p>O arquivo <code>.elf</code> não pode ser interpretado diretamente pela FPGA nem por grande parte dos ambientes de simulação de memória.</p>
+<p>Isso ocorre porque o formato ELF contém:</p>
+<ul>
+<li>cabeçalhos;</li>
+<li>tabelas de símbolos;</li>
+<li>metadados de seções;</li>
+<li>informações auxiliares para depuração e ligação.</li>
+</ul>
+<p>O hardware, por outro lado, normalmente requer dados em formato bruto ou textual simples para inicialização de memória.</p>
+<h3 id="61-conversao-com-objcopy">6.1 Conversão com <code>objcopy</code></h3>
+<p>A extração do conteúdo útil do <code>.elf</code> é realizada com:</p>
+<div class="highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>riscv64-unknown-elf-objcopy<span class="w"> </span>-O<span class="w"> </span>binary<span class="w"> </span>program.elf<span class="w"> </span>program.bin
+</span></code></pre></div>
+<p>Essa etapa remove a estrutura do executável e preserva apenas os bytes relevantes para execução.</p>
+<h3 id="62-formatos-gerados">6.2 Formatos Gerados</h3>
+<ul>
+<li><code>.bin</code> → binário bruto (<em>raw binary</em>);</li>
+<li><code>.hex</code> → representação textual adequada para inicialização de memória.</li>
+</ul>
+<h3 id="63-integracao-com-hardware">6.3 Integração com Hardware</h3>
+<p>Esses arquivos são utilizados para:</p>
+<ul>
+<li>inicializar a Boot ROM;</li>
+<li>carregar a memória RAM no simulador;</li>
+<li>alimentar o sistema durante simulação ou síntese da FPGA.</li>
+</ul>
+<p>Em outras palavras, o Build System converte um executável orientado a software em um formato compreensível pelo hardware digital.</p>
+<hr />
+<h2 id="7-simulacao-rules_simmk">7. Simulação (<code>rules_sim.mk</code>)</h2>
+<p>O módulo <code>rules_sim.mk</code> integra o software ao ambiente de simulação.</p>
+<p>Funções principais:</p>
+<ul>
+<li>execução de simuladores (por exemplo, GHDL);</li>
+<li>carregamento de memória com arquivos <code>.hex</code>;</li>
+<li>validação funcional do sistema;</li>
+<li>integração com frameworks de teste e automação.</li>
+</ul>
+<p>Nesse fluxo, o GNU Make funciona como orquestrador de ferramentas externas, disparando o simulador correto, preparando dependências e organizando a sequência de execução.</p>
+<hr />
+<h2 id="8-sintese-e-fpga-rules_fpgamk">8. Síntese e FPGA (<code>rules_fpga.mk</code>)</h2>
+<p>O módulo <code>rules_fpga.mk</code> controla o fluxo de implementação em hardware.</p>
+<p>Funções:</p>
+<ul>
+<li>síntese lógica;</li>
+<li><em>place-and-route</em>;</li>
+<li>geração de bitstream;</li>
+<li>geração de arquivos de configuração de memória;</li>
+<li>programação da FPGA;</li>
+<li>upload para memória flash, quando aplicável;</li>
+<li>execução de scripts auxiliares, incluindo upload automatizado quando necessário.</li>
+</ul>
+<p>A geração do bitstream cria o arquivo de configuração que materializa o circuito lógico na FPGA. Além disso, o fluxo pode gerar artefatos associados à configuração de memória, permitindo que ROMs ou memórias internas sejam inicializadas corretamente durante a programação do dispositivo.</p>
+<p>Quando há programação da FPGA ou upload para memória flash, o circuito e seus conteúdos associados podem persistir no dispositivo, evitando a necessidade de reprogramação completa em toda reinicialização do ambiente de testes.</p>
+<p>Assim, o Build System não se limita ao software: ele também integra o ciclo de implementação física do sistema digital.</p>
+<hr />
+<h2 id="9-pontes-de-automacao-entre-software-e-hardware">9. Pontes de Automação entre Software e Hardware</h2>
+<p>Além de compilar código, o Make atua como camada de automação entre diferentes ferramentas do projeto.</p>
+<p>Isso inclui:</p>
+<ul>
+<li>chamada de scripts Python para upload ou preparação de artefatos;</li>
+<li>acionamento de simuladores;</li>
+<li>execução de fluxos de FPGA;</li>
+<li>coordenação entre software compilado e infraestrutura de hardware.</li>
+</ul>
+<p>O GNU Make atua como um <strong>orquestrador central</strong>, coordenando:</p>
+<ul>
+<li>compilação do software;</li>
+<li>geração de artefatos;</li>
+<li>execução de simulação;</li>
+<li>chamada de scripts auxiliares;</li>
+<li>programação do hardware.</li>
+</ul>
+<p>Essa automação reduz a quantidade de passos manuais, padroniza o fluxo de desenvolvimento e diminui a chance de inconsistências entre o software compilado e os artefatos carregados no hardware.</p>
+
+
+
+
+
+
+
+  
+    
+  
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Last update">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="May 2, 2026 01:45:06 UTC">May 2, 2026 01:45:06</span>
+  </span>
+
+    
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tabs", "navigation.footer", "navigation.tracking", "navigation.top", "toc.follow", "content.code.copy", "content.tabs.link", "search.highlight", "search.suggest", "content.tooltips"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

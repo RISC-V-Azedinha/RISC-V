@@ -1,0 +1,2816 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Arquitetura, Drivers e Aplicações do SoC RISC-V">
+      
+      
+      
+        <link rel="canonical" href="https://RISC-V-Azedinha.github.io/RISC-V/soc/uart_controller/">
+      
+      
+        <link rel="prev" href="../gpio_controller/">
+      
+      
+        <link rel="next" href="../../software/boot/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Controlador UART - RISC-V SOC</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#uart-controller-microarquitetura" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="RISC-V SOC" class="md-header__button md-logo" aria-label="RISC-V SOC" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 17H7V7h10m4 4V9h-2V7a2 2 0 0 0-2-2h-2V3h-2v2h-2V3H9v2H7c-1.11 0-2 .89-2 2v2H3v2h2v2H3v2h2v2a2 2 0 0 0 2 2h2v2h2v-2h2v2h2v-2h2a2 2 0 0 0 2-2v-2h2v-2h-2v-2m-6 2h-2v-2h2m2-2H9v6h6z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            RISC-V SOC
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Controlador UART
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="indigo"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/RISC-V-Azedinha/RISC-V" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    RISC-V-Azedinha/RISC-V
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../.." class="md-tabs__link">
+          
+  
+  
+  Introdução
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../hardware/single-cycle/" class="md-tabs__link">
+          
+  
+  
+  Arquitetura de Hardware
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../software/boot/" class="md-tabs__link">
+          
+  
+  
+  Software
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../vga_controller/" class="md-tabs__link">
+          
+  
+  
+  Periféricos
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../dev/simulation.md" class="md-tabs__link">
+          
+  
+  
+  Simulação e Verificação
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../apps/protocolo_comunicacao_host_fpga.md" class="md-tabs__link">
+          
+  
+  
+  Aplicações
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="RISC-V SOC" class="md-nav__button md-logo" aria-label="RISC-V SOC" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 17H7V7h10m4 4V9h-2V7a2 2 0 0 0-2-2h-2V3h-2v2h-2V3H9v2H7c-1.11 0-2 .89-2 2v2H3v2h2v2H3v2h2v2a2 2 0 0 0 2 2h2v2h2v-2h2v2h2v-2h2a2 2 0 0 0 2-2v-2h2v-2h-2v-2m-6 2h-2v-2h2m2-2H9v6h6z"/></svg>
+
+    </a>
+    RISC-V SOC
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/RISC-V-Azedinha/RISC-V" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    RISC-V-Azedinha/RISC-V
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introdução
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Introdução
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visão Geral
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../intro/setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Requisitos e Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../intro/quickstart.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Primeiros Passos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arquitetura de Hardware
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Arquitetura de Hardware
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/single-cycle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Microarquitetura Monociclo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/multi-cycle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Microarquitetura Multiciclo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/interrupts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Subsistema de Interrupções
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gpio_controller/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Controlador GPIO
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Controlador UART
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Controlador UART
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-visao-geral" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Visão Geral
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Visão Geral">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-caracteristicas-principais" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Características Principais
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-teoria-do-protocolo-uart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Teoria do Protocolo UART
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Teoria do Protocolo UART">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-estrutura-do-frame-uart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Estrutura do Frame UART
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-componentes-do-frame" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Componentes do Frame
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-baud-rate-taxa-de-transmissao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Baud Rate (Taxa de Transmissão)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-diagrama-de-blocos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Diagrama de Blocos
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-mapa-de-memoria" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Mapa de Memória
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Mapa de Memória">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-registrador-data-offset-0x0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Registrador DATA (Offset 0x0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-registrador-status-offset-0x4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Registrador STATUS (Offset 0x4)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-sequencias-de-uso" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Sequências de Uso
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-geracao-de-baud-rate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Geração de Baud Rate
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Geração de Baud Rate">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-calculo-do-periodo-de-bit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Cálculo do Período de Bit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-equacao-geral" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Equação Geral
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-transmissor-tx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Transmissor (TX)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Transmissor (TX)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-arquitetura-do-tx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Arquitetura do TX
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-maquina-de-estados-tx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Máquina de Estados TX
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-receptor-rx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Receptor (RX)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Receptor (RX)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-desafios-da-recepcao-assincrona" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Desafios da Recepção Assíncrona
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-sincronizador-cross-domain-2-ff" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Sincronizador Cross-Domain (2-FF)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73-maquina-de-estados-rx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 Máquina de Estados RX
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-oversampling-e-amostragem-no-centro-do-bit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Oversampling e Amostragem no Centro do Bit
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Oversampling e Amostragem no Centro do Bit">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-o-problema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 O Problema
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82-a-solucao-amostragem-no-centro" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2 A Solução: Amostragem no Centro
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#83-calculo-do-ponto-de-amostragem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.3 Cálculo do Ponto de Amostragem
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-fifo-de-recepcao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. FIFO de Recepção
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. FIFO de Recepção">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#91-arquitetura" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.1 Arquitetura
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#92-flags-de-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.2 Flags de Status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#93-contador-de-itens" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.3 Contador de Itens
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-interface-de-barramento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Interface de Barramento
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Interface de Barramento">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#101-protocolo-de-handshake" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.1 Protocolo de Handshake
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#102-mapeamento-de-operacoes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.2 Mapeamento de Operações
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#103-interrupcao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.3 Interrupção
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10.3 Interrupção">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1031-o-sinal-de-interrupcao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.3.1 O Sinal de Interrupção
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1032-tipo-de-gatilho" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.3.2 Tipo de Gatilho
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1033-quando-a-interrupcao-ocorre" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.3.3 Quando a Interrupção Ocorre
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1034-fluxo-de-atendimento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.3.4 Fluxo de Atendimento
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1035-analogia-a-caixa-de-correio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.3.5 Analogia: A Caixa de Correio
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-referencias" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Referências
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Software
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Software
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../software/boot/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Processo de Boot
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../software/linker/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Linker Scripts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Periféricos
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Periféricos
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vga_controller/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Controlador VGA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulação e Verificação
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Simulação e Verificação
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/simulation.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ambiente de Testes (Cocotb)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/fpga_build/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fluxo de Síntese (FPGA)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Aplicações
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Aplicações
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../apps/protocolo_comunicacao_host_fpga.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Protocolo de Comunicação
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../apps/interface_grafica_educacional_depuracao.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interface Gráfica Educacional e Depuração
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../apps/clientes_inteligencia_artificial.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clientes de Inteligência Artificial
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../apps/pong.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Jogo Pong
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../apps/fractal.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Renderização de Fractal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-visao-geral" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Visão Geral
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Visão Geral">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-caracteristicas-principais" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Características Principais
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-teoria-do-protocolo-uart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Teoria do Protocolo UART
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Teoria do Protocolo UART">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-estrutura-do-frame-uart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Estrutura do Frame UART
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-componentes-do-frame" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Componentes do Frame
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-baud-rate-taxa-de-transmissao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Baud Rate (Taxa de Transmissão)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-diagrama-de-blocos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Diagrama de Blocos
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-mapa-de-memoria" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Mapa de Memória
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Mapa de Memória">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-registrador-data-offset-0x0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Registrador DATA (Offset 0x0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-registrador-status-offset-0x4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Registrador STATUS (Offset 0x4)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-sequencias-de-uso" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Sequências de Uso
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-geracao-de-baud-rate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Geração de Baud Rate
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Geração de Baud Rate">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-calculo-do-periodo-de-bit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Cálculo do Período de Bit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-equacao-geral" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Equação Geral
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-transmissor-tx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Transmissor (TX)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Transmissor (TX)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-arquitetura-do-tx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Arquitetura do TX
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-maquina-de-estados-tx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Máquina de Estados TX
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-receptor-rx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Receptor (RX)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Receptor (RX)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-desafios-da-recepcao-assincrona" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Desafios da Recepção Assíncrona
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-sincronizador-cross-domain-2-ff" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Sincronizador Cross-Domain (2-FF)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73-maquina-de-estados-rx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 Máquina de Estados RX
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-oversampling-e-amostragem-no-centro-do-bit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Oversampling e Amostragem no Centro do Bit
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Oversampling e Amostragem no Centro do Bit">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-o-problema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 O Problema
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82-a-solucao-amostragem-no-centro" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2 A Solução: Amostragem no Centro
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#83-calculo-do-ponto-de-amostragem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.3 Cálculo do Ponto de Amostragem
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-fifo-de-recepcao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. FIFO de Recepção
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. FIFO de Recepção">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#91-arquitetura" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.1 Arquitetura
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#92-flags-de-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.2 Flags de Status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#93-contador-de-itens" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.3 Contador de Itens
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-interface-de-barramento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Interface de Barramento
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Interface de Barramento">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#101-protocolo-de-handshake" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.1 Protocolo de Handshake
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#102-mapeamento-de-operacoes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.2 Mapeamento de Operações
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#103-interrupcao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.3 Interrupção
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10.3 Interrupção">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1031-o-sinal-de-interrupcao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.3.1 O Sinal de Interrupção
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1032-tipo-de-gatilho" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.3.2 Tipo de Gatilho
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1033-quando-a-interrupcao-ocorre" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.3.3 Quando a Interrupção Ocorre
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1034-fluxo-de-atendimento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.3.4 Fluxo de Atendimento
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1035-analogia-a-caixa-de-correio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.3.5 Analogia: A Caixa de Correio
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-referencias" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Referências
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="uart-controller-microarquitetura">UART Controller - Microarquitetura</h1>
+<hr />
+<h2 id="1-visao-geral">1. Visão Geral</h2>
+<p>O <strong>UART Controller</strong> é um periférico de comunicação serial assíncrona que implementa as funções de <strong>Transmissor (TX)</strong> e <strong>Receptor (RX)</strong> em um único módulo de hardware.</p>
+<h3 id="11-caracteristicas-principais">1.1 Características Principais</h3>
+<table>
+<thead>
+<tr>
+<th>Característica</th>
+<th>Valor</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Padrão</strong></td>
+<td>UART (Universal Asynchronous Receiver-Transmitter)</td>
+</tr>
+<tr>
+<td><strong>Formato de Frame</strong></td>
+<td>8N1 (8 bits de dados, sem paridade, 1 stop bit)</td>
+</tr>
+<tr>
+<td><strong>Baud Rate Padrão</strong></td>
+<td>921.600 bps</td>
+</tr>
+<tr>
+<td><strong>Frequência de Clock</strong></td>
+<td>100 MHz (configurável)</td>
+</tr>
+<tr>
+<td><strong>Buffer de Recepção</strong></td>
+<td>FIFO de 64 bytes (configurável)</td>
+</tr>
+<tr>
+<td><strong>Interrupções</strong></td>
+<td>Geradas quando dados estão disponíveis na FIFO</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="2-teoria-do-protocolo-uart">2. Teoria do Protocolo UART</h2>
+<h3 id="21-estrutura-do-frame-uart">2.1 Estrutura do Frame UART</h3>
+<p><img alt="Estrutura do Frame UART" src="../../images/UART/UART-Estrutura_do_Frame.svg" /></p>
+<hr />
+<h3 id="22-componentes-do-frame">2.2 Componentes do Frame</h3>
+<table>
+<thead>
+<tr>
+<th>Componente</th>
+<th>Descrição</th>
+<th>Nível Lógico</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Start Bit</strong></td>
+<td>Marca o início da transmissão</td>
+<td><code>0</code> (Space)</td>
+</tr>
+<tr>
+<td><strong>Data Bits</strong></td>
+<td>Dados úteis (8 bits, LSB primeiro)</td>
+<td><code>0</code> ou <code>1</code></td>
+</tr>
+<tr>
+<td><strong>Stop Bit</strong></td>
+<td>Marca o fim da transmissão</td>
+<td><code>1</code> (Mark)</td>
+</tr>
+<tr>
+<td><strong>Idle</strong></td>
+<td>Linha em repouso</td>
+<td><code>1</code> (Mark)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="23-baud-rate-taxa-de-transmissao">2.3 Baud Rate (Taxa de Transmissão)</h3>
+<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Baud Rate = Bits por segundo (bps)
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>Exemplo: 921.600 baud = 921.600 bits/segundo
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>Tempo por bit = 1 / 921.600 = 8,68 µs/bit
+</span></code></pre></div>
+<hr />
+<h2 id="3-diagrama-de-blocos">3. Diagrama de Blocos</h2>
+<p><img alt="Diagrama de Blocos" src="../../images/UART/UART-Diagrama_de_Blocos.svg" /></p>
+<hr />
+<h2 id="4-mapa-de-memoria">4. Mapa de Memória</h2>
+<h3 id="41-registrador-data-offset-0x0">4.1 Registrador DATA (Offset 0x0)</h3>
+<table>
+<thead>
+<tr>
+<th>Operação</th>
+<th>Comportamento</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>WRITE</strong></td>
+<td>Escreve byte na latch TX. Se <code>TX_BUSY = 0</code>, inicia transmissão automaticamente</td>
+</tr>
+<tr>
+<td><strong>READ</strong></td>
+<td>Lê byte na cabeça da FIFO (operação <strong>peek</strong> - não remove da fila)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="42-registrador-status-offset-0x4">4.2 Registrador STATUS (Offset 0x4)</h3>
+<table>
+<thead>
+<tr>
+<th>Bit</th>
+<th>Nome</th>
+<th>Direção</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>TX_BUSY</td>
+<td>Leitura</td>
+<td><code>1</code> = Transmissor ocupado, <code>0</code> = Livre</td>
+</tr>
+<tr>
+<td>1</td>
+<td>RX_VALID</td>
+<td>Leitura</td>
+<td><code>1</code> = FIFO contém dados, <code>0</code> = FIFO vazia</td>
+</tr>
+<tr>
+<td>2</td>
+<td>FLUSH</td>
+<td>Escrita</td>
+<td><code>1</code> = Limpa toda a FIFO</td>
+</tr>
+</tbody>
+</table>
+<h3 id="43-sequencias-de-uso">4.3 Sequências de Uso</h3>
+<p><strong>Transmissão (TX):</strong>
+<div class="highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">STATUS</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">TX_BUSY</span><span class="p">);</span><span class="w">     </span><span class="c1">// Aguardar TX livre</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">DATA</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">byte_to_send</span><span class="p">;</span><span class="w">         </span><span class="c1">// Inicia transmissão</span>
+</span></code></pre></div></p>
+<p><strong>Recepção (RX):</strong>
+<div class="highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="p">(</span><span class="n">STATUS</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">RX_VALID</span><span class="p">));</span><span class="w"> </span><span class="c1">// Aguardar dados</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">byte</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DATA</span><span class="p">;</span><span class="w">                  </span><span class="c1">// Ler (peek)</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">STATUS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">RX_POP</span><span class="p">;</span><span class="w">             </span><span class="c1">// Avançar fila</span>
+</span></code></pre></div></p>
+<hr />
+<h2 id="5-geracao-de-baud-rate">5. Geração de Baud Rate</h2>
+<h3 id="51-calculo-do-periodo-de-bit">5.1 Cálculo do Período de Bit</h3>
+<p>O hardware utiliza um <strong>divisor de frequência</strong> para gerar o Baud Rate:</p>
+<div class="highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">constant</span><span class="w"> </span><span class="n">c_bit_period</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="kt">integer</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="n">CLK_FREQ</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">BAUD_RATE</span><span class="p">;</span>
+</span></code></pre></div>
+<p><strong>Cálculo para 115200 baud @ 100 MHz:</strong></p>
+<div class="highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>CLK_FREQ   = 100.000.000 Hz (100 MHz)
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>BAUD_RATE  = 115.200 bps
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>c_bit_period = 100.000.000 / 115.200
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>             = 868 ciclos (arredondado)
+</span></code></pre></div>
+<h3 id="52-equacao-geral">5.2 Equação Geral</h3>
+<div class="highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>Período de 1 bit (ciclos) = ⌊ CLK_FREQ ÷ BAUD_RATE ⌋
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>Período de 1 bit (ns)     = c_bit_period × (1 / CLK_FREQ)
+</span></code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Baud Rate</th>
+<th>CLK_FREQ</th>
+<th>c_bit_period</th>
+<th>Tempo/bit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>115.200</td>
+<td>100 MHz</td>
+<td>868</td>
+<td>8,68 µs</td>
+</tr>
+<tr>
+<td>57.600</td>
+<td>100 MHz</td>
+<td>1736</td>
+<td>17,36 µs</td>
+</tr>
+<tr>
+<td>9.600</td>
+<td>100 MHz</td>
+<td>10417</td>
+<td>104,17 µs</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="6-transmissor-tx">6. Transmissor (TX)</h2>
+<h3 id="61-arquitetura-do-tx">6.1 Arquitetura do TX</h3>
+<p>O transmissor UART é composto por três elementos principais que trabalham em conjunto para realizar a serialização dos dados. O <strong>TX Data Latch</strong> é um registrador de entrada que armazena temporariamente o byte a ser transmitido quando a CPU escreve no registrador de dados. Este latch mantém o dado estável enquanto a máquina de estados inicia o processo de transmissão. O <strong>TX FSM (Finite State Machine)</strong> é a unidade de controle que gerencia todo o fluxo de transmissão, transitando entre os estados IDLE, START, DATA e STOP. A FSM controla o temporizador de bits e o registrador de deslocamento, garantindo que cada bit seja transmitido com a duração correta. O <strong>Shift Register (tx_shifter[7:0])</strong> é um registrador de deslocamento de 8 bits que contém o byte a ser transmitido. A cada período de bit, a FSM desloca o registrador para a direita, alimentando o pino uart_tx_pin com o bit menos significativo (LSB first). O shift register é carregado com o byte do TX Data Latch no início da transmissão e é deslocado bit a bit até que todos os 8 dados sejam transmitidos, seguido pelo stop bit.</p>
+<h3 id="62-maquina-de-estados-tx">6.2 Máquina de Estados TX</h3>
+<p>A máquina de estados do transmissor opera em quatro estados distintos:</p>
+<ul>
+<li>
+<p><strong>TX_IDLE</strong>: Estado de repouso. O pino uart_tx_pin permanece em nível alto (idle) e a flag tx_busy_flag é desativada. O hardware aguarda a escrita de um novo byte no registrador de dados para transitar para TX_START.</p>
+</li>
+<li>
+<p><strong>TX_START</strong>: Início do frame. O pino uart_tx_pin é forçado para nível baixo (espaço). O temporizador de bits é carregado com c_bit_period - 1 e inicia a contagem. A duração deste estado é de exatamente um período de bit.</p>
+</li>
+<li>
+<p><strong>TX_DATA</strong>: Transmissão de dados. Os 8 bits são serializados individualmente. A FSM mantém este estado por 8 períodos de bit. Ao final de cada período, o registrador de deslocamento atualiza o pino de saída e incrementa o índice bit_idx até atingir 7, transitando então para TX_STOP.</p>
+</li>
+<li>
+<p><strong>TX_STOP</strong>: Fim do frame. O pino uart_tx_pin retorna ao nível alto (marcador). A duração é de um período de bit. Após a conclusão, a FSM retorna a TX_IDLE, liberando o transmissor para um novo ciclo.</p>
+</li>
+</ul>
+<hr />
+<h2 id="7-receptor-rx">7. Receptor (RX)</h2>
+<h3 id="71-desafios-da-recepcao-assincrona">7.1 Desafios da Recepção Assíncrona</h3>
+<ol>
+<li><strong>Clock Domain Crossing (CDC):</strong> O sinal <code>uart_rx_pin</code> vem de fora do domínio de clock</li>
+<li><strong>Sincronização de Tempo:</strong> O receptor deve amostrar os bits <strong>no centro</strong> de cada período</li>
+</ol>
+<h3 id="72-sincronizador-cross-domain-2-ff">7.2 Sincronizador Cross-Domain (2-FF)</h3>
+<p>O receptor UART enfrenta um desafio fundamental de design relacionado ao cruzamento de domínios de clock (CDC - Clock Domain Crossing). O pino de entrada uart_rx_pin é um sinal assíncrono que vem de fora do SoC, potencialmente gerado por outro dispositivo com seu próprio domínio de clock. A conexão direta desse sinal aos flip-flops do domínio de clock do receptor pode causar metastabilidade, um fenômeno em que o flip-flop pode entrar em um estado indefinido quando a transição do sinal de entrada ocorre muito próximo à borda de clock.</p>
+<p>A solução implementada utiliza um sincronizador de dois flip-flops (2-FF synchronizer). Este circuito consiste em dois flip-flops em cascata que funcionam como um registrador de dois estágios. O primeiro flip-flop (FF1) captura o sinal assíncrono na borda de clock, mas pode potencialmente entrar em estado metastável se a transição coincidir com a borda de clock. O segundo flip-flop (FF2) captura a saída do primeiro flip-flop na próxima borda de clock, período suficiente para que qualquer metastabilidade no primeiro flip-flop se resolva para um estado válido. A saída do segundo flip-flop (rx_pin_sync(1) ou rx_bit_val) é então um sinal sincronizado que pode ser usado com segurança dentro do domínio de clock do receptor.</p>
+<p>A implementação em VHDL utiliza um registrador de deslocamento de 2 bits que é atualizado a cada borda de clock: rx_pin_sync &lt;= rx_pin_sync(0) &amp; uart_rx_pin. O bit mais significativo (rx_pin_sync(1)) representa o valor sincronizado do pino de entrada, que é então utilizado pela máquina de estados do receptor.</p>
+<h3 id="73-maquina-de-estados-rx">7.3 Máquina de Estados RX</h3>
+<p>A máquina de estados do receptor opera em quatro estados, com uma lógica adicional para evitar leituras falsas causadas por ruído:</p>
+<ul>
+<li>
+<p><strong>RX_IDLE</strong>: Estado de repouso. O receptor monitora o pino sincronizado rx_bit_val. A detecção de uma transição de alto para baixo (rx_bit_val = '0') aciona a transição para RX_START.</p>
+</li>
+<li>
+<p><strong>RX_START</strong>: Validação do start bit. A FSM aguarda metade de um período de bit (c_bit_period / 2) para amostrar novamente o pino. Se o sinal retornar para alto, assume-se ruído e a FSM volta a RX_IDLE. Se continuar em baixo, o start bit é confirmado e a FSM avança para RX_DATA.</p>
+</li>
+<li>
+<p><strong>RX_DATA</strong>: Recepção de dados. A FSM processa a captura ao longo de 8 períodos de bit. Ao final de cada período de bit no receptor (que se alinha com o centro do bit do transmissor), o valor de rx_bit_val é inserido no registrador rx_shifter através de deslocamento à esquerda.</p>
+</li>
+<li>
+<p><strong>RX_STOP</strong>: Fim da recepção. Após um período de bit completo desde o último dado, o pino é amostrado. O nível alto confirma a presença do stop bit e aciona o sinal de escrita na FIFO (w_wr_en = '1'). Independentemente da amostra, a FSM retorna imediatamente para RX_IDLE visando capturar o próximo frame.</p>
+</li>
+</ul>
+<hr />
+<h2 id="8-oversampling-e-amostragem-no-centro-do-bit">8. Oversampling e Amostragem no Centro do Bit</h2>
+<h3 id="81-o-problema">8.1 O Problema</h3>
+<p>Sinais UART estão sujeitos a:
+- <strong>Ruído elétrico</strong> (interferência eletromagnética)
+- <strong>Distorção de borda</strong> (bordas não são perfeitamente verticais)
+- <strong>Jitter</strong> (variações no tempo de chegada)</p>
+<h3 id="82-a-solucao-amostragem-no-centro">8.2 A Solução: Amostragem no Centro</h3>
+<p>A estratégia de amostragem no centro do bit é fundamental para a robustez do receptor UART. A fundamentação teórica baseia-se na observação de que, durante a transmissão de um bit, as bordas de transição (início e fim do período) são regiões onde o sinal está mais suscetível a ruído, distorção e incertezas de temporização. O centro do período de bit é onde o sinal está mais estável, pois já houve tempo suficiente para o transceptor remoto completar sua transição e ainda não começou a transição para o próximo bit.</p>
+<p>Na prática, o receptor utiliza o timer de bits para determinar o momento exato de amostragem. O timer incrementa a cada ciclo de clock e, quando atinge o valor zero (indicando o fim de um período de bit), o valor do pino sincronizado é amostrado e deslocado para dentro do registrador de deslocamento. Esta abordagem resulta em amostragem no final de cada período de bit, que corresponde ao centro do período de bit seguinte (da perspectiva do transmissor), garantindo a posição ideal de amostragem.</p>
+<p>Para o start bit especial, a lógica é ajustada: em vez de esperar o final do período, o receptor amostra após metade do período (c_bit_period / 2). Esta amostragem antecipada permite validar se o start bit é genuíno (permanece em baixo) ou é ruído (retorna a alto rapidamente).</p>
+<h3 id="83-calculo-do-ponto-de-amostragem">8.3 Cálculo do Ponto de Amostragem</h3>
+<p><strong>Para 115200 baud @ 100 MHz (c_bit_period = 868):</strong></p>
+<div class="highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>Ponto de amostragem do Start Bit = c_bit_period / 2 = 868 / 2 = 434 ciclos
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>Código VHDL:
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    if rx_timer &lt; (c_bit_period / 2) - 1 then
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>        rx_timer &lt;= rx_timer + 1;
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    else
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>        if rx_bit_val = &#39;0&#39; then rx_state &lt;= RX_DATA;
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>        else rx_state &lt;= RX_IDLE;  -- Ruído
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>        end if;
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    end if;
+</span></code></pre></div>
+<hr />
+<h2 id="9-fifo-de-recepcao">9. FIFO de Recepção</h2>
+<h3 id="91-arquitetura">9.1 Arquitetura</h3>
+<p>A FIFO de recepção é uma estrutura de buffer circular que desacopla a taxa de recepção dos dados da taxa de consumo pela CPU, eliminando a necessidade de polls constante e permitindo a recepção de dados em rajadas. A arquitetura implementa um buffer circular com apontadores de cabeça (write pointer - r_head) e cauda (read pointer - r_tail), ambos como índices de 6 bits para uma FIFO de 64 posições.</p>
+<p>O <strong>write pointer (r_head)</strong> aponta para a próxima posição vazia onde um novo byte recebido será armazenado. Quando um byte chega do receptor (w_wr_en = '1'), ele é escrito na posição atual do r_head, e então o apontador é incrementado módulo 64. O <strong>read pointer (r_tail)</strong> aponta para o próximo byte a ser lido pela CPU. Quando a CPU lê o registrador de dados (operação de peek), o byte em r_tail é apresentado na saída sem modificar o apontador. Somente quando a CPU escreve no registrador de status com o comando de pop (bit 0), o r_tail é incrementado, efetivamente removendo o byte da fila.</p>
+<p>A <strong>contagem de itens (r_count)</strong> mantém o número atual de bytes válidos na FIFO. Este contador é incrementado em uma escrita (se a FIFO não estiver cheia) e decrementado em um pop (se a FIFO não estiver vazia). As flags de status w_fifo_full e w_fifo_empty são derivadas diretamente deste contador para indicar as condições de buffer cheio e buffer vazio, respectivamente.</p>
+<h3 id="92-flags-de-status">9.2 Flags de Status</h3>
+<div class="highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">w_fifo_full</span><span class="w">  </span><span class="o">&lt;=</span><span class="w"> </span><span class="sc">&#39;1&#39;</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="n">r_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FIFO_DEPTH</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="sc">&#39;0&#39;</span><span class="p">;</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">w_fifo_empty</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="sc">&#39;1&#39;</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="n">r_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="sc">&#39;0&#39;</span><span class="p">;</span>
+</span></code></pre></div>
+<h3 id="93-contador-de-itens">9.3 Contador de Itens</h3>
+<div class="highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">if</span><span class="w"> </span><span class="n">w_wr_en</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">&#39;1&#39;</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="n">w_rd_en</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">&#39;0&#39;</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="n">w_fifo_full</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">&#39;0&#39;</span><span class="w"> </span><span class="k">then</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">    </span><span class="n">r_count</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">r_count</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="k">elsif</span><span class="w"> </span><span class="n">w_wr_en</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">&#39;0&#39;</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="n">w_rd_en</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">&#39;1&#39;</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="n">w_fifo_empty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">&#39;0&#39;</span><span class="w"> </span><span class="k">then</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">    </span><span class="n">r_count</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">r_count</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="k">end</span><span class="w"> </span><span class="k">if</span><span class="p">;</span>
+</span></code></pre></div>
+<hr />
+<h2 id="10-interface-de-barramento">10. Interface de Barramento</h2>
+<h3 id="101-protocolo-de-handshake">10.1 Protocolo de Handshake</h3>
+<p>A interface de barramento implementa um protocolo de handshake simples com sinais de válido (vld_i) e pronto (rdy_o). O fluxo de operação é o seguinte: quando a CPU deseja escrever ou ler do UART, ela configura os sinais de endereço (addr_i), dados (data_i), write enable (we_i) e configura vld_i para nível alto. Na próxima borda de clock, a lógica de controle do UART detecta vld_i = '1', executa a operação solicitada (escrita no registrador de dados, escrita no registrador de comandos ou leitura de registrador) e, no ciclo seguinte, asserta rdy_o = '1' para indicar conclusão. A CPU então detecta rdy_o = '1', pode remover vld_i e proceder com a próxima operação. Este protocolo garante que a CPU e o periférico estejam sincronizados, evitando condições de corrida e garantindo que cada operação seja completada antes que uma nova seja iniciada.</p>
+<h3 id="102-mapeamento-de-operacoes">10.2 Mapeamento de Operações</h3>
+<table>
+<thead>
+<tr>
+<th>addr_i</th>
+<th>we_i</th>
+<th>Operação</th>
+<th>Ação</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0x0</td>
+<td>1</td>
+<td>WRITE DATA</td>
+<td>Se <code>TX_BUSY=0</code>: inicia transmissão</td>
+</tr>
+<tr>
+<td>0x0</td>
+<td>0</td>
+<td>READ DATA</td>
+<td><code>data_o(7:0) &lt;= r_fifo(r_tail)</code> (peek)</td>
+</tr>
+<tr>
+<td>0x4</td>
+<td>1</td>
+<td>WRITE CMD</td>
+<td><code>data_i(0)=1</code>: pop; <code>data_i(2)=1</code>: flush</td>
+</tr>
+<tr>
+<td>0x4</td>
+<td>0</td>
+<td>READ STATUS</td>
+<td><code>data_o(0)&lt;=TX_BUSY</code>, <code>data_o(1)&lt;=RX_VALID</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="103-interrupcao">10.3 Interrupção</h3>
+<h4 id="1031-o-sinal-de-interrupcao">10.3.1 O Sinal de Interrupção</h4>
+<p>O UART possui um pino de saída dedicado para interrupções: <code>irq_o</code>. Este pino é conectado ao controlador de interrupções do processador (como o PLIC em sistemas RISC-V), que por sua vez notifica a CPU quando o periférico precisa de atenção.</p>
+<p><strong>Resumo das características:</strong>
+- <strong>Nome do sinal:</strong> <code>irq_o</code>
+- <strong>Direção:</strong> Saída (UART → CPU)
+- <strong>Polaridade:</strong> Ativo em nível alto (<code>1</code> = interrupção ativa)</p>
+<h4 id="1032-tipo-de-gatilho">10.3.2 Tipo de Gatilho</h4>
+<p>O UART utiliza <strong>interrupção por nível (level-triggered)</strong>. Isso significa que o sinal permanece ativo (<code>1</code>) enquanto a condição que gerou a interrupção existir, e desativa automaticamente quando a condição deixa de existir.</p>
+<p><strong>Comparação rápida:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Tipo</th>
+<th>Comportamento</th>
+<th>Quando usar</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Level-triggered</strong></td>
+<td>Permanece ativo enquanto condição existir</td>
+<td>Condições que podem mudar rapidamente</td>
+</tr>
+<tr>
+<td><strong>Edge-triggered</strong></td>
+<td>Ativa apenas na transição 0→1</td>
+<td>Eventos únicos e instantâneos</td>
+</tr>
+</tbody>
+</table>
+<h4 id="1033-quando-a-interrupcao-ocorre">10.3.3 Quando a Interrupção Ocorre</h4>
+<p>A interrupção é gerada quando a FIFO de recepção contém pelo menos um byte disponível para leitura:</p>
+<div class="highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>irq_o = 1  →  FIFO não vazia (há dados para ler)
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>irq_o = 0  →  FIFO vazia (todos os dados foram consumidos)
+</span></code></pre></div>
+<p>Esta lógica é implementada como:
+<div class="highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">irq_o</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="k">not</span><span class="w"> </span><span class="n">w_fifo_empty</span><span class="p">;</span><span class="w">  </span><span class="c1">-- ativo quando há dados</span>
+</span></code></pre></div></p>
+<h4 id="1034-fluxo-de-atendimento">10.3.4 Fluxo de Atendimento</h4>
+<p>Para entender o fluxo, imagine a seguinte situação: dados estão chegando pela linha serial RX. O receptor armazena cada byte na FIFO. Quando o primeiro byte chega, a FIFO deixa de estar vazia. Neste momento, o hardware ativa <code>irq_o = 1</code>, enviando um pedido de interrupção ao processador.</p>
+<p>A CPU, ao receber a notificação, suspende a tarefa atual e executa a rotina de atendimento da UART. Dentro dessa rotina, o software deve:</p>
+<ol>
+<li><strong>Ler o registrador de dados (DATA)</strong> para obter o byte disponível</li>
+<li><strong>Executar a operação de pop</strong> no registrador de status para remover o byte da FIFO</li>
+<li><strong>Repetir</strong> até que a FIFO esteja vazia</li>
+</ol>
+<p>Quando a FIFO fica vazia (após todos os bytes serem consumidos), o hardware automaticamente desativa <code>irq_o = 0</code>. Não é necessário que o software desative explicitamente a interrupção.</p>
+<h4 id="1035-analogia-a-caixa-de-correio">10.3.5 Analogia: A Caixa de Correio</h4>
+<p>Pense no sistema de interrupção como uma caixa de correio com uma campainha:</p>
+<ul>
+<li>A campainha toca (<code>irq_o = 1</code>) quando há cartas na caixa (dados na FIFO)</li>
+<li>Você para o que está fazendo para verificar a caixa (tratamento de interrupção)</li>
+<li>Remove as cartas (lê os dados e faz pop)</li>
+<li>Quando a caixa está vazia, a campainha para sozinha (<code>irq_o = 0</code>)</li>
+</ul>
+<p>Esta analogia ajuda a entender por que não precisamos "limpar" a interrupção manualmente — ela se auto-desativa quando a condição desaparece.</p>
+<hr />
+<h2 id="11-referencias">11. Referências</h2>
+<ul>
+<li><strong>RTL Source:</strong> <code>rtl/perips/uart/uart_controller.vhd</code></li>
+<li><strong>Testbench:</strong> <code>sim/perips/test_uart_controller.py</code></li>
+<li><strong>IEEE Std 1076:</strong> VHDL Language Reference Manual</li>
+</ul>
+<hr />
+
+
+
+
+
+
+
+  
+    
+  
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Last update">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="May 2, 2026 01:49:03 UTC">May 2, 2026 01:49:03</span>
+  </span>
+
+    
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../gpio_controller/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Controlador GPIO">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Controlador GPIO
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../../software/boot/" class="md-footer__link md-footer__link--next" aria-label="Next: Processo de Boot">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Processo de Boot
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tabs", "navigation.footer", "navigation.tracking", "navigation.top", "toc.follow", "content.code.copy", "content.tabs.link", "search.highlight", "search.suggest", "content.tooltips"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

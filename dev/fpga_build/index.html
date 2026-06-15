@@ -1,0 +1,2421 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Arquitetura, Drivers e Aplicações do SoC RISC-V">
+      
+      
+      
+        <link rel="canonical" href="https://RISC-V-Azedinha.github.io/RISC-V/dev/fpga_build/">
+      
+      
+        <link rel="prev" href="../../soc/vga_controller/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Fluxo de Síntese (FPGA) - RISC-V SOC</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#fluxo-de-sintese-e-programacao-da-fpga" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="RISC-V SOC" class="md-header__button md-logo" aria-label="RISC-V SOC" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 17H7V7h10m4 4V9h-2V7a2 2 0 0 0-2-2h-2V3h-2v2h-2V3H9v2H7c-1.11 0-2 .89-2 2v2H3v2h2v2H3v2h2v2a2 2 0 0 0 2 2h2v2h2v-2h2v2h2v-2h2a2 2 0 0 0 2-2v-2h2v-2h-2v-2m-6 2h-2v-2h2m2-2H9v6h6z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            RISC-V SOC
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Fluxo de Síntese (FPGA)
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="indigo"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/RISC-V-Azedinha/RISC-V" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    RISC-V-Azedinha/RISC-V
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../.." class="md-tabs__link">
+          
+  
+  
+  Introdução
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../hardware/single-cycle/" class="md-tabs__link">
+          
+  
+  
+  Arquitetura de Hardware
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../software/boot/" class="md-tabs__link">
+          
+  
+  
+  Software
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../soc/vga_controller/" class="md-tabs__link">
+          
+  
+  
+  Periféricos
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../simulation.md" class="md-tabs__link">
+          
+  
+  
+  Simulação e Verificação
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../apps/protocolo_comunicacao_host_fpga.md" class="md-tabs__link">
+          
+  
+  
+  Aplicações
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="RISC-V SOC" class="md-nav__button md-logo" aria-label="RISC-V SOC" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 17H7V7h10m4 4V9h-2V7a2 2 0 0 0-2-2h-2V3h-2v2h-2V3H9v2H7c-1.11 0-2 .89-2 2v2H3v2h2v2H3v2h2v2a2 2 0 0 0 2 2h2v2h2v-2h2v2h2v-2h2a2 2 0 0 0 2-2v-2h2v-2h-2v-2m-6 2h-2v-2h2m2-2H9v6h6z"/></svg>
+
+    </a>
+    RISC-V SOC
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/RISC-V-Azedinha/RISC-V" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    RISC-V-Azedinha/RISC-V
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introdução
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Introdução
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visão Geral
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../intro/setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Requisitos e Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../intro/quickstart.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Primeiros Passos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arquitetura de Hardware
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Arquitetura de Hardware
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/single-cycle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Microarquitetura Monociclo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/multi-cycle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Microarquitetura Multiciclo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardware/interrupts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Subsistema de Interrupções
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../soc/gpio_controller/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Controlador GPIO
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../soc/uart_controller/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Controlador UART
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Software
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Software
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../software/boot/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Processo de Boot
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../software/linker/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Linker Scripts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Periféricos
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Periféricos
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../soc/vga_controller/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Controlador VGA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulação e Verificação
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Simulação e Verificação
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../simulation.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ambiente de Testes (Cocotb)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fluxo de Síntese (FPGA)
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fluxo de Síntese (FPGA)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-fluxo-de-sintese-e-implementacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Fluxo de Síntese e Implementação
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Fluxo de Síntese e Implementação">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-sintese-logica" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Síntese Lógica
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.1 Síntese Lógica">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#traducao-rtl-para-netlist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tradução RTL para Netlist
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#flags-de-otimizacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flags de Otimização
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-implementacao-place-and-route" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Implementação (Place and Route)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.2 Implementação (Place and Route)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#otimizacao-pre-place-opt_design" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Otimização Pré-Place (opt_design)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#posicionamento-place_design" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Posicionamento (place_design)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#roteamento-route_design" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Roteamento (route_design)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relatorios-de-saida" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relatórios de Saída
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-automacao-via-script-tcl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Automação via Script TCL
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-restricoes-fisicas-e-temporais-constraints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Restrições Físicas e Temporais (Constraints)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Restrições Físicas e Temporais (Constraints)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-ancoragem-fisica-pinsxdc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Ancoragem Física (pins.xdc)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.1 Ancoragem Física (pins.xdc)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mapeamento-porta-pino" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mapeamento Porta → Pino
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#padrao-de-tensao-iostandard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Padrão de Tensão IOSTANDARD
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuracao-de-energia-global" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuração de Energia Global
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-restricoes-de-clock" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Restrições de Clock
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.2 Restrições de Clock">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#proposito-da-declaracao-de-clock" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Propósito da Declaração de Clock
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relacao-fisica" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relação Física
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-programacao-e-upload-na-fpga" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Programação e Upload na FPGA
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Programação e Upload na FPGA">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-configuracao-de-hardware-via-jtag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Configuração de Hardware via JTAG
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.1 Configuração de Hardware via JTAG">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#processo-de-programacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Processo de Programação
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-carga-de-software-via-uart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Carga de Software via UART
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.2 Carga de Software via UART">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#arquitetura-do-protocolo-de-upload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Arquitetura do Protocolo de Upload
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#detalhes-de-implementacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detalhes de Implementação
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-resumo-do-pipeline-completo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Resumo do Pipeline Completo
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Aplicações
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Aplicações
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../apps/protocolo_comunicacao_host_fpga.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Protocolo de Comunicação
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../apps/interface_grafica_educacional_depuracao.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interface Gráfica Educacional e Depuração
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../apps/clientes_inteligencia_artificial.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clientes de Inteligência Artificial
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../apps/pong.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Jogo Pong
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../apps/fractal.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Renderização de Fractal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-fluxo-de-sintese-e-implementacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Fluxo de Síntese e Implementação
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Fluxo de Síntese e Implementação">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-sintese-logica" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Síntese Lógica
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.1 Síntese Lógica">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#traducao-rtl-para-netlist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tradução RTL para Netlist
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#flags-de-otimizacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flags de Otimização
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-implementacao-place-and-route" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Implementação (Place and Route)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.2 Implementação (Place and Route)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#otimizacao-pre-place-opt_design" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Otimização Pré-Place (opt_design)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#posicionamento-place_design" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Posicionamento (place_design)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#roteamento-route_design" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Roteamento (route_design)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relatorios-de-saida" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relatórios de Saída
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-automacao-via-script-tcl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Automação via Script TCL
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-restricoes-fisicas-e-temporais-constraints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Restrições Físicas e Temporais (Constraints)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Restrições Físicas e Temporais (Constraints)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-ancoragem-fisica-pinsxdc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Ancoragem Física (pins.xdc)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.1 Ancoragem Física (pins.xdc)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mapeamento-porta-pino" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mapeamento Porta → Pino
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#padrao-de-tensao-iostandard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Padrão de Tensão IOSTANDARD
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuracao-de-energia-global" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuração de Energia Global
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-restricoes-de-clock" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Restrições de Clock
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.2 Restrições de Clock">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#proposito-da-declaracao-de-clock" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Propósito da Declaração de Clock
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relacao-fisica" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relação Física
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-programacao-e-upload-na-fpga" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Programação e Upload na FPGA
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Programação e Upload na FPGA">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-configuracao-de-hardware-via-jtag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Configuração de Hardware via JTAG
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.1 Configuração de Hardware via JTAG">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#processo-de-programacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Processo de Programação
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-carga-de-software-via-uart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Carga de Software via UART
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.2 Carga de Software via UART">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#arquitetura-do-protocolo-de-upload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Arquitetura do Protocolo de Upload
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#detalhes-de-implementacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detalhes de Implementação
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-resumo-do-pipeline-completo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Resumo do Pipeline Completo
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="fluxo-de-sintese-e-programacao-da-fpga">Fluxo de Síntese e Programação da FPGA</h1>
+<p>Este documento descreve o processo completo de implementação do SoC RISC-V em hardware FPGA, desde a síntese lógica do código VHDL até a transferência do bitstream e carregamento do firmware. O fluxo documentado utiliza a ferramenta Vivado da Xilinx e é orquestrado por scripts TCL automatizados, eliminando a necessidade de interação via interface gráfica.</p>
+<hr />
+<h2 id="1-fluxo-de-sintese-e-implementacao">1. Fluxo de Síntese e Implementação</h2>
+<h3 id="11-sintese-logica">1.1 Síntese Lógica</h3>
+<p>A <strong>síntese lógica</strong> é o processo de traduzir a descrição comportamental do hardware em linguagem VHDL (Register Transfer Level) para uma netlist de componentes genéricos disponíveis na FPGA-alvo. Este processo é realizado pelo comando <code>synth_design</code> no Vivado e transforma estruturas VHDL em primitivas físicas da arquitetura do dispositivo.</p>
+<p>No contexto deste projeto, a síntese é invocada pelo script <code>build.tcl</code> com os seguintes parâmetros críticos:</p>
+<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nv">synth_design</span><span class="w"> </span><span class="o">-</span>top<span class="w"> </span>soc_top<span class="w"> </span><span class="o">-</span>part<span class="w"> </span>xc7a100tcsg324-1<span class="w"> </span><span class="err">\</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">    </span><span class="nv">-generic</span><span class="w"> </span><span class="s2">&quot;INIT_FILE=build/fpga/boot/bootloader.hex&quot;</span><span class="w"> </span><span class="err">\</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="nv">-flatten_hierarchy</span><span class="w"> </span>rebuilt<span class="w"> </span><span class="o">-</span>retiming<span class="w"> </span><span class="o">-</span>quiet
+</span></code></pre></div>
+<p>Esses parâmetros são fundamentais para o projeto: o <code>-part</code> define o dispositivo-alvo da família Artix-7, enquanto <code>-generic "INIT_FILE=..."</code> automatiza a injeção do conteúdo do bootloader no arquivo HEX para a memória ROM (inicialização de BRAM), garantindo que o código de boot esteja presente no bitstream gerado sem necessidade de intervenção manual.</p>
+<h4 id="traducao-rtl-para-netlist">Tradução RTL para Netlist</h4>
+<p>O processo de síntese executa as seguintes transformações:</p>
+<ol>
+<li>
+<p><strong>Análise semântica</strong>: O sintetizador verifica a descrição VHDL, realizando inferência de circuitos combinacionais e sequenciais a partir de expressões booleanas e estruturas <code>process</code>.</p>
+</li>
+<li>
+<p><strong>Mapeamento em primitivas</strong>: Os módulos VHDL são mapeados nas primitivas disponíveis na FPGA Xilinx Artix-7:</p>
+</li>
+<li><strong>LUTs (Look-Up Tables)</strong>: Funções booleanas de até 6 entradas que implementam lógica combinacional</li>
+<li><strong>Flip-Flops (FFs)</strong>: Elementos de armazenamento para lógica sequencial (registradores)</li>
+<li><strong>MUXEs</strong>: Seletores implementados via LUTs ou recursos dedicados</li>
+<li>
+<p><strong>Carry Chains</strong>: Caminhos de propagação rápida para operações aritméticas</p>
+</li>
+<li>
+<p><strong>Inferência de memórias</strong>: O sintetizador reconhece padrões de descrição de memórias (arrays, sinais com índice) e os mapeia em dois tipos distintos de recursos. A <strong>LUTRAM</strong> (RAM distribuída) utiliza as LUTs da malha lógica comum da FPGA, sendo adequada para estruturas pequenas como FIFOs curtas ou registradores de deslocamento com memória. Já a <strong>BRAM</strong> (Block RAM) consiste em blocos de silício dedicados com alta densidade, sendo a escolha ideal para a memória principal, bootloader ou qualquer estrutura que exija grande capacidade de armazenamento.</p>
+</li>
+<li>
+<p><strong>Generic Injection</strong>: O parâmetro <code>-generic "INIT_FILE=..."</code> permite injetar o conteúdo do bootloader em memória ROM (inicialização de BRAM com o arquivo <code>.hex</code>), possibilitando que o código de boot esteja presente no bitstream gerado.</p>
+</li>
+</ol>
+<h4 id="flags-de-otimizacao">Flags de Otimização</h4>
+<p>Conhecer estas flags é útil caso seja necessário ajustar a área consumida ou resolver problemas de temporização (timing) no futuro.</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Função</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-flatten_hierarchy rebuilt</code></td>
+<td>Elimina a hierarquia de módulos, permitindo otimizações cross-boundary entre entidades VHDL</td>
+</tr>
+<tr>
+<td><code>-retiming</code></td>
+<td>Permite o deslocamento de registradores através de lógica combinacional para balancear caminhos críticos</td>
+</tr>
+<tr>
+<td><code>-quiet</code></td>
+<td>Suprime logs detalhados, reduzindo ruído na saída</td>
+</tr>
+</tbody>
+</table>
+<p>O resultado da síntese é uma netlist EDIF que representa a funcionalidade do design em termos de recursos genéricos da FPGA, sem considerar ainda a topologia física do dispositivo.</p>
+<h3 id="12-implementacao-place-and-route">1.2 Implementação (Place and Route)</h3>
+<p>A fase de <strong>Implementação</strong> transforma a netlist genérica em um desenho físico concreto, alocando cada primitiva a uma localização específica no silício da FPGA e criando as conexões físicas entre elas. Esta fase é composta por três etapas sequenciais invocadas no <code>build.tcl</code>:</p>
+<div class="highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nv">opt_design</span><span class="w"> </span><span class="o">-</span>quiet
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nv">place_design</span><span class="w"> </span><span class="o">-</span>quiet
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nv">route_design</span><span class="w"> </span><span class="o">-</span>quiet
+</span></code></pre></div>
+<h4 id="otimizacao-pre-place-opt_design">Otimização Pré-Place (opt_design)</h4>
+<p>O comando <code>opt_design</code> executa otimizações lógicas sobre a netlist sintetizada:</p>
+<ul>
+<li><strong>Colapso de redundância</strong>: Remove lógica combinacional duplicada</li>
+<li><strong>Ressíntese</strong>: Reformula expressões booleanas para reduzir o número de LUTs</li>
+<li><strong>Extração de FSM</strong>: Identifica máquinas de estados e as implementa com otimização de codificação (binary, one-hot, gray)</li>
+<li><strong>Otimização de carry</strong>: Agrupa operações aritméticas em cadeias de carry dedicadas</li>
+</ul>
+<h4 id="posicionamento-place_design">Posicionamento (place_design)</h4>
+<p>O algoritmo de <strong>Place</strong> aloca cada célula lógica (LUT, FF, BRAM, DSP) a uma localização física específica nas fatias (SLICEs) da FPGA. Este posicionamento deve satisfazer:</p>
+<ol>
+<li>
+<p><strong>Restrições de localização</strong>: Pinos de entrada/saída (IOBs) devem ser mapeados nos pinos metálicos definidos no arquivo de constraints</p>
+</li>
+<li>
+<p><strong>Restrições de agrupamento</strong>: Blocos relacionados (como uma FSM e suas saídas) devem ser posicionados próximos para minimizar o comprimento das conexões</p>
+</li>
+<li>
+<p><strong>Otimização de timing</strong>: O algoritmo tenta posicionar células em caminhos críticos mais próximas para reduzir atraso de roteamento</p>
+</li>
+</ol>
+<p>A FPGA Xilinx Artix-7 xc7a100t possui 15.850 slices, cada um contendo 4 LUTs de 6 entradas e 8 flip-flops. O posicionamento é armazenado em um checkpoint (DCP - Design Checkpoint) para permitir iterações.</p>
+<h4 id="roteamento-route_design">Roteamento (route_design)</h4>
+<p>O <strong>Route</strong> cria as conexões físicas entre as células posicionadas utilizando os switches de programação (configurable switch boxes) disponíveis nas matrizes de roteamento da FPGA:</p>
+<ol>
+<li>
+<p><strong>Roteamento global</strong>: Conexões de clock e sinais de alta fan-out usam recursos dedicados (global buffers)</p>
+</li>
+<li>
+<p><strong>Roteamento local</strong>: Sinais comuns utilizam a matriz de roteamento general-purpose, composta por linhas e colunas de metal comutáveis</p>
+</li>
+<li>
+<p><strong>Análise de timing</strong>: Durante o roteamento, o Vivado calcula o atraso de cada conexão (delay) baseado no modelo de atraso RC das linhas de metal</p>
+</li>
+</ol>
+<p>O atraso total de um caminho (path delay) é a soma dos atrasos das células atravessadas mais os atrasos de roteamento. A ferramenta verifica se este atraso satisfaz as restrições temporais definidas no XDC.</p>
+<h4 id="relatorios-de-saida">Relatórios de Saída</h4>
+<p>Após a implementação, o script gera os seguintes relatórios:</p>
+<table>
+<thead>
+<tr>
+<th>Relatório</th>
+<th>Conteúdo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>utilization_route.rpt</code></td>
+<td>Utilização de cada tipo de recurso (LUT, FF, BRAM, DSP, IO)</td>
+</tr>
+<tr>
+<td><code>timing_summary.rpt</code></td>
+<td>Verificação de setup/hold para todos os caminhos; slack de cada domínio de clock</td>
+</tr>
+<tr>
+<td><code>power.rpt</code></td>
+<td>Estimativa de consumo de energia estático e dinâmico</td>
+</tr>
+</tbody>
+</table>
+<h3 id="13-automacao-via-script-tcl">1.3 Automação via Script TCL</h3>
+<p>O script <code>build.tcl</code> implementa um pipeline de build completo que executa sem intervenção manual:</p>
+<div class="highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c"># 1. Configuração do projeto</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">set</span><span class="w"> </span>topEntity<span class="w"> </span><span class="s2">&quot;soc_top&quot;</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">set</span><span class="w"> </span>targetPart<span class="w"> </span><span class="s2">&quot;xc7a100tcsg324-1&quot;</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c"># 2. Leitura de arquivos fonte (VHDL + XDC)</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="nv">read_vhdl</span><span class="w"> </span>.<span class="o">/</span>pkg<span class="o">/*</span>.vhd
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="nv">read_vhdl</span><span class="w"> </span>.<span class="o">/</span>rtl<span class="o">/</span>core<span class="o">/*</span>.vhd
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="nv">read_xdc</span><span class="w"> </span>.<span class="o">/</span>fpga<span class="o">/</span>constraints<span class="o">/</span>pins.xdc
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="c"># 3. Síntese</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="nv">synth_design</span><span class="w"> </span><span class="o">-</span>top<span class="w"> </span><span class="nv">$topEntity</span><span class="w"> </span><span class="o">-</span>part<span class="w"> </span><span class="nv">$targetPart</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="c"># 4. Implementação</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="nv">opt_design</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="nv">place_design</span>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="nv">route_design</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="c"># 5. Geração do bitstream</span>
+</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="nv">write_bitstream</span><span class="w"> </span>.<span class="o">/</span>build<span class="o">/</span>fpga<span class="o">/</span>bitstream<span class="o">/</span>soc_top.bit
+</span></code></pre></div>
+<p>A execução deste script via linha de comando (<code>vivado -mode batch -source build.tcl</code>) produz o bitstream sem abrir a GUI do Vivado. Esta abordagem é essencial para pipelines de integração contínua e reprodutibilidade.</p>
+<hr />
+<h2 id="2-restricoes-fisicas-e-temporais-constraints">2. Restrições Físicas e Temporais (Constraints)</h2>
+<h3 id="21-ancoragem-fisica-pinsxdc">2.1 Ancoragem Física (pins.xdc)</h3>
+<p>O arquivo de constraints <code>pins.xdc</code> (Xilinx Design Constraints) faz a ligação entre a lógica descrita em VHDL e o mundo físico dos pinos metálicos do encapsulamento da FPGA. Cada declaração no XDC especifica o mapeamento de uma porta lógica (definida na entidade VHDL <code>soc_top</code>) a um pino específico do dispositivo.</p>
+<h4 id="mapeamento-porta-pino">Mapeamento Porta → Pino</h4>
+<p>A diretiva <code>PACKAGE_PIN</code> atribui uma porta lógica a um pino físico do encapsulamento:</p>
+<div class="highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>set_property -dict { PACKAGE_PIN E3 IOSTANDARD LVCMOS33 } [get_ports { CLK_i }];
+</span></code></pre></div>
+<p>Esta declaração significa:
+* Porta <code>CLK_i</code> (sinal de clock de entrada) mapeada ao pino E3 do encapsulamento TQG324
+* Pino E3 corresponde ao cristal de 100MHz na placa Nexys 4</p>
+<p>A justificativa para este mapeamento específico reside no hardware da placa de desenvolvimento, onde o cristal oscilador está conectado fisicamente a este pino.</p>
+<h4 id="padrao-de-tensao-iostandard">Padrão de Tensão IOSTANDARD</h4>
+<p>A diretiva <code>IOSTANDARD LVCMOS33</code> define o padrão de tensão para os pinos de entrada/saída:</p>
+<ul>
+<li><strong>LVCMOS33</strong>: Low-Voltage CMOS com tensão de 3.3V</li>
+<li>Este padrão é definido porque:</li>
+<li>A placa Nexys 4 utiliza tensão de alimentação de 3.3V para I/O</li>
+<li>Os transceptores USB-UART (FTDI) operam em 3.3V</li>
+<li>LEDs e chaves pull-up/pull-down da placa são compatíveis com 3.3V</li>
+</ul>
+<p>Utilizar um padrão incompatível resultaria em níveis lógicos incorretos, podendo danificar componentes ou causar falhas de comunicação.</p>
+<h4 id="configuracao-de-energia-global">Configuração de Energia Global</h4>
+<p>O arquivo também define parâmetros globais de configuração:</p>
+<div class="highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>set_property CFGBVS VCCO [current_design]
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>set_property CONFIG_VOLTAGE 3.3 [current_design]
+</span></code></pre></div>
+<p>Estas propriedades configuram o banco de tensão de configuração (Configuration Bank Voltage), determinando que os pinos de configuração operem a 3.3V. A escolha de CFGBVS=VCCO indica que a tensão de configuração segue a tensão VCCO dos bancos de I/O, neste caso 3.3V.</p>
+<h3 id="22-restricoes-de-clock">2.2 Restrições de Clock</h3>
+<p>A definição do clock no XDC é fundamental para a Análise Estática de Temporização (STA - Static Timing Analysis):</p>
+<div class="highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>create_clock -add -name sys_clk_pin -period 10.00 -waveform {0 5} [get_ports { CLK_i }];
+</span></code></pre></div>
+<h4 id="proposito-da-declaracao-de-clock">Propósito da Declaração de Clock</h4>
+<p>A diretiva <code>create_clock</code> comunica ao Vivado que o pino <code>CLK_i</code> é um sinal periódico com período de 10.0 nanossegundos (frequência de 100MHz). Com esta informação, a ferramenta pode:</p>
+<ol>
+<li>
+<p><strong>Calcular atrasos de caminho</strong>: Cada caminho entre registradores tem um atraso máximo permitido definido pelo período do clock</p>
+</li>
+<li>
+<p><strong>Verificar setup (tempo de preparação)</strong>: Para um flip-flop capturar corretamente um dado na próxima borda de clock, o dado deve ser estável por pelo menos <code>T_su</code> (setup time) antes da borda. O Vivado verifica se <code>T_arrival + T_su &lt;= T_period</code></p>
+</li>
+<li>
+<p><strong>Verificar hold (tempo de manutenção)</strong>: O dado deve permanecer estável por pelo menos <code>T_h</code> (hold time) após a borda de clock para garantir captura correta. O Vivado verifica se <code>T_arrival &gt;= T_h</code></p>
+</li>
+<li>
+<p><strong>Determinar domínios de clock</strong>: Sinais assíncronos com clocks diferentes são tratados como domínios de clock separados, e o projetista deve inserir lógica de sincronização (async fifo, two-stage synchronizer) para transferência entre domínios</p>
+</li>
+</ol>
+<h4 id="relacao-fisica">Relação Física</h4>
+<p>Fisicamente, o clock de 100MHz alimenta os flip-flops do design através da rede de clock da FPGA (global buffers BUFG). Sem a declaração <code>create_clock</code>, o Vivado não conseguiria determinar as janelas de tempo válidas para amostragem de dados, e a análise de temporização seria incompleta ou incorreta.</p>
+<p>A violação de setup resulta em metastabilidade, onde o flip-flop pode oscilar entre estados válidos por um tempo indefinido antes de estabilizar, corrompendo o dado registrado.</p>
+<hr />
+<h2 id="3-programacao-e-upload-na-fpga">3. Programação e Upload na FPGA</h2>
+<h3 id="31-configuracao-de-hardware-via-jtag">3.1 Configuração de Hardware via JTAG</h3>
+<p>O protocolo <strong>JTAG</strong> (Joint Test Action Group) é a interface de comunicação que permite ao Vivado transferir o bitstream gerado do computador para a memória de configuração da FPGA. No contexto da placa Nexys 4, essa comunicação ocorre via cabo USB que conecta o FTDI USB-JTAG integrado ao computador.</p>
+<p>O script <code>program.tcl</code> executa esta operação:</p>
+<div class="highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nv">open_hw_manager</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nv">connect_hw_server</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="nv">open_hw_target</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="k">set</span><span class="w"> </span>device<span class="w"> </span><span class="k">[</span><span class="nb">lindex</span><span class="w"> </span><span class="k">[</span><span class="nv">get_hw_devices</span><span class="k">]</span><span class="w"> </span><span class="mi">0</span><span class="k">]</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="nv">current_hw_device</span><span class="w"> </span><span class="nv">$device</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="nv">set_property</span><span class="w"> </span>PROGRAM.FILE<span class="w"> </span>.<span class="o">/</span>build<span class="o">/</span>fpga<span class="o">/</span>bitstream<span class="o">/</span>soc_top.bit<span class="w"> </span><span class="nv">$device</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="nv">program_hw_devices</span><span class="w"> </span><span class="nv">$device</span>
+</span></code></pre></div>
+<h4 id="processo-de-programacao">Processo de Programação</h4>
+<ol>
+<li>
+<p><strong>Conexão</strong>: O Vivado abre o Hardware Manager e conecta ao servidor de hardware local (ou remoto via cable server)</p>
+</li>
+<li>
+<p><strong>Descoberta</strong>: O comando <code>open_hw_target</code> varre a cadeia JTAG e identifica os dispositivos conectados</p>
+</li>
+<li>
+<p><strong>Seleção</strong>: O dispositivo FPGA (xc7a100t) é selecionado como alvo</p>
+</li>
+<li>
+<p><strong>Transferência</strong>: O arquivo <code>.bit</code> (contendo a configuração dos CLBs, BRAMs, IOBs, e rotas) é transferido via JTAG para a memória de configuração da FPGA</p>
+</li>
+<li>
+<p><strong>Inicialização</strong>: A FPGA inicia a execução imediata após a configuração, com o código do bootloader sendo executado a partir da BRAM carregada com o conteúdo de <code>bootloader.hex</code></p>
+</li>
+</ol>
+<h3 id="32-carga-de-software-via-uart">3.2 Carga de Software via UART</h3>
+<p>Após a FPGA estar configurada, o firmware da aplicação usuário deve ser transferido para a RAM do SoC. O script <code>upload.py</code> automatiza este processo utilizando a UART do sistema.</p>
+<h4 id="arquitetura-do-protocolo-de-upload">Arquitetura do Protocolo de Upload</h4>
+<p>O protocolo implementado segue uma sequência de handshake:</p>
+<ol>
+<li>
+<p><strong>Reset de Hardware</strong>: O script ativa o pino RTS (Request To Send) da UART para gerar um reset no SoC:
+   <div class="highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">ser</span><span class="o">.</span><span class="n">rts</span> <span class="o">=</span> <span class="kc">False</span>    <span class="c1"># Ativa linha de reset (ativo baixo)</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">ser</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;</span><span class="se">\xCA\xFE\xBA\xBE</span><span class="s1">&#39;</span><span class="p">)</span>  <span class="c1"># Magic word</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">ser</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;</span><span class="se">\x04</span><span class="s1">&#39;</span><span class="p">)</span>  <span class="c1"># Comando de soft-reset</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">ser</span><span class="o">.</span><span class="n">rts</span> <span class="o">=</span> <span class="kc">True</span>     <span class="c1"># Libera reset</span>
+</span></code></pre></div></p>
+</li>
+<li>
+<p><strong>Aguarda Bootloader</strong>: O SoC, ao inicializar, transmite a string "[BOOT]" via UART indicando que está pronto para receber firmware</p>
+</li>
+<li>
+<p><strong>Handshake</strong>:</p>
+</li>
+<li>Host envia Magic Word <code>0xCAFEBABE</code></li>
+<li>
+<p>Bootloader confirma com <code>!</code></p>
+</li>
+<li>
+<p><strong>Transmissão do Tamanho</strong>:</p>
+</li>
+<li>Host envia tamanho do binário (4 bytes, little-endian)</li>
+<li>
+<p>Formato: <code>struct.pack('&lt;I', file_size)</code></p>
+</li>
+<li>
+<p><strong>Transferência do Binário</strong>:</p>
+</li>
+<li>Dados enviados em blocos de 64 bytes</li>
+<li>
+<p>ACK visual: bootloader envia <code>.</code> a cada 1KB recebido</p>
+</li>
+<li>
+<p><strong>Confirmação</strong>: Bootloader envia <code>&gt;</code> ao final da transmissão bem-sucedida</p>
+</li>
+<li>
+<p><strong>Salto para Aplicação</strong>: O bootloader transfere execução para o endereço <code>0x80000800</code> onde a aplicação foi gravada</p>
+</li>
+</ol>
+<h4 id="detalhes-de-implementacao">Detalhes de Implementação</h4>
+<table>
+<thead>
+<tr>
+<th>Aspecto</th>
+<th>Valor</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Porta padrão</td>
+<td>COM6</td>
+</tr>
+<tr>
+<td>Baud rate</td>
+<td>921600</td>
+</tr>
+<tr>
+<td>Tamanho do bloco</td>
+<td>64 bytes</td>
+</tr>
+<tr>
+<td>Endereço de carregamento</td>
+<td>0x80000800</td>
+</tr>
+<tr>
+<td>Timeout</td>
+<td>2 segundos</td>
+</tr>
+</tbody>
+</table>
+<p>O uso de baud rate alto (921600) reduz o tempo de transferência, e a transferência fragmentada permite feedback visual progressivo durante o upload.</p>
+<hr />
+<h2 id="4-resumo-do-pipeline-completo">4. Resumo do Pipeline Completo</h2>
+<p>O fluxo de implementação pode ser sintetizado na seguinte sequência:</p>
+<div class="highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>Código VHDL (RTL)
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>       ↓
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>[build.tcl] Síntese (synth_design)
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>       ↓
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>Netlist de primitivas (LUT, FF, BRAM)
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>       ↓
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>[build.tcl] Implementação (opt + place + route)
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>       ↓
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>Design posicionado e roteado
+</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>       ↓
+</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>[build.tcl] Geração do bitstream (.bit)
+</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>       ↓
+</span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>[program.tcl] Programação via JTAG
+</span><span id="__span-8-14"><a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>       ↓
+</span><span id="__span-8-15"><a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a>FPGA configurada (bootloader em BRAM)
+</span><span id="__span-8-16"><a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a>       ↓
+</span><span id="__span-8-17"><a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a>[upload.py] Transferência da aplicação via UART
+</span><span id="__span-8-18"><a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a>       ↓
+</span><span id="__span-8-19"><a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a>SoC RISC-V executando aplicação do usuário
+</span></code></pre></div>
+<p>Este pipeline automatizado permite iterações rápidas durante o desenvolvimento, onde cada modificação no código VHDL pode ser sintetizada, programada e testada sem intervenção manual na ferramenta de desenvolvimento.</p>
+
+
+
+
+
+
+
+  
+    
+  
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Last update">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="April 27, 2026 00:27:07 UTC">April 27, 2026 00:27:07</span>
+  </span>
+
+    
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../../soc/vga_controller/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Controlador VGA">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Controlador VGA
+              </div>
+            </div>
+          </a>
+        
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tabs", "navigation.footer", "navigation.tracking", "navigation.top", "toc.follow", "content.code.copy", "content.tabs.link", "search.highlight", "search.suggest", "content.tooltips"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

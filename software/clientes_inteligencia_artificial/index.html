@@ -10,25 +10,27 @@
       
       
       
+        <link rel="canonical" href="https://RISC-V-Azedinha.github.io/RISC-V/software/clientes_inteligencia_artificial/">
+      
       
       
       
         
       
       
-      <link rel="icon" href="/RISC-V/assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
-        <title>RISC-V SOC</title>
+        <title>Pipeline de Inteligência Artificial Host → FPGA - RISC-V SOC</title>
       
     
     
-      <link rel="stylesheet" href="/RISC-V/assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="/RISC-V/assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -47,9 +49,9 @@
       
     
     
-      <link rel="stylesheet" href="/RISC-V/stylesheets/extra.css">
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
     
-    <script>__md_scope=new URL("/RISC-V/",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -73,6 +75,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#pipeline-de-inteligencia-artificial-host-fpga" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -83,7 +90,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="/RISC-V/." title="RISC-V SOC" class="md-header__button md-logo" aria-label="RISC-V SOC" data-md-component="logo">
+    <a href="../.." title="RISC-V SOC" class="md-header__button md-logo" aria-label="RISC-V SOC" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 17H7V7h10m4 4V9h-2V7a2 2 0 0 0-2-2h-2V3h-2v2h-2V3H9v2H7c-1.11 0-2 .89-2 2v2H3v2h2v2H3v2h2v2a2 2 0 0 0 2 2h2v2h2v-2h2v2h2v-2h2a2 2 0 0 0 2-2v-2h2v-2h-2v-2m-6 2h-2v-2h2m2-2H9v6h6z"/></svg>
@@ -103,7 +110,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              
+              Pipeline de Inteligência Artificial Host → FPGA
             
           </span>
         </div>
@@ -204,7 +211,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/RISC-V/." class="md-tabs__link">
+        <a href="../.." class="md-tabs__link">
           
   
   
@@ -224,7 +231,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/RISC-V/hardware/single-cycle/" class="md-tabs__link">
+        <a href="../../hardware/single-cycle/" class="md-tabs__link">
           
   
   
@@ -244,7 +251,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/RISC-V/software/boot/" class="md-tabs__link">
+        <a href="../boot/" class="md-tabs__link">
           
   
   
@@ -264,7 +271,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/RISC-V/soc/vga_controller/" class="md-tabs__link">
+        <a href="../../soc/vga_controller/" class="md-tabs__link">
           
   
   
@@ -284,7 +291,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/RISC-V/dev/simulation.md" class="md-tabs__link">
+        <a href="../../dev/simulation.md" class="md-tabs__link">
           
   
   
@@ -304,7 +311,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/RISC-V/apps/protocolo_comunicacao_host_fpga.md" class="md-tabs__link">
+        <a href="../../apps/protocolo_comunicacao_host_fpga.md" class="md-tabs__link">
           
   
   
@@ -338,7 +345,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="/RISC-V/." title="RISC-V SOC" class="md-nav__button md-logo" aria-label="RISC-V SOC" data-md-component="logo">
+    <a href="../.." title="RISC-V SOC" class="md-nav__button md-logo" aria-label="RISC-V SOC" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 17H7V7h10m4 4V9h-2V7a2 2 0 0 0-2-2h-2V3h-2v2h-2V3H9v2H7c-1.11 0-2 .89-2 2v2H3v2h2v2H3v2h2v2a2 2 0 0 0 2 2h2v2h2v-2h2v2h2v-2h2a2 2 0 0 0 2-2v-2h2v-2h-2v-2m-6 2h-2v-2h2m2-2H9v6h6z"/></svg>
@@ -418,7 +425,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -446,7 +453,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/intro/setup/" class="md-nav__link">
+      <a href="../../intro/setup/" class="md-nav__link">
         
   
   
@@ -474,7 +481,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/intro/quickstart.md" class="md-nav__link">
+      <a href="../../intro/quickstart.md" class="md-nav__link">
         
   
   
@@ -559,7 +566,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/hardware/single-cycle/" class="md-nav__link">
+      <a href="../../hardware/single-cycle/" class="md-nav__link">
         
   
   
@@ -587,7 +594,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/hardware/multi-cycle/" class="md-nav__link">
+      <a href="../../hardware/multi-cycle/" class="md-nav__link">
         
   
   
@@ -615,7 +622,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/hardware/interrupts/" class="md-nav__link">
+      <a href="../../hardware/interrupts/" class="md-nav__link">
         
   
   
@@ -643,7 +650,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/soc/gpio_controller/" class="md-nav__link">
+      <a href="../../soc/gpio_controller/" class="md-nav__link">
         
   
   
@@ -671,7 +678,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/soc/uart_controller/" class="md-nav__link">
+      <a href="../../soc/uart_controller/" class="md-nav__link">
         
   
   
@@ -756,7 +763,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/software/boot/" class="md-nav__link">
+      <a href="../boot/" class="md-nav__link">
         
   
   
@@ -784,7 +791,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/software/linker/" class="md-nav__link">
+      <a href="../linker/" class="md-nav__link">
         
   
   
@@ -869,7 +876,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/soc/vga_controller/" class="md-nav__link">
+      <a href="../../soc/vga_controller/" class="md-nav__link">
         
   
   
@@ -954,7 +961,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/dev/simulation.md" class="md-nav__link">
+      <a href="../../dev/simulation.md" class="md-nav__link">
         
   
   
@@ -982,7 +989,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/dev/fpga_build/" class="md-nav__link">
+      <a href="../../dev/fpga_build/" class="md-nav__link">
         
   
   
@@ -1067,7 +1074,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/apps/protocolo_comunicacao_host_fpga.md" class="md-nav__link">
+      <a href="../../apps/protocolo_comunicacao_host_fpga.md" class="md-nav__link">
         
   
   
@@ -1095,7 +1102,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/apps/interface_grafica_educacional_depuracao.md" class="md-nav__link">
+      <a href="../../apps/interface_grafica_educacional_depuracao.md" class="md-nav__link">
         
   
   
@@ -1123,7 +1130,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/apps/clientes_inteligencia_artificial.md" class="md-nav__link">
+      <a href="../../apps/clientes_inteligencia_artificial.md" class="md-nav__link">
         
   
   
@@ -1151,7 +1158,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/apps/pong.md" class="md-nav__link">
+      <a href="../../apps/pong.md" class="md-nav__link">
         
   
   
@@ -1179,7 +1186,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/RISC-V/apps/fractal.md" class="md-nav__link">
+      <a href="../../apps/fractal.md" class="md-nav__link">
         
   
   
@@ -1224,6 +1231,105 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-diagrama-oficial-do-pipeline-ia-fpga" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Diagrama Oficial do Pipeline IA → FPGA
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Diagrama Oficial do Pipeline IA → FPGA">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#interpretacao-do-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interpretação do Pipeline
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-protocolo-uart-especificacao-formal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Protocolo UART --- Especificação Formal
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Protocolo UART --- Especificação Formal">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-tabela-oficial-de-opcodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Tabela Oficial de Opcodes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-estrutura-geral-do-pacote" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Estrutura Geral do Pacote
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-exemplo-upload-de-pesos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Exemplo --- Upload de Pesos
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-protocolo-de-inferencia" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 Protocolo de Inferência
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -1236,8 +1342,142 @@
               
               <article class="md-content__inner md-typeset">
                 
-  <h1>404 - Not found</h1>
+                  
 
+
+  
+  
+
+
+<h1 id="pipeline-de-inteligencia-artificial-host-fpga">Pipeline de Inteligência Artificial Host → FPGA</h1>
+<p>Esta seção apresenta a especificação formal do fluxo de execução dos
+clientes de Inteligência Artificial, descrevendo o caminho completo
+percorrido pelos dados desde o treinamento do modelo no computador
+hospedeiro até a execução acelerada no SoC RISC-V implementado na FPGA.</p>
+<p>O objetivo é consolidar, de forma arquitetural, como software de alto
+nível e hardware especializado cooperam para executar inferência de IA.</p>
+<hr />
+<h2 id="1-diagrama-oficial-do-pipeline-ia-fpga">1. Diagrama Oficial do Pipeline IA → FPGA</h2>
+<p>O pipeline abaixo representa o fluxo completo implementado pelos
+clientes:</p>
+<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>flowchart LR
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>A[Dataset&lt;br&gt;Iris / MNIST] --&gt; B[Treinamento no Host&lt;br&gt;Scikit-Learn]
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>B --&gt; C[Extração de Pesos e Bias]
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>C --&gt; D[Quantização INT8]
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>D --&gt; E[Serialização em Bytes]
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>E --&gt; F[Empacotamento UART]
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>F --&gt; G[Envio Serial]
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>G --&gt; H[NPU / SoC RISC-V na FPGA]
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>H --&gt; I[Inferência em Hardware]
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>I --&gt; J[Resultados Binários]
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>J --&gt; K[Desserialização]
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>K --&gt; L[Interpretação no Host]
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>L --&gt; M[Predição Final + Métricas]
+</span></code></pre></div>
+<h3 id="interpretacao-do-pipeline">Interpretação do Pipeline</h3>
+<p>Etapa                    Responsável</p>
+<hr />
+<p>Treinamento              Host (CPU)
+  Preparação de dados      Host
+  Execução da inferência   FPGA
+  Validação e métricas     Host</p>
+<p>O hardware atua como um acelerador especializado, enquanto o Host
+executa tarefas de alto nível.</p>
+<hr />
+<h2 id="2-protocolo-uart-especificacao-formal">2. Protocolo UART --- Especificação Formal</h2>
+<p>A comunicação entre Host e FPGA utiliza um protocolo orientado a
+comandos (<em>opcode-based protocol</em>).</p>
+<p>Cada mensagem inicia com um opcode de 1 byte, seguido por parâmetros
+opcionais.</p>
+<h3 id="21-tabela-oficial-de-opcodes">2.1 Tabela Oficial de Opcodes</h3>
+<hr />
+<p>Opcode   ASCII   Direção      Função                    Payload</p>
+<hr />
+<p>0x50     P       Host → FPGA  Sincronização             nenhum</p>
+<p>0x4C     L       Host → FPGA  Upload de pesos           tamanho + dados</p>
+<p>0x43     C       Host → FPGA  Configuração NPU          parâmetros</p>
+<p>0x54     T       Host → FPGA  Configurar tiling         dimensões</p>
+<p>0x49     I       Host → FPGA  Enviar input              vetor de entrada</p>
+<p>0x42     B       Host → FPGA  Executar inferência       flags</p>
+<p>0x4B     K       FPGA → Host  ACK (OK)                  nenhum</p>
+<hr />
+<h3 id="22-estrutura-geral-do-pacote">2.2 Estrutura Geral do Pacote</h3>
+<div class="highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>[OPCODE][TAMANHO][PAYLOAD]
+</span></code></pre></div>
+<ul>
+<li>OPCODE → identifica operação\</li>
+<li>TAMANHO → inteiro de 32 bits (little-endian)\</li>
+<li>PAYLOAD → dados serializados</li>
+</ul>
+<h3 id="23-exemplo-upload-de-pesos">2.3 Exemplo --- Upload de Pesos</h3>
+<div class="highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>[L][SIZE][WEIGHTS...]
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>4C | 00 10 00 00 | &lt;4096 bytes&gt;
+</span></code></pre></div>
+<p>Resposta:</p>
+<div class="highlight"><pre><span></span><code>4B (ACK)
+</code></pre></div>
+<h3 id="24-protocolo-de-inferencia">2.4 Protocolo de Inferência</h3>
+<div class="highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>sequenceDiagram
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>participant Host
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>participant FPGA
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>Host-&gt;&gt;FPGA: P (sync)
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>FPGA--&gt;&gt;Host: P
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>Host-&gt;&gt;FPGA: L + pesos
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>FPGA--&gt;&gt;Host: K
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>Host-&gt;&gt;FPGA: C
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>Host-&gt;&gt;FPGA: T
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>loop Inferência
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>Host-&gt;&gt;FPGA: I + input
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>Host-&gt;&gt;FPGA: B
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>FPGA--&gt;&gt;Host: resultados
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>end
+</span></code></pre></div>
+<hr />
+<div class="admonition note">
+<p class="admonition-title">Edge AI</p>
+<p>Os clientes de IA realizam treinamento no Host, convertem os dados e<br />
+enviam para a FPGA via UART. A FPGA executa a inferência e retorna os<br />
+resultados.</p>
+</div>
+
+
+
+
+
+
+
+  
+    
+  
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Last update">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="May 2, 2026 01:45:06 UTC">May 2, 2026 01:45:06</span>
+  </span>
+
+    
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
               </article>
             </div>
           
@@ -1284,12 +1524,12 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "/RISC-V/", "features": ["navigation.instant", "navigation.tabs", "navigation.footer", "navigation.tracking", "navigation.top", "toc.follow", "content.code.copy", "content.tabs.link", "search.highlight", "search.suggest", "content.tooltips"], "search": "/RISC-V/assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tabs", "navigation.footer", "navigation.tracking", "navigation.top", "toc.follow", "content.code.copy", "content.tabs.link", "search.highlight", "search.suggest", "content.tooltips"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="/RISC-V/assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
-        <script src="/RISC-V/javascripts/mathjax.js"></script>
+        <script src="../../javascripts/mathjax.js"></script>
       
         <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
       

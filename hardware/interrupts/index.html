@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://RISC-V-Azedinha.github.io/RISC-V/hardware/single-cycle/">
+        <link rel="canonical" href="https://RISC-V-Azedinha.github.io/RISC-V/hardware/interrupts/">
       
       
-        <link rel="prev" href="../../intro/setup/">
+        <link rel="prev" href="../multi-cycle/">
       
       
-        <link rel="next" href="../multi-cycle/">
+        <link rel="next" href="../../soc/gpio_controller/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Microarquitetura Monociclo - RISC-V SOC</title>
+        <title>Subsistema de Interrupções - RISC-V SOC</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#microarquitetura-monociclo-single-cycle" class="md-skip">
+        <a href="#subsistema-de-interrupcoes-do-soc-risc-v" class="md-skip">
           Skip to content
         </a>
       
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Microarquitetura Monociclo
+              Subsistema de Interrupções
             
           </span>
         </div>
@@ -237,7 +237,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+        <a href="../single-cycle/" class="md-tabs__link">
           
   
   
@@ -574,37 +574,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Microarquitetura Monociclo
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../single-cycle/" class="md-nav__link">
         
   
   
@@ -620,165 +593,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#1-a-anatomia-da-instrucao" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. A Anatomia da Instrução
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="1. A Anatomia da Instrução">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#11-formatos-de-instrucoes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1.1. Formatos de Instruções
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#2-o-gerador-de-imediatos-immgen" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. O Gerador de Imediatos (ImmGen)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-o-caminho-de-dados-datapath" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. O Caminho de Dados (Datapath)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="3. O Caminho de Dados (Datapath)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#31-banco-de-registradores" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.1. Banco de Registradores
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#32-unidade-logica-e-aritmetica" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.2. Unidade Lógica e Aritmética
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#33-unidade-de-branch" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.3. Unidade de Branch
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#4-a-unidade-de-controle-control-path" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. A Unidade de Controle (Control Path)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="4. A Unidade de Controle (Control Path)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#41-sinais-de-controle" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.1. Sinais de Controle
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#42-operacao-da-alu" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.2. Operação da ALU
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#5-integracao-no-top-level" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Integração no Top-Level
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -816,10 +630,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../interrupts/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Subsistema de Interrupções
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -835,6 +676,215 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-fundamentacao-excecoes-e-interrupcoes-no-risc-v" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Fundamentação: Exceções e Interrupções no RISC-V
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Fundamentação: Exceções e Interrupções no RISC-V">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-tipos-de-interrupcoes-no-machine-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1. Tipos de Interrupções no Machine Mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-mecanica-de-desvio-de-fluxo-trap-entry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2. Mecânica de Desvio de Fluxo (Trap Entry)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-retorno-de-interrupcao-trap-return" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3. Retorno de Interrupção (Trap Return)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-o-controlador-local-clint" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. O Controlador Local (CLINT)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. O Controlador Local (CLINT)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-microarquitetura-do-clint" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1. Microarquitetura do CLINT
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-o-temporizador-de-hardware-mtime-mtimecmp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2. O Temporizador de Hardware (mtime / mtimecmp)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-interrupcao-de-software-msip" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3. Interrupção de Software (MSIP)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-o-controlador-global-plic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. O Controlador Global (PLIC)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. O Controlador Global (PLIC)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-arquitetura-do-plic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1. Arquitetura do PLIC
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-mapa-de-memoria-do-plic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2. Mapa de Memória do PLIC
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-protocolo-claimcomplete-o-ciclo-de-vida-da-interrupcao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3. Protocolo Claim/Complete (O Ciclo de Vida da Interrupção)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-integracao-hardwaresoftware" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Integração Hardware/Software
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Integração Hardware/Software">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-construcao-dinamica-do-vetor-mip" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1. Construção Dinâmica do Vetor MIP
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-o-central-trap-handler-software" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2. O Central Trap Handler (Software)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1438,22 +1488,44 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-a-anatomia-da-instrucao" class="md-nav__link">
+  <a href="#1-fundamentacao-excecoes-e-interrupcoes-no-risc-v" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. A Anatomia da Instrução
+        1. Fundamentação: Exceções e Interrupções no RISC-V
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="1. A Anatomia da Instrução">
+    <nav class="md-nav" aria-label="1. Fundamentação: Exceções e Interrupções no RISC-V">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#11-formatos-de-instrucoes" class="md-nav__link">
+  <a href="#11-tipos-de-interrupcoes-no-machine-mode" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1.1. Formatos de Instruções
+        1.1. Tipos de Interrupções no Machine Mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-mecanica-de-desvio-de-fluxo-trap-entry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2. Mecânica de Desvio de Fluxo (Trap Entry)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-retorno-de-interrupcao-trap-return" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3. Retorno de Interrupção (Trap Return)
       
     </span>
   </a>
@@ -1466,33 +1538,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-o-gerador-de-imediatos-immgen" class="md-nav__link">
+  <a href="#2-o-controlador-local-clint" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. O Gerador de Imediatos (ImmGen)
+        2. O Controlador Local (CLINT)
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-o-caminho-de-dados-datapath" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. O Caminho de Dados (Datapath)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="3. O Caminho de Dados (Datapath)">
+    <nav class="md-nav" aria-label="2. O Controlador Local (CLINT)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#31-banco-de-registradores" class="md-nav__link">
+  <a href="#21-microarquitetura-do-clint" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.1. Banco de Registradores
+        2.1. Microarquitetura do CLINT
       
     </span>
   </a>
@@ -1500,10 +1561,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#32-unidade-logica-e-aritmetica" class="md-nav__link">
+  <a href="#22-o-temporizador-de-hardware-mtime-mtimecmp" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.2. Unidade Lógica e Aritmética
+        2.2. O Temporizador de Hardware (mtime / mtimecmp)
       
     </span>
   </a>
@@ -1511,10 +1572,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#33-unidade-de-branch" class="md-nav__link">
+  <a href="#23-interrupcao-de-software-msip" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.3. Unidade de Branch
+        2.3. Interrupção de Software (MSIP)
       
     </span>
   </a>
@@ -1527,22 +1588,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-a-unidade-de-controle-control-path" class="md-nav__link">
+  <a href="#3-o-controlador-global-plic" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. A Unidade de Controle (Control Path)
+        3. O Controlador Global (PLIC)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="4. A Unidade de Controle (Control Path)">
+    <nav class="md-nav" aria-label="3. O Controlador Global (PLIC)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#41-sinais-de-controle" class="md-nav__link">
+  <a href="#31-arquitetura-do-plic" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4.1. Sinais de Controle
+        3.1. Arquitetura do PLIC
       
     </span>
   </a>
@@ -1550,10 +1611,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#42-operacao-da-alu" class="md-nav__link">
+  <a href="#32-mapa-de-memoria-do-plic" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4.2. Operação da ALU
+        3.2. Mapa de Memória do PLIC
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-protocolo-claimcomplete-o-ciclo-de-vida-da-interrupcao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3. Protocolo Claim/Complete (O Ciclo de Vida da Interrupção)
       
     </span>
   </a>
@@ -1566,13 +1638,41 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#5-integracao-no-top-level" class="md-nav__link">
+  <a href="#4-integracao-hardwaresoftware" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. Integração no Top-Level
+        4. Integração Hardware/Software
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="4. Integração Hardware/Software">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-construcao-dinamica-do-vetor-mip" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1. Construção Dinâmica do Vetor MIP
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-o-central-trap-handler-software" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2. O Central Trap Handler (Software)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1596,439 +1696,206 @@
   
 
 
-<h1 id="microarquitetura-monociclo-single-cycle">Microarquitetura Monociclo (Single-Cycle)</h1>
-<p>A microarquitetura de ciclo único (<em>Single-Cycle</em>) é a implementação mais direta e fundamental do processador RISC-V. O seu princípio de funcionamento é simples: <strong>cada instrução é buscada, decodificada e totalmente executada em um único pulso de relógio</strong>.</p>
-<p>Embora não seja a abordagem mais eficiente em termos de frequência máxima (devido ao longo caminho crítico), é a base pedagógica perfeita para compreender a interação entre as instruções da ISA RV32I e o hardware digital.</p>
-<h2 id="1-a-anatomia-da-instrucao">1. A Anatomia da Instrução</h2>
-<p>O núcleo RISC-V (RV32I) processa instruções de 32 bits. Para simplificar a decodificação em hardware, os campos da instrução possuem posições fixas ou altamente regulares. Uma instrução típica de 32 bits é fatiada da seguinte forma:</p>
+<h1 id="subsistema-de-interrupcoes-do-soc-risc-v">Subsistema de Interrupções do SoC RISC-V</h1>
+<p>O subsistema de interrupções é um dos componentes mais críticos para a operação de um processador RISC-V. Ele permite que eventos assíncronos — originados de periféricos externos ou mecanismos internos — interrompam o fluxo normal de execução do programa, forçando o núcleo a tratar esses eventos de forma determinística. Este documento detalha a arquitetura de interrupções do SoC, desde os conceitos fundamentais até a integração entre hardware e software.</p>
+<h2 id="1-fundamentacao-excecoes-e-interrupcoes-no-risc-v">1. Fundamentação: Exceções e Interrupções no RISC-V</h2>
+<p>Na especificação RISC-V, o termo <strong>"trap"</strong> (armadilha) é usado como denominação genérica para representar qualquer evento que altere o fluxo normal de execução. O trap engloba duas categorias principais:</p>
+<ul>
+<li><strong>Exceção:</strong> Evento síncrono causado pela própria instrução que está sendo executada (ex: divisão por zero, acesso à memória não alinhado, instrução ilegal).</li>
+<li><strong>Interrupção:</strong> Evento assíncrono causado por fontes externas ao processador (ex: timer, periféricos), que não tem relação direta com a instrução em execução.</li>
+</ul>
+<h3 id="11-tipos-de-interrupcoes-no-machine-mode">1.1. Tipos de Interrupções no Machine Mode</h3>
+<p>O RISC-V define três categorias principais de interrupções no modo de máquina (M-Mode), cada uma com uma finalidade específica:</p>
 <table>
 <thead>
 <tr>
-<th>Campo</th>
-<th>Bits</th>
+<th>Tipo</th>
+<th>Código MCAUSE</th>
+<th>Descrição</th>
+<th>Fonte</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Software</strong></td>
+<td>3 (0x3)</td>
+<td>Interrupção de software</td>
+<td>CLINT (MSIP)</td>
+</tr>
+<tr>
+<td><strong>Timer</strong></td>
+<td>7 (0x7)</td>
+<td>Interrupção de temporizador</td>
+<td>CLINT (MTIP)</td>
+</tr>
+<tr>
+<td><strong>External</strong></td>
+<td>11 (0xB)</td>
+<td>Interrupção externa</td>
+<td>PLIC (periféricos)</td>
+</tr>
+</tbody>
+</table>
+<p>Cada tipo de interrupção possui um bit dedicado no registrador <strong>MIP</strong> (<em>Machine Interrupt Pending</em>) e um bit correspondente em <strong>MIE</strong> (<em>Machine Interrupt Enable</em>) para habilitação individual.</p>
+<h3 id="12-mecanica-de-desvio-de-fluxo-trap-entry">1.2. Mecânica de Desvio de Fluxo (Trap Entry)</h3>
+<p>Quando o hardware aceita uma interrupção, ele executa automaticamente uma sequência de ações determinísticas, sem a intervenção do software:</p>
+<ol>
+<li><strong>Salvamento do PC de retorno:</strong> O endereço da instrução que seria executada a seguir é salvo no registrador <strong>MEPC</strong> (<em>Machine Exception Program Counter</em>). Para interrupções, este é o endereço da próxima instrução sequencial.</li>
+<li><strong>Registro da causa:</strong> O registrador <strong>MCAUSE</strong> (<em>Machine Cause</em>) é atualizado com um valor codificado que identifica o tipo de evento. O bit mais significativo indica se é uma interrupção (1) ou exceção (0), e os bits inferiores contêm o código específico.</li>
+<li><strong>Desabilitação global:</strong> O bit <strong>MIE</strong> (<em>Machine Interrupt Enable</em>) em <strong>MSTATUS</strong> é automaticamente zerado, impedindo que outras interrupções ocorram (aninhamento) durante o tratamento inicial.</li>
+<li><strong>Desvio para o vetor:</strong> O contador de programa (PC) é carregado com o valor de <strong>MTVEC</strong> (<em>Machine Trap Vector</em>), que contém o endereço base da rotina de tratamento de interrupções.</li>
+</ol>
+<p>Esta sequência é implementada diretamente no hardware pelo módulo <code>csr_file.vhd</code>, garantindo que o salvamento de contexto seja atômico e seguro.</p>
+<h3 id="13-retorno-de-interrupcao-trap-return">1.3. Retorno de Interrupção (Trap Return)</h3>
+<p>A instrução <strong>MRET</strong> (<em>Machine Return</em>) é usada para sair da rotina de tratamento e restaurar o fluxo normal de execução. Ao ser decodificada, o hardware executa:</p>
+<ol>
+<li>Restaura o valor de <strong>MIE</strong> a partir de <strong>MPIE</strong> (<em>Machine Previous Interrupt Enable</em>).</li>
+<li>Copia o conteúdo de <strong>MEPC</strong> para o PC, retornando para a instrução seguinte à interrupção.</li>
+<li>Restaura o nível de privilégio anterior do processador.</li>
+</ol>
+<hr />
+<h2 id="2-o-controlador-local-clint">2. O Controlador Local (CLINT)</h2>
+<p>O <strong>CLINT</strong> (<em>Core Local Interruptor</em>) é um periférico integrado que gerencia interrupções de baixa latência e de altíssimo determinismo: as interrupções de timer e software. Ele é implementado em <code>rtl/soc/clint.vhd</code> e possui conexão direta com o núcleo.</p>
+<h3 id="21-microarquitetura-do-clint">2.1. Microarquitetura do CLINT</h3>
+<p>O CLINT é mapeado em memória e expõe quatro registradores principais através de uma interface de barramento (MMIO):</p>
+<table>
+<thead>
+<tr>
+<th>Endereço</th>
+<th>Registrador</th>
 <th>Descrição</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong><code>opcode</code></strong></td>
-<td><code>[6:0]</code></td>
-<td>Indica a categoria ou formato da instrução (ex: R-Type, I-Type, Load, Store). É o sinal vital para a Unidade de Controle.</td>
+<td>0x00</td>
+<td><strong>MSIP</strong></td>
+<td>Machine Software Interrupt Pending (1 bit)</td>
 </tr>
 <tr>
-<td><strong><code>rd</code></strong></td>
-<td><code>[11:7]</code></td>
-<td>Endereço do registrador de destino (<em>Destination</em>), onde o resultado da operação será guardado.</td>
+<td>0x08</td>
+<td><strong>MTIMECMP</strong> (LOW)</td>
+<td>Parte baixa do comparador de timer</td>
 </tr>
 <tr>
-<td><strong><code>funct3</code></strong></td>
-<td><code>[14:12]</code></td>
-<td>Subcódigo de operação (3 bits) utilizado para diferenciar operações dentro do mesmo <code>opcode</code> (ex: distinguir <code>ADD</code> de <code>SUB</code>, ou tipos de saltos condicionais).</td>
+<td>0x0C</td>
+<td><strong>MTIMECMP</strong> (HIGH)</td>
+<td>Parte alta do comparador de timer</td>
 </tr>
 <tr>
-<td><strong><code>rs1</code></strong></td>
-<td><code>[19:15]</code></td>
-<td>Endereço do registrador de origem 1 (<em>Source 1</em>).</td>
+<td>0x10</td>
+<td><strong>MTIME</strong> (LOW)</td>
+<td>Parte baixa do contador de tempo</td>
 </tr>
 <tr>
-<td><strong><code>rs2</code></strong></td>
-<td><code>[24:20]</code></td>
-<td>Endereço do registrador de origem 2 (<em>Source 2</em>).</td>
-</tr>
-<tr>
-<td><strong><code>funct7</code></strong></td>
-<td><code>[31:25]</code></td>
-<td>Subcódigo adicional (7 bits) usado em instruções do tipo R para especificar ainda mais a operação.</td>
+<td>0x14</td>
+<td><strong>MTIME</strong> (HIGH)</td>
+<td>Parte alta do contador de tempo</td>
 </tr>
 </tbody>
 </table>
-<h3 id="11-formatos-de-instrucoes">1.1. Formatos de Instruções</h3>
-<p>Para acomodar diferentes necessidades (operações matemáticas, acessos à memória e saltos), as instruções são divididas em 6 formatos básicos:</p>
+<h3 id="22-o-temporizador-de-hardware-mtime-mtimecmp">2.2. O Temporizador de Hardware (mtime / mtimecmp)</h3>
+<p>O CLINT implementa um contador de tempo de 64 bits chamado <strong>MTIME</strong> que incrementa continuamente enquanto o processador está ativo. Este valor é comparado com o registrador <strong>MTIMECMP</strong> (também de 64 bits):</p>
+<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1">-- Timer Interrupt: dispara quando mtime &gt;= mtimecmp</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">irq_timer_o</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="sc">&#39;1&#39;</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="p">(</span><span class="n">r_mtime</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">r_mtimecmp</span><span class="p">)</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="sc">&#39;0&#39;</span><span class="p">;</span>
+</span></code></pre></div>
+<p>Quando <code>MTIME &gt;= MTIMECMP</code>, a linha <strong>MTIP</strong> (<em>Machine Timer Interrupt Pending</em>) é ativada. O software tipicamente configura o <code>MTIMECMP</code> para gerar interrupções periódicas (ex: <em>ticks</em> de um sistema operacional).</p>
+<blockquote>
+<p><strong>Nota sobre o Determinismo do Timer:</strong> Por ser um contador que incrementa linearmente junto com o clock do sistema, o timer oferece comportamento previsível. O momento exato da interrupção pode ser calculado matematicamente: <code>(MTIMECMP - MTIME_atual) / freq_clock</code>.</p>
+</blockquote>
+<h3 id="23-interrupcao-de-software-msip">2.3. Interrupção de Software (MSIP)</h3>
+<p>O registrador <strong>MSIP</strong> é um bit único que pode ser escrito via software para gerar uma interrupção local. O uso típico inclui:</p>
 <ul>
-<li>
-<p><strong>Tipo-R (Register):</strong> Usado para operações aritméticas e lógicas onde todos os operandos são registradores (ex: <code>ADD</code>, <code>SUB</code>, <code>AND</code>).</p>
-</li>
-<li>
-<p><strong>Tipo-I (Immediate):</strong> Usado para operações com imediatos curtos (12 bits), instruções de Load (leitura de memória) e o salto <code>JALR</code>.</p>
-</li>
-<li>
-<p><strong>Tipo-S (Store):</strong> Usado exclusivamente para escrever na memória (ex: <code>SW</code>, <code>SB</code>). O imediato de 12 bits é dividido em duas partes para manter <code>rs1</code> e <code>rs2</code> em seus lugares fixos.</p>
-</li>
-<li>
-<p><strong>Tipo-B (Branch):</strong> Usado para saltos condicionais (<code>BEQ</code>, <code>BNE</code>). Muito semelhante ao Tipo-S, mas o imediato codifica múltiplos de 2 (visto que as instruções são alinhadas na memória).</p>
-</li>
-<li>
-<p><strong>Tipo-U (Upper Immediate):</strong> Usado para carregar imediatos longos (20 bits) nos bits mais significativos de um registrador (<code>LUI</code>, <code>AUIPC</code>).</p>
-</li>
-<li>
-<p><strong>Tipo-J (Jump):</strong> Usado para saltos incondicionais longos (<code>JAL</code>).</p>
-</li>
+<li><strong>Comunicação inter-processos (IPC)</strong> ou sinalização.</li>
+<li><strong>Delegação de tarefas</strong>, onde uma interrupção de hardware rápida agenda um trabalho de software de menor prioridade.</li>
 </ul>
-<p><img alt="Formatos de Instruções" class="hero-img" src="../../assets/instruction_format.png" /></p>
-<h2 id="2-o-gerador-de-imediatos-immgen">2. O Gerador de Imediatos (ImmGen)</h2>
-<p>Ao olhar para os formatos acima, você pode notar que os imediatos (valores constantes embutidos na instrução) nos formatos S, B e J parecem estar "embaralhados". Isso não é um erro; é uma escolha de design intencional.</p>
-<div class="admonition info">
-<p class="admonition-title">Por que embaralhar os bits?</p>
-<p>Se o RISC-V mantivesse o imediato contínuo no formato S, os bits referentes ao registrador <code>rs2</code> teriam que mudar de lugar. Ao manter <code>rs1</code> e <code>rs2</code> fixos, o hardware pode começar a ler os registradores do Register File no exato instante em que a instrução chega, sem ter que esperar a Unidade de Controle descobrir qual é o formato da instrução. Isso economiza tempo precioso de hardware!</p>
-</div>
-<p>O ImmGen (Gerador de Imediatos) é o componente de hardware responsável por desembaralhar esses bits e reconstruir o número original de 32 bits. Ele faz isso em duas etapas:</p>
-<ol>
-<li>
-<p><strong>Extração e Reconstrução:</strong> Lendo o <code>opcode</code>, o ImmGen sabe qual é o formato da instrução e reconecta os fios (bits) na ordem correta.</p>
-</li>
-<li>
-<p><strong>Extensão de Sinal:</strong> Como a maioria das operações precisa de 32 bits, o ImmGen copia o bit mais significativo do imediato original (que sempre fica no bit 31 da instrução) para preencher os bits restantes à esquerda, preservando o sinal (positivo ou negativo) em complemento de 2.</p>
-</li>
-</ol>
-<h2 id="3-o-caminho-de-dados-datapath">3. O Caminho de Dados (Datapath)</h2>
-<p>O Datapath é o "músculo" do processador. É o circuito de potência responsável por rotear os dados, realizar os cálculos e interagir com a memória. Em um processador monociclo, o fluxo de dados atravessa cinco fases lógicas sequenciais dentro do mesmo pulso de clock:</p>
-<p><img alt="Single-Cycle Datapath" class="hero-img" src="../../assets/single_cycle_datapath.png" /></p>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:5"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><input id="__tabbed_1_4" name="__tabbed_1" type="radio" /><input id="__tabbed_1_5" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Fetch (Busca)</label><label for="__tabbed_1_2">Decode (Decodificação)</label><label for="__tabbed_1_3">Execute (Execução)</label><label for="__tabbed_1_4">Memory (Acesso à Memória)</label><label for="__tabbed_1_5">Write-Back (Escrita)</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<p>O endereço atual da instrução, armazenado no <strong>Program Counter (PC)</strong>, é enviado para a Memória de Instruções (IMEM). A memória retorna a instrução de 32 bits a ser executada. Ao mesmo tempo, um somador paralelo calcula <code>PC + 4</code> para apontar para a próxima instrução sequencial.</p>
-</div>
-<div class="tabbed-block">
-<p>A instrução é fatiada. Os campos <code>rs1</code> e <code>rs2</code> são enviados ao <strong>Register File</strong> (Banco de Registradores) para ler os operandos. Simultaneamente, o <strong>Gerador de Imediatos (ImmGen)</strong> extrai e estende o sinal de qualquer valor imediato embutido na instrução, formatando-o para 32 bits.</p>
-</div>
-<div class="tabbed-block">
-<p>A <strong>Unidade Lógica e Aritmética (ALU)</strong> entra em ação. Dependendo da instrução, ela pode calcular operações matemáticas (soma, subtração, lógica AND/OR), calcular endereços de memória para operações de <em>Load/Store</em>, ou realizar comparações para instruções de desvio (Branch).</p>
-</div>
-<div class="tabbed-block">
-<p>Se a instrução for um <code>Load</code> ou <code>Store</code>, o resultado gerado pela ALU é utilizado como endereço para acessar a <strong>Memória de Dados (DMEM)</strong>. Dados são lidos ou escritos neste estágio. Para outras instruções, esta fase é ignorada.</p>
-</div>
-<div class="tabbed-block">
-<p>O resultado final — seja proveniente da ALU, da Memória de Dados ou do cálculo de um salto — é roteado de volta e escrito no registrador de destino (<code>rd</code>) dentro do Register File.</p>
-</div>
-</div>
-</div>
-<div class="admonition tip">
-<p class="admonition-title">Tempo de Propagação</p>
-<p>Na arquitetura monociclo (<em>single-cycle</em>), toda instrução deve atravessar o <em>datapath</em> completo dentro de um único ciclo de clock. Assim, o período mínimo de clock é determinado pelo maior tempo de propagação combinacional ao longo do circuito — o chamado <strong>caminho crítico</strong>. Consequentemente, a frequência máxima do processador fica limitada por esse atraso. Mais adiante será discutido o uso de <em>pipeline</em>, que divide o <em>datapath</em> em estágios menores para reduzir o comprimento do caminho crítico e permitir frequências de operação mais altas.</p>
-</div>
-<h3 id="31-banco-de-registradores">3.1. Banco de Registradores</h3>
-<p>O banco de registradores (Register File) é a estrutura de memória interna mais rápida do processador, composto por 32 registradores de 32 bits, definidos em hardware através do tipo <code>t_reg_array</code>. A sua implementação técnica divide-se em abordagens distintas para leitura e escrita:</p>
-<ul>
-<li><strong>Leitura Assíncrona:</strong> O módulo possui duas portas de leitura independentes (<code>rs1</code> e <code>rs2</code>) que funcionam de forma puramente combinacional. Assim que os endereços <code>ReadAddr1_i</code> ou <code>ReadAddr2_i</code> são alterados, os dados correspondentes surgem quase instantaneamente nas saídas <code>ReadData1_o</code> e <code>ReadData2_o</code>, sem aguardar pelo pulso de clock.</li>
-<li><strong>Escrita Síncrona:</strong> Diferente da leitura, a atualização de um registrador exige sincronização. A escrita apenas ocorre na transição positiva do sinal de clock (<code>rising_edge(clk_i)</code>), e exclusivamente se o sinal de controle <code>RegWrite_i</code> estiver ativo (<code>'1'</code>).</li>
-<li><strong>Proteção de Hardware do Registro <code>x0</code>:</strong> A convenção da arquitetura RISC-V dita que o registrador <code>x0</code> deve conter sempre o valor constante zero. O hardware garante esta regra forçando a saída <code>x"00000000"</code> sempre que o endereço de leitura for <code>"00000"</code>. Paralelamente, no processo de escrita, existe uma barreira lógica (<code>WriteAddr_i /= "00000"</code>) que ignora silenciosamente qualquer tentativa de alteração do registrador zero.</li>
-</ul>
-<h3 id="32-unidade-logica-e-aritmetica">3.2. Unidade Lógica e Aritmética</h3>
-<p>A Unidade Lógica e Aritmética (ULA, ou ALU em inglês) é o motor computacional do processador, operando em conjunto com o seu controlador dedicado.</p>
-<ul>
-<li>
-<p><strong>O Controlador da ULA (<code>alu_control</code>):</strong> a Unidade de Controle Principal delega a decisão exata da operação matemática ao <code>alu_control</code>. Este módulo secundário avalia o sinal <code>ALUOp_i</code> de 2 bits (que indica a categoria da instrução) cruzando-o com os campos <code>Funct3_i</code> e <code>Funct7_i</code>. O resultado é a geração de um sinal de controle otimizado de 4 bits (<code>ALUControl_o</code>). Por exemplo, para operações R-Type (<code>ALUOp_i = "10"</code>), o módulo verifica o bit 5 do <code>Funct7_i</code> para alternar entre uma soma e uma subtração, ou entre deslocamentos lógicos e aritméticos.</p>
-</li>
-<li>
-<p><strong>A Unidade de Execução (<code>alu</code>):</strong> o módulo <code>alu.vhd</code> é um bloco puramente combinacional que reage imediatamente a qualquer mudança nos operandos <code>A_i</code>, <code>B_i</code> ou no comando <code>ALUControl_i</code>. Suporta um vasto leque de operações, incluindo:</p>
-<ul>
-<li><strong>Aritméticas:</strong> Soma e subtração nativas (com tratamento de sinais).</li>
-<li><strong>Comparações:</strong> Avaliações de "menor que" com e sem sinal (SLT e SLTU).</li>
-<li><strong>Lógicas:</strong> Operações bit-a-bit XOR, OR e AND.</li>
-<li><strong>Deslocamentos (Shifts):</strong> Deslocamentos à esquerda (SLL), à direita lógicos (SRL) e à direita aritméticos (SRA).</li>
-</ul>
-</li>
-</ul>
-<div class="admonition note">
-<p class="admonition-title">Flag Zero</p>
-<p>A par do resultado de 32 bits, a ALU gera continuamente uma flag fundamental: o sinal <code>Zero_o</code>. Esta flag assume o valor <code>'1'</code> estritamente quando o resultado numérico de toda a operação de 32 bits for igual a zero (<code>x"00000000"</code>).</p>
-</div>
+<p>A escrita no bit 0 do MSIP (endereço 0x00) aciona o sinal, e o próprio software tratador deve limpar este bit ao final do processamento para baixar a linha de interrupção.</p>
 <hr />
-<h3 id="33-unidade-de-branch">3.3. Unidade de Branch</h3>
-<p>Em muitas arquiteturas clássicas, o cálculo do desvio condicional é fundido na Unidade de Controle Principal. No entanto, este núcleo RISC-V foi desenhado isolando esta responsabilidade na <code>branch_unit</code>, tornando o código mais modular e coeso.</p>
-<p>Para decidir se o processador deve saltar para um novo endereço de memória, a <code>branch_unit</code> correlaciona três sinais de entrada: o sinal que confirma que a instrução é um desvio (<code>Branch_i</code>), a flag matemática gerada pela ULA (<code>ALU_Zero_i</code>) e o campo <code>Funct3_i</code> que dita a regra de salto. </p>
-<p>Com base nisto, a unidade emite o sinal <code>BranchTaken_o</code>:</p>
-<ul>
-<li><strong>BEQ (Branch if Equal):</strong> Requer que os operandos sejam iguais (A - B = 0). O desvio é tomado se <code>ALU_Zero_i = '1'</code>.</li>
-<li><strong>BNE (Branch if Not Equal):</strong> O desvio avança se a subtração gerar um valor diferente de zero (<code>ALU_Zero_i = '0'</code>).</li>
-<li><strong>Outras avaliações:</strong> O módulo aplica lógicas análogas para <code>BLT</code>, <code>BGE</code>, <code>BLTU</code> e <code>BGEU</code>, combinando a flag zero resultante de operações <code>SLT</code>/<code>SLTU</code> executadas pela ALU.</li>
-</ul>
-<h2 id="4-a-unidade-de-controle-control-path">4. A Unidade de Controle (Control Path)</h2>
-<p>Se o Datapath é o músculo, a Unidade de Controle é o cérebro. O seu papel é observar o <code>opcode</code>, o <code>funct3</code> e o <code>funct7</code> da instrução e <strong>emitir os sinais de comando</strong> que configuram os multiplexadores, habilitam as memórias e dizem à ALU o que fazer.</p>
-<p>Em vez de declarar dezenas de sinais soltos, o nosso projeto em VHDL utiliza uma abordagem estruturada e elegante através de um <code>record</code> VHDL (<code>t_control</code>). O pacote <code>s_ctrl</code> encapsula todos os sinais diretivos:</p>
-<ul>
-<li>
-<p><code>Branch</code> / <code>Jump</code>: Determinam se o próximo PC será <code>PC+4</code> ou um endereço de salto calculado pela ALU.</p>
-</li>
-<li>
-<p><code>MemRead</code> / <code>MemWrite</code>: Habilitam a leitura ou escrita na Memória de Dados.</p>
-</li>
-<li>
-<p><code>ALUSrc</code>: Um seletor de multiplexador que decide se a ALU vai operar com o registrador <code>rs2</code> ou com um Imediato estendido.</p>
-</li>
-<li>
-<p><code>RegWrite</code>: Habilita a gravação do resultado final no Register File.</p>
-</li>
-<li>
-<p><code>ResultSrc</code>: Decide qual dado vai para a fase de Write-Back (resultado da ALU, dado da memória, ou <code>PC+4</code>).</p>
-</li>
-</ul>
-<div class="admonition info">
-<p class="admonition-title">ALU Control</p>
-<p>A Unidade de Controle é frequentemente dividida em duas. A Unidade Principal (Main Control) lê o <code>opcode</code> e emite um sinal genérico chamado <code>ALUOp</code>. Um decodificador secundário (ALU Control) cruza esse <code>ALUOp</code> com o <code>funct3</code> e <code>funct7</code> para gerar o sinal de seleção final da operação da ALU, otimizando o tamanho do hardware gerado.</p>
-</div>
-<h3 id="41-sinais-de-controle">4.1. Sinais de Controle</h3>
-<table>
-<thead>
-<tr>
-<th>Instrução</th>
-<th><code>Opcode</code></th>
-<th><code>RegWrite</code></th>
-<th><code>ALUSrc</code></th>
-<th><code>MemtoReg</code></th>
-<th><code>MemRead</code></th>
-<th><code>MemWrite</code></th>
-<th><code>Branch</code></th>
-<th><code>Jump</code></th>
-<th><code>ALUOp</code></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>R-TYPE</code> (<strong>add</strong>, <strong>sub</strong>)</td>
-<td><code>0110011</code></td>
-<td>1</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td><code>10</code></td>
-</tr>
-<tr>
-<td><code>LOAD</code> (<strong>lw</strong>)</td>
-<td><code>0000011</code></td>
-<td>1</td>
-<td>1</td>
-<td>1</td>
-<td>1</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td><code>00</code></td>
-</tr>
-<tr>
-<td><code>STORE</code> (<strong>sw</strong>)</td>
-<td><code>0100011</code></td>
-<td>0</td>
-<td>1</td>
-<td>X</td>
-<td>0</td>
-<td>1</td>
-<td>0</td>
-<td>0</td>
-<td><code>00</code></td>
-</tr>
-<tr>
-<td><code>BRANCH</code> (<strong>beq</strong>)</td>
-<td><code>1100011</code></td>
-<td>0</td>
-<td>0</td>
-<td>X</td>
-<td>0</td>
-<td>0</td>
-<td>1</td>
-<td>0</td>
-<td><code>01</code></td>
-</tr>
-<tr>
-<td><code>I-TYPE</code> (<strong>addi</strong>)</td>
-<td><code>0010011</code></td>
-<td>1</td>
-<td>1</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td><code>00</code></td>
-</tr>
-<tr>
-<td><code>JAL</code> (<strong>jal</strong>)</td>
-<td><code>1101111</code></td>
-<td>1</td>
-<td>X</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>1</td>
-<td><code>XX</code></td>
-</tr>
-<tr>
-<td><code>JALR</code> (<strong>jalr</strong>)</td>
-<td><code>1100111</code></td>
-<td>1</td>
-<td>1</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>1</td>
-<td><code>00</code></td>
-</tr>
-<tr>
-<td><code>LUI</code> (<strong>lui</strong>)</td>
-<td><code>0110111</code></td>
-<td>1</td>
-<td>1</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td><code>00</code></td>
-</tr>
-<tr>
-<td><code>AUIPC</code> (<strong>auipc</strong>)</td>
-<td><code>0010111</code></td>
-<td>1</td>
-<td>1</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td><code>00</code></td>
-</tr>
-</tbody>
-</table>
-<h3 id="42-operacao-da-alu">4.2. Operação da ALU</h3>
-<table>
-<thead>
-<tr>
-<th><code>ALUOp_i</code> (Entrada)</th>
-<th><code>funct7</code> (Entrada)</th>
-<th><code>funct3</code> (Entrada)</th>
-<th><code>ALUControl_o</code> (Saída)</th>
-<th>Operação da ULA</th>
-<th>Motivo</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>"00"</code></td>
-<td><strong>X (ignorado)</strong></td>
-<td><strong>X (ignorado)</strong></td>
-<td><code>"0000"</code></td>
-<td><strong>ADD</strong></td>
-<td>Para LW/SW/ADDI, a ULA sempre soma.</td>
-</tr>
-<tr>
-<td><code>"01"</code></td>
-<td><strong>X (ignorado)</strong></td>
-<td><strong>X (ignorado)</strong></td>
-<td><code>"1000"</code></td>
-<td><strong>SUB</strong></td>
-<td>Para Branch, a ULA sempre subtrai para comparar.</td>
-</tr>
-<tr>
-<td><code>"10"</code></td>
-<td><code>0000000</code></td>
-<td><code>000</code></td>
-<td><code>"0000"</code></td>
-<td><strong>ADD</strong></td>
-<td>Instrução R-Type: ADD</td>
-</tr>
-<tr>
-<td><code>"10"</code></td>
-<td><code>0100000</code></td>
-<td><code>000</code></td>
-<td><code>"1000"</code></td>
-<td><strong>SUB</strong></td>
-<td>Instrução R-Type: SUB</td>
-</tr>
-<tr>
-<td><code>"10"</code></td>
-<td><code>0000000</code></td>
-<td><code>001</code></td>
-<td><code>"0001"</code></td>
-<td><strong>SLL</strong></td>
-<td>Instrução R-Type: SLL</td>
-</tr>
-<tr>
-<td><code>"10"</code></td>
-<td><code>0000000</code></td>
-<td><code>010</code></td>
-<td><code>"0010"</code></td>
-<td><strong>SLT</strong></td>
-<td>Instrução R-Type: SLT</td>
-</tr>
-<tr>
-<td><code>"10"</code></td>
-<td><code>0000000</code></td>
-<td><code>011</code></td>
-<td><code>"0011"</code></td>
-<td><strong>SLTU</strong></td>
-<td>Instrução R-Type: SLTU</td>
-</tr>
-<tr>
-<td><code>"10"</code></td>
-<td><code>0000000</code></td>
-<td><code>100</code></td>
-<td><code>"0100"</code></td>
-<td><strong>XOR</strong></td>
-<td>Instrução R-Type: XOR</td>
-</tr>
-<tr>
-<td><code>"10"</code></td>
-<td><code>0000000</code></td>
-<td><code>101</code></td>
-<td><code>"0101"</code></td>
-<td><strong>SRL</strong></td>
-<td>Instrução R-Type: SRL</td>
-</tr>
-<tr>
-<td><code>"10"</code></td>
-<td><code>0100000</code></td>
-<td><code>101</code></td>
-<td><code>"1101"</code></td>
-<td><strong>SRA</strong></td>
-<td>Instrução R-Type: SRA</td>
-</tr>
-<tr>
-<td><code>"10"</code></td>
-<td><code>0000000</code></td>
-<td><code>110</code></td>
-<td><code>"0110"</code></td>
-<td><strong>OR</strong></td>
-<td>Instrução R-Type: OR</td>
-</tr>
-<tr>
-<td><code>"10"</code></td>
-<td><code>0000000</code></td>
-<td><code>111</code></td>
-<td><code>"0111"</code></td>
-<td><strong>AND</strong></td>
-<td>Instrução R-Type: AND</td>
-</tr>
-<tr>
-<td><code>"11"</code></td>
-<td><strong>X (ignorado)</strong></td>
-<td><strong>X (ignorado)</strong></td>
-<td><code>"XXXX"</code></td>
-<td><strong>Indefinido</strong></td>
-<td>Combinação de ALUOp não utilizada.</td>
-</tr>
-</tbody>
-</table>
-<h2 id="5-integracao-no-top-level">5. Integração no Top-Level</h2>
-<p>O arquivo <code>processor_top.vhd</code> representa a cápsula mais externa do núcleo RISC-V. Este módulo implementa uma <strong>Arquitetura de Harvard Modificada</strong>, expondo barramentos separados para a Memória de Instruções (IMEM) e para a Memória de Dados (DMEM). Esta topologia permite que a CPU busque a próxima instrução em simultâneo com a leitura ou escrita de dados na memória.</p>
-<div class="admonition tip">
-<p class="admonition-title">Pipelined</p>
-<p>A existência de dois barramentos separados - um para instruções e outro para dados - é necessário para viabilizar uma microarquitetura <strong>pipelined</strong>. Apesar de, na <strong>multiciclo</strong>, não apresentar nenhum ganho real.</p>
-</div>
-<p>É neste arquivo que ocorre a união estrutural entre os dois grandes blocos do sistema:</p>
+<h2 id="3-o-controlador-global-plic">3. O Controlador Global (PLIC)</h2>
+<p>O <strong>PLIC</strong> (<em>Platform-Level Interrupt Controller</em>) é o maestro das interrupções externas, gerenciando sinais de periféricos do SoC (UART, DMA, NPU, etc.). Diferente do CLINT, que lida com eventos íntimos ao núcleo, o PLIC concentra, prioriza e arbitra múltiplas fontes simultâneas.</p>
+<h3 id="31-arquitetura-do-plic">3.1. Arquitetura do PLIC</h3>
+<p>O PLIC (implementado em <code>rtl/soc/plic.vhd</code>) suporta até 32 fontes de interrupção. Sua arquitetura opera em três estágios:</p>
 <ol>
-<li>
-<p><strong>A Comunicação Ascendente (Feedback):</strong> O Datapath (circuito de potência) envia para o Control Path (circuito de comando) a instrução de 32 bits recém-buscada na IMEM (<code>s_instruction</code>) e flags cruciais, como a flag matemática de zero (<code>s_alu_zero</code>), essencial para resolver os saltos condicionais (<em>Branches</em>).</p>
-</li>
-<li>
-<p><strong>A Comunicação Descendente (Comando):</strong> A Unidade de Controle analisa a instrução e emite o pacote completo de diretrizes através do record <code>t_control</code>. Este sinal é injetado de volta no Datapath para orquestrar o ciclo completo.</p>
-</li>
+<li><strong>Gateway:</strong> Detecta e registra de forma assíncrona o pedido do periférico.</li>
+<li><strong>Arbiter:</strong> Avalia as interrupções pendentes e seleciona a de maior prioridade.</li>
+<li><strong>Claim/Complete:</strong> Protocolo de <em>handshaking</em> em duas vias com o processador.</li>
 </ol>
-<p>A união entre o <code>U_CONTROLPATH</code> e o <code>U_DATAPATH</code> conclui o processador de ciclo único, formando um núcleo coeso capaz de executar o conjunto de instruções RV32I.</p>
+<h3 id="32-mapa-de-memoria-do-plic">3.2. Mapa de Memória do PLIC</h3>
+<table>
+<thead>
+<tr>
+<th>Endereço</th>
+<th>Registrador</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0x000000</td>
+<td>Prioridade</td>
+<td>Define a prioridade de cada fonte (0-7)</td>
+</tr>
+<tr>
+<td>0x001000</td>
+<td>Pending</td>
+<td>Retorna quais fontes estão aguardando atendimento (Leitura)</td>
+</tr>
+<tr>
+<td>0x002000</td>
+<td>Enable</td>
+<td>Máscara para habilitar fontes específicas</td>
+</tr>
+<tr>
+<td>0x200000</td>
+<td>Threshold</td>
+<td>Prioridade mínima exigida para interromper o Core</td>
+</tr>
+<tr>
+<td>0x200004</td>
+<td>Claim/Complete</td>
+<td>Leitura = Reivindica (Claim), Escrita = Conclui (Complete)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="33-protocolo-claimcomplete-o-ciclo-de-vida-da-interrupcao">3.3. Protocolo Claim/Complete (O Ciclo de Vida da Interrupção)</h3>
+<p>Para garantir que nenhuma interrupção seja perdida ou tratada em duplicidade, o PLIC exige um protocolo rigoroso:</p>
+<ul>
+<li><strong>Fase 1 - Claim (Reivindicação):</strong> O processador lê o endereço <code>0x200004</code>. O PLIC retorna o ID da interrupção de maior prioridade no momento e <strong>limpa automaticamente</strong> o bit de <em>pending</em> no Gateway, marcando a interrupção como "em tratamento".</li>
+<li><strong>Fase 2 - Complete (Conclusão):</strong> Após executar a rotina do driver, o software escreve o mesmo ID de volta no endereço <code>0x200004</code>. Isso sinaliza ao PLIC que a tarefa acabou, liberando o Gateway para aceitar novos disparos daquele mesmo periférico.</li>
+</ul>
+<hr />
+<h2 id="4-integracao-hardwaresoftware">4. Integração Hardware/Software</h2>
+<p>A ponte entre os sinais físicos de silício e o código em C é feita pelos registradores CSR do núcleo e pela camada de abstração de hardware (HAL).</p>
+<h3 id="41-construcao-dinamica-do-vetor-mip">4.1. Construção Dinâmica do Vetor MIP</h3>
+<p>Fisicamente, no módulo <code>csr_file.vhd</code>, o registrador <strong>MIP</strong> não é uma memória estática, mas sim um reflexo em tempo real das linhas físicas que chegam da topologia do SoC:</p>
+<div class="highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">s_mip_comb</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="p">(</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span><span class="mi">11</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">Irq_Ext_i</span><span class="p">,</span><span class="w">   </span><span class="c1">-- MEIP: Vem do PLIC</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="mi">7</span><span class="w">  </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">Irq_Timer_i</span><span class="p">,</span><span class="w"> </span><span class="c1">-- MTIP: Vem do CLINT</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="mi">3</span><span class="w">  </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">Irq_Soft_i</span><span class="p">,</span><span class="w">  </span><span class="c1">-- MSIP: Vem do CLINT</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">    </span><span class="k">others</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="sc">&#39;0&#39;</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="p">);</span>
+</span></code></pre></div>
+<h3 id="42-o-central-trap-handler-software">4.2. O Central Trap Handler (Software)</h3>
+<p>O fluxo de software começa no arquivo <code>fpga/sw/platform/bsp/irq/irq_dispatch.c</code>. A função principal utiliza o atributo de compilador <code>interrupt("machine")</code>, que instrui o GCC a gerar código de salvamento de contexto seguro e a instrução <code>mret</code> no final.</p>
+<p>O despachante lê o <code>MCAUSE</code> para rotear o fluxo:</p>
+<div class="highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kt">void</span><span class="w"> </span><span class="n">__attribute__</span><span class="p">((</span><span class="n">interrupt</span><span class="p">(</span><span class="s">&quot;machine&quot;</span><span class="p">)))</span><span class="w"> </span><span class="n">irq_dispatch_handler</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">mcause</span><span class="p">;</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="k">asm</span><span class="w"> </span><span class="k">volatile</span><span class="w"> </span><span class="p">(</span><span class="s">&quot;csrr %0, mcause&quot;</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="s">&quot;=r&quot;</span><span class="p">(</span><span class="n">mcause</span><span class="p">));</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="c1">// Interrupção Externa do PLIC (Bit 31 em &#39;1&#39; e código 0xB)</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mcause</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mh">0x8000000B</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">        </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">source</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hal_plic_claim</span><span class="p">();</span><span class="w">  </span><span class="c1">// Lê o ID vencedor</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">source</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">source</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">PLIC_MAX_SOURCES</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">g_isr_table</span><span class="p">[</span><span class="n">source</span><span class="p">]</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">                </span><span class="n">g_isr_table</span><span class="p">[</span><span class="n">source</span><span class="p">]();</span><span class="w">       </span><span class="c1">// Executa o driver do periférico</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">            </span><span class="p">}</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="w">        </span><span class="n">hal_plic_complete</span><span class="p">(</span><span class="n">source</span><span class="p">);</span><span class="w">           </span><span class="c1">// Libera o PLIC</span>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="p">}</span>
+</span></code></pre></div>
 
 
 
@@ -2049,7 +1916,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="March 14, 2026 05:23:49 UTC">March 14, 2026 05:23:49</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="April 20, 2026 01:24:16 UTC">April 20, 2026 01:24:16</span>
   </span>
 
     
@@ -2087,7 +1954,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../../intro/setup/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Requisitos e Setup">
+          <a href="../multi-cycle/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Microarquitetura Multiciclo">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -2097,20 +1964,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Requisitos e Setup
+                Microarquitetura Multiciclo
               </div>
             </div>
           </a>
         
         
           
-          <a href="../multi-cycle/" class="md-footer__link md-footer__link--next" aria-label="Next: Microarquitetura Multiciclo">
+          <a href="../../soc/gpio_controller/" class="md-footer__link md-footer__link--next" aria-label="Next: Controlador GPIO">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Microarquitetura Multiciclo
+                Controlador GPIO
               </div>
             </div>
             <div class="md-footer__button md-icon">

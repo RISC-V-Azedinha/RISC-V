@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://RISC-V-Azedinha.github.io/RISC-V/hardware/single-cycle/">
+        <link rel="canonical" href="https://RISC-V-Azedinha.github.io/RISC-V/soc/gpio_controller/">
       
       
-        <link rel="prev" href="../../intro/setup/">
+        <link rel="prev" href="../../hardware/interrupts/">
       
       
-        <link rel="next" href="../multi-cycle/">
+        <link rel="next" href="../uart_controller/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Microarquitetura Monociclo - RISC-V SOC</title>
+        <title>Controlador GPIO - RISC-V SOC</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#microarquitetura-monociclo-single-cycle" class="md-skip">
+        <a href="#gpio-controller-microarquitetura" class="md-skip">
           Skip to content
         </a>
       
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Microarquitetura Monociclo
+              Controlador GPIO
             
           </span>
         </div>
@@ -237,7 +237,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+        <a href="../../hardware/single-cycle/" class="md-tabs__link">
           
   
   
@@ -277,7 +277,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../soc/vga_controller/" class="md-tabs__link">
+        <a href="../vga_controller/" class="md-tabs__link">
           
   
   
@@ -574,37 +574,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Microarquitetura Monociclo
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../hardware/single-cycle/" class="md-nav__link">
         
   
   
@@ -620,165 +593,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#1-a-anatomia-da-instrucao" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. A Anatomia da Instrução
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="1. A Anatomia da Instrução">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#11-formatos-de-instrucoes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1.1. Formatos de Instruções
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#2-o-gerador-de-imediatos-immgen" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. O Gerador de Imediatos (ImmGen)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-o-caminho-de-dados-datapath" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. O Caminho de Dados (Datapath)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="3. O Caminho de Dados (Datapath)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#31-banco-de-registradores" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.1. Banco de Registradores
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#32-unidade-logica-e-aritmetica" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.2. Unidade Lógica e Aritmética
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#33-unidade-de-branch" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.3. Unidade de Branch
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#4-a-unidade-de-controle-control-path" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. A Unidade de Controle (Control Path)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="4. A Unidade de Controle (Control Path)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#41-sinais-de-controle" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.1. Sinais de Controle
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#42-operacao-da-alu" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.2. Operação da ALU
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#5-integracao-no-top-level" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Integração no Top-Level
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -791,7 +605,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../multi-cycle/" class="md-nav__link">
+      <a href="../../hardware/multi-cycle/" class="md-nav__link">
         
   
   
@@ -819,7 +633,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../interrupts/" class="md-nav__link">
+      <a href="../../hardware/interrupts/" class="md-nav__link">
         
   
   
@@ -844,10 +658,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../soc/gpio_controller/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Controlador GPIO
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -863,6 +704,343 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-visao-geral" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Visão Geral
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-diagrama-de-blocos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Diagrama de Blocos
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-mapa-de-memoria" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Mapa de Memória
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Mapa de Memória">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#detalhamento-dos-registradores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detalhamento dos Registradores
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-arquitetura-de-registradores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Arquitetura de Registradores
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Arquitetura de Registradores">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-registrador-r_leds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Registrador r_leds
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4.1 Registrador r_leds">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#comportamento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comportamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#conexao-fisica" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conexão Física
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-sinal-gpio_sw" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Sinal gpio_sw
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4.2 Sinal gpio_sw">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fluxo-de-dados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fluxo de Dados
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-interacao-direcao-dados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Interação Direção Dados
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-logica-de-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Lógica de Interface
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Lógica de Interface">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-sinais-do-barramento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Sinais do Barramento
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-decodificacao-de-endereco" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Decodificação de Endereço
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-protocolo-de-handshake" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Protocolo de Handshake
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Protocolo de Handshake">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-descricao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Descrição
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-diagrama-de-estados-do-handshake" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Diagrama de Estados do Handshake
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-timing-do-handshake" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 Timing do Handshake
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-tabela-de-operacoes-completa" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Tabela de Operações Completa
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-consideracoes-de-projeto" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Considerações de Projeto
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Considerações de Projeto">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-dominio-de-clock" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 Domínio de Clock
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82-latencia" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2 Latência
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#83-largura-de-dados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.3 Largura de Dados
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#84-limitacoes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.4 Limitações
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-referencias" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Referências
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -875,7 +1053,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../soc/uart_controller/" class="md-nav__link">
+      <a href="../uart_controller/" class="md-nav__link">
         
   
   
@@ -1073,7 +1251,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../soc/vga_controller/" class="md-nav__link">
+      <a href="../vga_controller/" class="md-nav__link">
         
   
   
@@ -1438,22 +1616,44 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-a-anatomia-da-instrucao" class="md-nav__link">
+  <a href="#1-visao-geral" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. A Anatomia da Instrução
+        1. Visão Geral
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="1. A Anatomia da Instrução">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-diagrama-de-blocos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Diagrama de Blocos
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-mapa-de-memoria" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Mapa de Memória
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Mapa de Memória">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#11-formatos-de-instrucoes" class="md-nav__link">
+  <a href="#detalhamento-dos-registradores" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1.1. Formatos de Instruções
+        Detalhamento dos Registradores
       
     </span>
   </a>
@@ -1466,33 +1666,34 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-o-gerador-de-imediatos-immgen" class="md-nav__link">
+  <a href="#4-arquitetura-de-registradores" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. O Gerador de Imediatos (ImmGen)
+        4. Arquitetura de Registradores
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-o-caminho-de-dados-datapath" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. O Caminho de Dados (Datapath)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="3. O Caminho de Dados (Datapath)">
+    <nav class="md-nav" aria-label="4. Arquitetura de Registradores">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#31-banco-de-registradores" class="md-nav__link">
+  <a href="#41-registrador-r_leds" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.1. Banco de Registradores
+        4.1 Registrador r_leds
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4.1 Registrador r_leds">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#comportamento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comportamento
       
     </span>
   </a>
@@ -1500,21 +1701,54 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#32-unidade-logica-e-aritmetica" class="md-nav__link">
+  <a href="#conexao-fisica" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.2. Unidade Lógica e Aritmética
+        Conexão Física
       
     </span>
   </a>
   
 </li>
         
+      </ul>
+    </nav>
+  
+</li>
+        
           <li class="md-nav__item">
-  <a href="#33-unidade-de-branch" class="md-nav__link">
+  <a href="#42-sinal-gpio_sw" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.3. Unidade de Branch
+        4.2 Sinal gpio_sw
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4.2 Sinal gpio_sw">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fluxo-de-dados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fluxo de Dados
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-interacao-direcao-dados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Interação Direção Dados
       
     </span>
   </a>
@@ -1527,22 +1761,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-a-unidade-de-controle-control-path" class="md-nav__link">
+  <a href="#5-logica-de-interface" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. A Unidade de Controle (Control Path)
+        5. Lógica de Interface
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="4. A Unidade de Controle (Control Path)">
+    <nav class="md-nav" aria-label="5. Lógica de Interface">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#41-sinais-de-controle" class="md-nav__link">
+  <a href="#51-sinais-do-barramento" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4.1. Sinais de Controle
+        5.1 Sinais do Barramento
       
     </span>
   </a>
@@ -1550,10 +1784,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#42-operacao-da-alu" class="md-nav__link">
+  <a href="#52-decodificacao-de-endereco" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4.2. Operação da ALU
+        5.2 Decodificação de Endereço
       
     </span>
   </a>
@@ -1566,10 +1800,132 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#5-integracao-no-top-level" class="md-nav__link">
+  <a href="#6-protocolo-de-handshake" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. Integração no Top-Level
+        6. Protocolo de Handshake
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Protocolo de Handshake">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-descricao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Descrição
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-diagrama-de-estados-do-handshake" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Diagrama de Estados do Handshake
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-timing-do-handshake" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 Timing do Handshake
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-tabela-de-operacoes-completa" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Tabela de Operações Completa
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-consideracoes-de-projeto" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Considerações de Projeto
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Considerações de Projeto">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-dominio-de-clock" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 Domínio de Clock
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82-latencia" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2 Latência
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#83-largura-de-dados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.3 Largura de Dados
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#84-limitacoes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.4 Limitações
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-referencias" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Referências
       
     </span>
   </a>
@@ -1596,439 +1952,332 @@
   
 
 
-<h1 id="microarquitetura-monociclo-single-cycle">Microarquitetura Monociclo (Single-Cycle)</h1>
-<p>A microarquitetura de ciclo único (<em>Single-Cycle</em>) é a implementação mais direta e fundamental do processador RISC-V. O seu princípio de funcionamento é simples: <strong>cada instrução é buscada, decodificada e totalmente executada em um único pulso de relógio</strong>.</p>
-<p>Embora não seja a abordagem mais eficiente em termos de frequência máxima (devido ao longo caminho crítico), é a base pedagógica perfeita para compreender a interação entre as instruções da ISA RV32I e o hardware digital.</p>
-<h2 id="1-a-anatomia-da-instrucao">1. A Anatomia da Instrução</h2>
-<p>O núcleo RISC-V (RV32I) processa instruções de 32 bits. Para simplificar a decodificação em hardware, os campos da instrução possuem posições fixas ou altamente regulares. Uma instrução típica de 32 bits é fatiada da seguinte forma:</p>
+<h1 id="gpio-controller-microarquitetura">GPIO Controller - Microarquitetura</h1>
+<hr />
+<h2 id="1-visao-geral">1. Visão Geral</h2>
+<p>O <strong>GPIO Controller</strong> é um periférico de Entrada/Saída de Uso Geral integrado ao barramento do SoC. Este módulo gerencia a comunicação entre o processador RISC-V e dispositivos físicos externos, especificamente:</p>
+<ul>
+<li><strong>16 pinos de saída</strong> conectados a LEDs</li>
+<li><strong>16 pinos de entrada</strong> conectados a chaves (switches)</li>
+</ul>
+<p>A arquitetura utiliza um protocolo de handshake para comunicação síncrona com o barramento do sistema, garantindo integridade de dados através de sinais de validade (<code>vld_i</code>) e prontidão (<code>rdy_o</code>).</p>
+<hr />
+<h2 id="2-diagrama-de-blocos">2. Diagrama de Blocos</h2>
+<p><img alt="Diagrama de Blocos" src="../../images/GPIO/GPIO-Diagrama_de_blocos.svg" /></p>
+<hr />
+<h2 id="3-mapa-de-memoria">3. Mapa de Memória</h2>
 <table>
 <thead>
 <tr>
-<th>Campo</th>
-<th>Bits</th>
+<th>Offset</th>
+<th>Nome</th>
+<th>Direção</th>
+<th>Descrição</th>
+<th>Acesso</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0x0</code></td>
+<td><code>LEDS</code></td>
+<td>R/W</td>
+<td>Registrador de dados dos LEDs</td>
+<td>Leitura/Escrita</td>
+</tr>
+<tr>
+<td><code>0x4</code></td>
+<td><code>SWITCHES</code></td>
+<td>R</td>
+<td>Registrador de estado das chaves</td>
+<td>Somente Leitura</td>
+</tr>
+</tbody>
+</table>
+<h3 id="detalhamento-dos-registradores">Detalhamento dos Registradores</h3>
+<p><img alt="Detalhamento dos Registradores" src="../../images/GPIO/GPIO-Detalhamento_dos_Registradores.svg" /></p>
+<hr />
+<h2 id="4-arquitetura-de-registradores">4. Arquitetura de Registradores</h2>
+<h3 id="41-registrador-r_leds">4.1 Registrador <code>r_leds</code></h3>
+<p><strong>Tipo:</strong> <code>std_logic_vector(15 downto 0)</code> - registrador interno<br />
+<strong>Propósito:</strong> Armazenar o estado lógico dos 16 pinos de saída conectados aos LEDs<br />
+<strong>Localização física:</strong> Sinal interno no domínio de clock  </p>
+<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">signal</span><span class="w"> </span><span class="n">r_leds</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="kt">std_logic_vector</span><span class="p">(</span><span class="mi">15</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+</span></code></pre></div>
+<h4 id="comportamento">Comportamento</h4>
+<table>
+<thead>
+<tr>
+<th>Condição</th>
+<th>Ação</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rst = '1'</code></td>
+<td><code>r_leds &lt;= (others =&gt; '0')</code> (reset)</td>
+</tr>
+<tr>
+<td><code>vld_i = '1'</code> E <code>we_i = '1'</code> E <code>addr_i = 0x0</code></td>
+<td><code>r_leds &lt;= data_i(15 downto 0)</code></td>
+</tr>
+<tr>
+<td>Caso contrário</td>
+<td>Mantém valor atual (latched)</td>
+</tr>
+</tbody>
+</table>
+<h4 id="conexao-fisica">Conexão Física</h4>
+<div class="highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">gpio_leds</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">r_leds</span><span class="p">;</span><span class="w">  </span><span class="c1">-- Saída combinacional para os pinos físicos</span>
+</span></code></pre></div>
+<p>A saída <code>gpio_leds</code> é uma conexão direta (wire) do registrador, atualizando-se imediatamente quando <code>r_leds</code> muda.</p>
+<h3 id="42-sinal-gpio_sw">4.2 Sinal <code>gpio_sw</code></h3>
+<p><strong>Tipo:</strong> <code>std_logic_vector(15 downto 0)</code> - porta de entrada<br />
+<strong>Propósito:</strong> Refletir o estado físico das 16 chaves (switches) externas<br />
+<strong>Características:</strong> Não é um registrador; é uma leitura direta do hardware externo  </p>
+<div class="highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">gpio_sw</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="kt">std_logic_vector</span><span class="p">(</span><span class="mi">15</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w">  </span><span class="c1">-- declaração na porta</span>
+</span></code></pre></div>
+<h4 id="fluxo-de-dados">Fluxo de Dados</h4>
+<div class="highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>gpio_sw (pino físico) ──────────────► data_o(15 downto 0) quando addr_i = 0x4
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>                                      (via multiplexador no processo)
+</span></code></pre></div>
+<h3 id="43-interacao-direcao-dados">4.3 Interação Direção Dados</h3>
+<p>Este módulo implementa uma <strong>separação fixa de direção</strong>:</p>
+<p><img alt="Interação Direção Dados" src="../../images/GPIO/GPIO-Arquitetura_de_Dire%C3%A7%C3%A3o_de_Dados.svg" /></p>
+<p><strong>Nota:</strong> Este módulo <strong>não possui</strong> um registrador de direção (direction register) como em GPIO tradicionais. A direção é fixa:
+- Bits 15:0 dos LEDs → <strong>sempre saída</strong>
+- Bits 15:0 dos Switches → <strong>sempre entrada</strong></p>
+<hr />
+<h2 id="5-logica-de-interface">5. Lógica de Interface</h2>
+<h3 id="51-sinais-do-barramento">5.1 Sinais do Barramento</h3>
+<table>
+<thead>
+<tr>
+<th>Sinal</th>
+<th>Direção</th>
+<th>Tipo</th>
 <th>Descrição</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong><code>opcode</code></strong></td>
-<td><code>[6:0]</code></td>
-<td>Indica a categoria ou formato da instrução (ex: R-Type, I-Type, Load, Store). É o sinal vital para a Unidade de Controle.</td>
+<td><code>clk</code></td>
+<td>Input</td>
+<td><code>std_logic</code></td>
+<td>Clock do sistema (síncrono)</td>
 </tr>
 <tr>
-<td><strong><code>rd</code></strong></td>
-<td><code>[11:7]</code></td>
-<td>Endereço do registrador de destino (<em>Destination</em>), onde o resultado da operação será guardado.</td>
+<td><code>rst</code></td>
+<td>Input</td>
+<td><code>std_logic</code></td>
+<td>Reset síncrono (ativo alto)</td>
 </tr>
 <tr>
-<td><strong><code>funct3</code></strong></td>
-<td><code>[14:12]</code></td>
-<td>Subcódigo de operação (3 bits) utilizado para diferenciar operações dentro do mesmo <code>opcode</code> (ex: distinguir <code>ADD</code> de <code>SUB</code>, ou tipos de saltos condicionais).</td>
+<td><code>vld_i</code></td>
+<td>Input</td>
+<td><code>std_logic</code></td>
+<td>Validade: indica transação válida no barramento</td>
 </tr>
 <tr>
-<td><strong><code>rs1</code></strong></td>
-<td><code>[19:15]</code></td>
-<td>Endereço do registrador de origem 1 (<em>Source 1</em>).</td>
+<td><code>we_i</code></td>
+<td>Input</td>
+<td><code>std_logic</code></td>
+<td>Write Enable: '1'=escrita, '0'=leitura</td>
 </tr>
 <tr>
-<td><strong><code>rs2</code></strong></td>
-<td><code>[24:20]</code></td>
-<td>Endereço do registrador de origem 2 (<em>Source 2</em>).</td>
+<td><code>addr_i</code></td>
+<td>Input</td>
+<td><code>slv(3:0)</code></td>
+<td>Offset do endereço (seleciona registrador)</td>
 </tr>
 <tr>
-<td><strong><code>funct7</code></strong></td>
-<td><code>[31:25]</code></td>
-<td>Subcódigo adicional (7 bits) usado em instruções do tipo R para especificar ainda mais a operação.</td>
+<td><code>data_i</code></td>
+<td>Input</td>
+<td><code>slv(31:0)</code></td>
+<td>Dados de entrada (escrita da CPU)</td>
+</tr>
+<tr>
+<td><code>data_o</code></td>
+<td>Output</td>
+<td><code>slv(31:0)</code></td>
+<td>Dados de saída (leitura para CPU)</td>
+</tr>
+<tr>
+<td><code>rdy_o</code></td>
+<td>Output</td>
+<td><code>std_logic</code></td>
+<td>Ready: indica que o periférico respondeu</td>
 </tr>
 </tbody>
 </table>
-<h3 id="11-formatos-de-instrucoes">1.1. Formatos de Instruções</h3>
-<p>Para acomodar diferentes necessidades (operações matemáticas, acessos à memória e saltos), as instruções são divididas em 6 formatos básicos:</p>
-<ul>
-<li>
-<p><strong>Tipo-R (Register):</strong> Usado para operações aritméticas e lógicas onde todos os operandos são registradores (ex: <code>ADD</code>, <code>SUB</code>, <code>AND</code>).</p>
-</li>
-<li>
-<p><strong>Tipo-I (Immediate):</strong> Usado para operações com imediatos curtos (12 bits), instruções de Load (leitura de memória) e o salto <code>JALR</code>.</p>
-</li>
-<li>
-<p><strong>Tipo-S (Store):</strong> Usado exclusivamente para escrever na memória (ex: <code>SW</code>, <code>SB</code>). O imediato de 12 bits é dividido em duas partes para manter <code>rs1</code> e <code>rs2</code> em seus lugares fixos.</p>
-</li>
-<li>
-<p><strong>Tipo-B (Branch):</strong> Usado para saltos condicionais (<code>BEQ</code>, <code>BNE</code>). Muito semelhante ao Tipo-S, mas o imediato codifica múltiplos de 2 (visto que as instruções são alinhadas na memória).</p>
-</li>
-<li>
-<p><strong>Tipo-U (Upper Immediate):</strong> Usado para carregar imediatos longos (20 bits) nos bits mais significativos de um registrador (<code>LUI</code>, <code>AUIPC</code>).</p>
-</li>
-<li>
-<p><strong>Tipo-J (Jump):</strong> Usado para saltos incondicionais longos (<code>JAL</code>).</p>
-</li>
-</ul>
-<p><img alt="Formatos de Instruções" class="hero-img" src="../../assets/instruction_format.png" /></p>
-<h2 id="2-o-gerador-de-imediatos-immgen">2. O Gerador de Imediatos (ImmGen)</h2>
-<p>Ao olhar para os formatos acima, você pode notar que os imediatos (valores constantes embutidos na instrução) nos formatos S, B e J parecem estar "embaralhados". Isso não é um erro; é uma escolha de design intencional.</p>
-<div class="admonition info">
-<p class="admonition-title">Por que embaralhar os bits?</p>
-<p>Se o RISC-V mantivesse o imediato contínuo no formato S, os bits referentes ao registrador <code>rs2</code> teriam que mudar de lugar. Ao manter <code>rs1</code> e <code>rs2</code> fixos, o hardware pode começar a ler os registradores do Register File no exato instante em que a instrução chega, sem ter que esperar a Unidade de Controle descobrir qual é o formato da instrução. Isso economiza tempo precioso de hardware!</p>
-</div>
-<p>O ImmGen (Gerador de Imediatos) é o componente de hardware responsável por desembaralhar esses bits e reconstruir o número original de 32 bits. Ele faz isso em duas etapas:</p>
-<ol>
-<li>
-<p><strong>Extração e Reconstrução:</strong> Lendo o <code>opcode</code>, o ImmGen sabe qual é o formato da instrução e reconecta os fios (bits) na ordem correta.</p>
-</li>
-<li>
-<p><strong>Extensão de Sinal:</strong> Como a maioria das operações precisa de 32 bits, o ImmGen copia o bit mais significativo do imediato original (que sempre fica no bit 31 da instrução) para preencher os bits restantes à esquerda, preservando o sinal (positivo ou negativo) em complemento de 2.</p>
-</li>
-</ol>
-<h2 id="3-o-caminho-de-dados-datapath">3. O Caminho de Dados (Datapath)</h2>
-<p>O Datapath é o "músculo" do processador. É o circuito de potência responsável por rotear os dados, realizar os cálculos e interagir com a memória. Em um processador monociclo, o fluxo de dados atravessa cinco fases lógicas sequenciais dentro do mesmo pulso de clock:</p>
-<p><img alt="Single-Cycle Datapath" class="hero-img" src="../../assets/single_cycle_datapath.png" /></p>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:5"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><input id="__tabbed_1_4" name="__tabbed_1" type="radio" /><input id="__tabbed_1_5" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Fetch (Busca)</label><label for="__tabbed_1_2">Decode (Decodificação)</label><label for="__tabbed_1_3">Execute (Execução)</label><label for="__tabbed_1_4">Memory (Acesso à Memória)</label><label for="__tabbed_1_5">Write-Back (Escrita)</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<p>O endereço atual da instrução, armazenado no <strong>Program Counter (PC)</strong>, é enviado para a Memória de Instruções (IMEM). A memória retorna a instrução de 32 bits a ser executada. Ao mesmo tempo, um somador paralelo calcula <code>PC + 4</code> para apontar para a próxima instrução sequencial.</p>
-</div>
-<div class="tabbed-block">
-<p>A instrução é fatiada. Os campos <code>rs1</code> e <code>rs2</code> são enviados ao <strong>Register File</strong> (Banco de Registradores) para ler os operandos. Simultaneamente, o <strong>Gerador de Imediatos (ImmGen)</strong> extrai e estende o sinal de qualquer valor imediato embutido na instrução, formatando-o para 32 bits.</p>
-</div>
-<div class="tabbed-block">
-<p>A <strong>Unidade Lógica e Aritmética (ALU)</strong> entra em ação. Dependendo da instrução, ela pode calcular operações matemáticas (soma, subtração, lógica AND/OR), calcular endereços de memória para operações de <em>Load/Store</em>, ou realizar comparações para instruções de desvio (Branch).</p>
-</div>
-<div class="tabbed-block">
-<p>Se a instrução for um <code>Load</code> ou <code>Store</code>, o resultado gerado pela ALU é utilizado como endereço para acessar a <strong>Memória de Dados (DMEM)</strong>. Dados são lidos ou escritos neste estágio. Para outras instruções, esta fase é ignorada.</p>
-</div>
-<div class="tabbed-block">
-<p>O resultado final — seja proveniente da ALU, da Memória de Dados ou do cálculo de um salto — é roteado de volta e escrito no registrador de destino (<code>rd</code>) dentro do Register File.</p>
-</div>
-</div>
-</div>
-<div class="admonition tip">
-<p class="admonition-title">Tempo de Propagação</p>
-<p>Na arquitetura monociclo (<em>single-cycle</em>), toda instrução deve atravessar o <em>datapath</em> completo dentro de um único ciclo de clock. Assim, o período mínimo de clock é determinado pelo maior tempo de propagação combinacional ao longo do circuito — o chamado <strong>caminho crítico</strong>. Consequentemente, a frequência máxima do processador fica limitada por esse atraso. Mais adiante será discutido o uso de <em>pipeline</em>, que divide o <em>datapath</em> em estágios menores para reduzir o comprimento do caminho crítico e permitir frequências de operação mais altas.</p>
-</div>
-<h3 id="31-banco-de-registradores">3.1. Banco de Registradores</h3>
-<p>O banco de registradores (Register File) é a estrutura de memória interna mais rápida do processador, composto por 32 registradores de 32 bits, definidos em hardware através do tipo <code>t_reg_array</code>. A sua implementação técnica divide-se em abordagens distintas para leitura e escrita:</p>
-<ul>
-<li><strong>Leitura Assíncrona:</strong> O módulo possui duas portas de leitura independentes (<code>rs1</code> e <code>rs2</code>) que funcionam de forma puramente combinacional. Assim que os endereços <code>ReadAddr1_i</code> ou <code>ReadAddr2_i</code> são alterados, os dados correspondentes surgem quase instantaneamente nas saídas <code>ReadData1_o</code> e <code>ReadData2_o</code>, sem aguardar pelo pulso de clock.</li>
-<li><strong>Escrita Síncrona:</strong> Diferente da leitura, a atualização de um registrador exige sincronização. A escrita apenas ocorre na transição positiva do sinal de clock (<code>rising_edge(clk_i)</code>), e exclusivamente se o sinal de controle <code>RegWrite_i</code> estiver ativo (<code>'1'</code>).</li>
-<li><strong>Proteção de Hardware do Registro <code>x0</code>:</strong> A convenção da arquitetura RISC-V dita que o registrador <code>x0</code> deve conter sempre o valor constante zero. O hardware garante esta regra forçando a saída <code>x"00000000"</code> sempre que o endereço de leitura for <code>"00000"</code>. Paralelamente, no processo de escrita, existe uma barreira lógica (<code>WriteAddr_i /= "00000"</code>) que ignora silenciosamente qualquer tentativa de alteração do registrador zero.</li>
-</ul>
-<h3 id="32-unidade-logica-e-aritmetica">3.2. Unidade Lógica e Aritmética</h3>
-<p>A Unidade Lógica e Aritmética (ULA, ou ALU em inglês) é o motor computacional do processador, operando em conjunto com o seu controlador dedicado.</p>
-<ul>
-<li>
-<p><strong>O Controlador da ULA (<code>alu_control</code>):</strong> a Unidade de Controle Principal delega a decisão exata da operação matemática ao <code>alu_control</code>. Este módulo secundário avalia o sinal <code>ALUOp_i</code> de 2 bits (que indica a categoria da instrução) cruzando-o com os campos <code>Funct3_i</code> e <code>Funct7_i</code>. O resultado é a geração de um sinal de controle otimizado de 4 bits (<code>ALUControl_o</code>). Por exemplo, para operações R-Type (<code>ALUOp_i = "10"</code>), o módulo verifica o bit 5 do <code>Funct7_i</code> para alternar entre uma soma e uma subtração, ou entre deslocamentos lógicos e aritméticos.</p>
-</li>
-<li>
-<p><strong>A Unidade de Execução (<code>alu</code>):</strong> o módulo <code>alu.vhd</code> é um bloco puramente combinacional que reage imediatamente a qualquer mudança nos operandos <code>A_i</code>, <code>B_i</code> ou no comando <code>ALUControl_i</code>. Suporta um vasto leque de operações, incluindo:</p>
-<ul>
-<li><strong>Aritméticas:</strong> Soma e subtração nativas (com tratamento de sinais).</li>
-<li><strong>Comparações:</strong> Avaliações de "menor que" com e sem sinal (SLT e SLTU).</li>
-<li><strong>Lógicas:</strong> Operações bit-a-bit XOR, OR e AND.</li>
-<li><strong>Deslocamentos (Shifts):</strong> Deslocamentos à esquerda (SLL), à direita lógicos (SRL) e à direita aritméticos (SRA).</li>
-</ul>
-</li>
-</ul>
-<div class="admonition note">
-<p class="admonition-title">Flag Zero</p>
-<p>A par do resultado de 32 bits, a ALU gera continuamente uma flag fundamental: o sinal <code>Zero_o</code>. Esta flag assume o valor <code>'1'</code> estritamente quando o resultado numérico de toda a operação de 32 bits for igual a zero (<code>x"00000000"</code>).</p>
-</div>
+<h3 id="52-decodificacao-de-endereco">5.2 Decodificação de Endereço</h3>
+<div class="highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>addr_i (bits)           Seleção
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>─────────────────────────────────
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>0000 (0x0)              Registrador de LEDs (r_leds)
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>0100 (0x4)              Registrador de Switches (gpio_sw)
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>outros                  Nenhuma ação (null)
+</span></code></pre></div>
 <hr />
-<h3 id="33-unidade-de-branch">3.3. Unidade de Branch</h3>
-<p>Em muitas arquiteturas clássicas, o cálculo do desvio condicional é fundido na Unidade de Controle Principal. No entanto, este núcleo RISC-V foi desenhado isolando esta responsabilidade na <code>branch_unit</code>, tornando o código mais modular e coeso.</p>
-<p>Para decidir se o processador deve saltar para um novo endereço de memória, a <code>branch_unit</code> correlaciona três sinais de entrada: o sinal que confirma que a instrução é um desvio (<code>Branch_i</code>), a flag matemática gerada pela ULA (<code>ALU_Zero_i</code>) e o campo <code>Funct3_i</code> que dita a regra de salto. </p>
-<p>Com base nisto, a unidade emite o sinal <code>BranchTaken_o</code>:</p>
-<ul>
-<li><strong>BEQ (Branch if Equal):</strong> Requer que os operandos sejam iguais (A - B = 0). O desvio é tomado se <code>ALU_Zero_i = '1'</code>.</li>
-<li><strong>BNE (Branch if Not Equal):</strong> O desvio avança se a subtração gerar um valor diferente de zero (<code>ALU_Zero_i = '0'</code>).</li>
-<li><strong>Outras avaliações:</strong> O módulo aplica lógicas análogas para <code>BLT</code>, <code>BGE</code>, <code>BLTU</code> e <code>BGEU</code>, combinando a flag zero resultante de operações <code>SLT</code>/<code>SLTU</code> executadas pela ALU.</li>
-</ul>
-<h2 id="4-a-unidade-de-controle-control-path">4. A Unidade de Controle (Control Path)</h2>
-<p>Se o Datapath é o músculo, a Unidade de Controle é o cérebro. O seu papel é observar o <code>opcode</code>, o <code>funct3</code> e o <code>funct7</code> da instrução e <strong>emitir os sinais de comando</strong> que configuram os multiplexadores, habilitam as memórias e dizem à ALU o que fazer.</p>
-<p>Em vez de declarar dezenas de sinais soltos, o nosso projeto em VHDL utiliza uma abordagem estruturada e elegante através de um <code>record</code> VHDL (<code>t_control</code>). O pacote <code>s_ctrl</code> encapsula todos os sinais diretivos:</p>
-<ul>
-<li>
-<p><code>Branch</code> / <code>Jump</code>: Determinam se o próximo PC será <code>PC+4</code> ou um endereço de salto calculado pela ALU.</p>
-</li>
-<li>
-<p><code>MemRead</code> / <code>MemWrite</code>: Habilitam a leitura ou escrita na Memória de Dados.</p>
-</li>
-<li>
-<p><code>ALUSrc</code>: Um seletor de multiplexador que decide se a ALU vai operar com o registrador <code>rs2</code> ou com um Imediato estendido.</p>
-</li>
-<li>
-<p><code>RegWrite</code>: Habilita a gravação do resultado final no Register File.</p>
-</li>
-<li>
-<p><code>ResultSrc</code>: Decide qual dado vai para a fase de Write-Back (resultado da ALU, dado da memória, ou <code>PC+4</code>).</p>
-</li>
-</ul>
-<div class="admonition info">
-<p class="admonition-title">ALU Control</p>
-<p>A Unidade de Controle é frequentemente dividida em duas. A Unidade Principal (Main Control) lê o <code>opcode</code> e emite um sinal genérico chamado <code>ALUOp</code>. Um decodificador secundário (ALU Control) cruza esse <code>ALUOp</code> com o <code>funct3</code> e <code>funct7</code> para gerar o sinal de seleção final da operação da ALU, otimizando o tamanho do hardware gerado.</p>
-</div>
-<h3 id="41-sinais-de-controle">4.1. Sinais de Controle</h3>
+<h2 id="6-protocolo-de-handshake">6. Protocolo de Handshake</h2>
+<h3 id="61-descricao">6.1 Descrição</h3>
+<p>O GPIO Controller implementa um protocolo <strong>handshake com latência 1</strong> para comunicação com o barramento do SoC:</p>
+<p><img alt="Protocolo de Handshake" src="../../images/GPIO/GPIO-Protocolo_de_Handshake.svg" /></p>
+<h3 id="62-diagrama-de-estados-do-handshake">6.2 Diagrama de Estados do Handshake</h3>
+<p><img alt="Diagrama de Estados do Handshake" src="../../images/GPIO/GPIO-Diagrama_de_Estados_do_Handshake.svg" /></p>
+<h3 id="63-timing-do-handshake">6.3 Timing do Handshake</h3>
 <table>
 <thead>
 <tr>
-<th>Instrução</th>
-<th><code>Opcode</code></th>
-<th><code>RegWrite</code></th>
-<th><code>ALUSrc</code></th>
-<th><code>MemtoReg</code></th>
-<th><code>MemRead</code></th>
-<th><code>MemWrite</code></th>
-<th><code>Branch</code></th>
-<th><code>Jump</code></th>
-<th><code>ALUOp</code></th>
+<th>Ciclo</th>
+<th><code>vld_i</code></th>
+<th><code>we_i</code></th>
+<th><code>addr_i</code></th>
+<th><code>data_i</code></th>
+<th><code>rdy_o</code></th>
+<th>Ação</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>R-TYPE</code> (<strong>add</strong>, <strong>sub</strong>)</td>
-<td><code>0110011</code></td>
+<td>N</td>
 <td>1</td>
+<td>0/1</td>
+<td>0x0/0x4</td>
+<td>valor</td>
 <td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td><code>10</code></td>
+<td>CPU inicia transação</td>
 </tr>
 <tr>
-<td><code>LOAD</code> (<strong>lw</strong>)</td>
-<td><code>0000011</code></td>
-<td>1</td>
-<td>1</td>
-<td>1</td>
-<td>1</td>
+<td>N+1</td>
 <td>0</td>
-<td>0</td>
-<td>0</td>
-<td><code>00</code></td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>1</td>
+<td>GPIO responde</td>
 </tr>
 <tr>
-<td><code>STORE</code> (<strong>sw</strong>)</td>
-<td><code>0100011</code></td>
+<td>N+2</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
 <td>0</td>
-<td>1</td>
-<td>X</td>
-<td>0</td>
-<td>1</td>
-<td>0</td>
-<td>0</td>
-<td><code>00</code></td>
-</tr>
-<tr>
-<td><code>BRANCH</code> (<strong>beq</strong>)</td>
-<td><code>1100011</code></td>
-<td>0</td>
-<td>0</td>
-<td>X</td>
-<td>0</td>
-<td>0</td>
-<td>1</td>
-<td>0</td>
-<td><code>01</code></td>
-</tr>
-<tr>
-<td><code>I-TYPE</code> (<strong>addi</strong>)</td>
-<td><code>0010011</code></td>
-<td>1</td>
-<td>1</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td><code>00</code></td>
-</tr>
-<tr>
-<td><code>JAL</code> (<strong>jal</strong>)</td>
-<td><code>1101111</code></td>
-<td>1</td>
-<td>X</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>1</td>
-<td><code>XX</code></td>
-</tr>
-<tr>
-<td><code>JALR</code> (<strong>jalr</strong>)</td>
-<td><code>1100111</code></td>
-<td>1</td>
-<td>1</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>1</td>
-<td><code>00</code></td>
-</tr>
-<tr>
-<td><code>LUI</code> (<strong>lui</strong>)</td>
-<td><code>0110111</code></td>
-<td>1</td>
-<td>1</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td><code>00</code></td>
-</tr>
-<tr>
-<td><code>AUIPC</code> (<strong>auipc</strong>)</td>
-<td><code>0010111</code></td>
-<td>1</td>
-<td>1</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td><code>00</code></td>
+<td>Idle novamente</td>
 </tr>
 </tbody>
 </table>
-<h3 id="42-operacao-da-alu">4.2. Operação da ALU</h3>
+<hr />
+<h2 id="7-tabela-de-operacoes-completa">7. Tabela de Operações Completa</h2>
 <table>
 <thead>
 <tr>
-<th><code>ALUOp_i</code> (Entrada)</th>
-<th><code>funct7</code> (Entrada)</th>
-<th><code>funct3</code> (Entrada)</th>
-<th><code>ALUControl_o</code> (Saída)</th>
-<th>Operação da ULA</th>
-<th>Motivo</th>
+<th><code>vld_i</code></th>
+<th><code>we_i</code></th>
+<th><code>addr_i</code></th>
+<th><code>data_i</code></th>
+<th><code>data_o</code></th>
+<th><code>rdy_o</code></th>
+<th>Ação</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>"00"</code></td>
-<td><strong>X (ignorado)</strong></td>
-<td><strong>X (ignorado)</strong></td>
-<td><code>"0000"</code></td>
-<td><strong>ADD</strong></td>
-<td>Para LW/SW/ADDI, a ULA sempre soma.</td>
+<td>0</td>
+<td>X</td>
+<td>X</td>
+<td>X</td>
+<td>(zera)</td>
+<td>0</td>
+<td>Nenhuma operação</td>
 </tr>
 <tr>
-<td><code>"01"</code></td>
-<td><strong>X (ignorado)</strong></td>
-<td><strong>X (ignorado)</strong></td>
-<td><code>"1000"</code></td>
-<td><strong>SUB</strong></td>
-<td>Para Branch, a ULA sempre subtrai para comparar.</td>
+<td>1</td>
+<td>1</td>
+<td>0x0</td>
+<td><code>xxxx_xxxx</code></td>
+<td>(zera)</td>
+<td>1</td>
+<td>Escrita em <code>r_leds</code></td>
 </tr>
 <tr>
-<td><code>"10"</code></td>
-<td><code>0000000</code></td>
-<td><code>000</code></td>
-<td><code>"0000"</code></td>
-<td><strong>ADD</strong></td>
-<td>Instrução R-Type: ADD</td>
+<td>1</td>
+<td>1</td>
+<td>0x4</td>
+<td>X</td>
+<td>(zera)</td>
+<td>1</td>
+<td>Escrita ignorada (endereço read-only)</td>
 </tr>
 <tr>
-<td><code>"10"</code></td>
-<td><code>0100000</code></td>
-<td><code>000</code></td>
-<td><code>"1000"</code></td>
-<td><strong>SUB</strong></td>
-<td>Instrução R-Type: SUB</td>
+<td>1</td>
+<td>1</td>
+<td>Outro</td>
+<td>X</td>
+<td>(zera)</td>
+<td>1</td>
+<td>Escrita ignorada (endereço inválido)</td>
 </tr>
 <tr>
-<td><code>"10"</code></td>
-<td><code>0000000</code></td>
-<td><code>001</code></td>
-<td><code>"0001"</code></td>
-<td><strong>SLL</strong></td>
-<td>Instrução R-Type: SLL</td>
+<td>1</td>
+<td>0</td>
+<td>0x0</td>
+<td>X</td>
+<td><code>r_leds</code></td>
+<td>1</td>
+<td>Leitura de LEDs</td>
 </tr>
 <tr>
-<td><code>"10"</code></td>
-<td><code>0000000</code></td>
-<td><code>010</code></td>
-<td><code>"0010"</code></td>
-<td><strong>SLT</strong></td>
-<td>Instrução R-Type: SLT</td>
+<td>1</td>
+<td>0</td>
+<td>0x4</td>
+<td>X</td>
+<td><code>gpio_sw</code></td>
+<td>1</td>
+<td>Leitura de Switches</td>
 </tr>
 <tr>
-<td><code>"10"</code></td>
-<td><code>0000000</code></td>
-<td><code>011</code></td>
-<td><code>"0011"</code></td>
-<td><strong>SLTU</strong></td>
-<td>Instrução R-Type: SLTU</td>
-</tr>
-<tr>
-<td><code>"10"</code></td>
-<td><code>0000000</code></td>
-<td><code>100</code></td>
-<td><code>"0100"</code></td>
-<td><strong>XOR</strong></td>
-<td>Instrução R-Type: XOR</td>
-</tr>
-<tr>
-<td><code>"10"</code></td>
-<td><code>0000000</code></td>
-<td><code>101</code></td>
-<td><code>"0101"</code></td>
-<td><strong>SRL</strong></td>
-<td>Instrução R-Type: SRL</td>
-</tr>
-<tr>
-<td><code>"10"</code></td>
-<td><code>0100000</code></td>
-<td><code>101</code></td>
-<td><code>"1101"</code></td>
-<td><strong>SRA</strong></td>
-<td>Instrução R-Type: SRA</td>
-</tr>
-<tr>
-<td><code>"10"</code></td>
-<td><code>0000000</code></td>
-<td><code>110</code></td>
-<td><code>"0110"</code></td>
-<td><strong>OR</strong></td>
-<td>Instrução R-Type: OR</td>
-</tr>
-<tr>
-<td><code>"10"</code></td>
-<td><code>0000000</code></td>
-<td><code>111</code></td>
-<td><code>"0111"</code></td>
-<td><strong>AND</strong></td>
-<td>Instrução R-Type: AND</td>
-</tr>
-<tr>
-<td><code>"11"</code></td>
-<td><strong>X (ignorado)</strong></td>
-<td><strong>X (ignorado)</strong></td>
-<td><code>"XXXX"</code></td>
-<td><strong>Indefinido</strong></td>
-<td>Combinação de ALUOp não utilizada.</td>
+<td>1</td>
+<td>0</td>
+<td>Outro</td>
+<td>X</td>
+<td>(zera)</td>
+<td>1</td>
+<td>Leitura inválida (retorna 0)</td>
 </tr>
 </tbody>
 </table>
-<h2 id="5-integracao-no-top-level">5. Integração no Top-Level</h2>
-<p>O arquivo <code>processor_top.vhd</code> representa a cápsula mais externa do núcleo RISC-V. Este módulo implementa uma <strong>Arquitetura de Harvard Modificada</strong>, expondo barramentos separados para a Memória de Instruções (IMEM) e para a Memória de Dados (DMEM). Esta topologia permite que a CPU busque a próxima instrução em simultâneo com a leitura ou escrita de dados na memória.</p>
-<div class="admonition tip">
-<p class="admonition-title">Pipelined</p>
-<p>A existência de dois barramentos separados - um para instruções e outro para dados - é necessário para viabilizar uma microarquitetura <strong>pipelined</strong>. Apesar de, na <strong>multiciclo</strong>, não apresentar nenhum ganho real.</p>
-</div>
-<p>É neste arquivo que ocorre a união estrutural entre os dois grandes blocos do sistema:</p>
+<hr />
+<h2 id="8-consideracoes-de-projeto">8. Considerações de Projeto</h2>
+<h3 id="81-dominio-de-clock">8.1 Domínio de Clock</h3>
+<ul>
+<li><strong>Síncrono:</strong> Todos os registradores operam na borda de subida do <code>clk</code></li>
+<li><strong>Reset:</strong> Síncrono, ativo alto, zera <code>r_leds</code> para <code>0x0000</code></li>
+</ul>
+<h3 id="82-latencia">8.2 Latência</h3>
+<ul>
+<li><strong>Latência de resposta:</strong> 1 ciclo de clock</li>
+<li>A CPU deve aguardar <code>rdy_o = '1'</code> antes de considerar a transação completa</li>
+</ul>
+<h3 id="83-largura-de-dados">8.3 Largura de Dados</h3>
+<ul>
+<li>Barramento: 32 bits (<code>data_i</code>, <code>data_o</code>)</li>
+<li>Dados úteis: 16 bits (LSB)</li>
+<li>Bits superiores (31:16): Reservados, retornam 0 em leituras</li>
+</ul>
+<h3 id="84-limitacoes">8.4 Limitações</h3>
 <ol>
-<li>
-<p><strong>A Comunicação Ascendente (Feedback):</strong> O Datapath (circuito de potência) envia para o Control Path (circuito de comando) a instrução de 32 bits recém-buscada na IMEM (<code>s_instruction</code>) e flags cruciais, como a flag matemática de zero (<code>s_alu_zero</code>), essencial para resolver os saltos condicionais (<em>Branches</em>).</p>
-</li>
-<li>
-<p><strong>A Comunicação Descendente (Comando):</strong> A Unidade de Controle analisa a instrução e emite o pacote completo de diretrizes através do record <code>t_control</code>. Este sinal é injetado de volta no Datapath para orquestrar o ciclo completo.</p>
-</li>
+<li><strong>Direção fixa:</strong> Não há registrador de direção configurável</li>
+<li><strong>Sem interrupções:</strong> O módulo não suporta geração de interrupções</li>
+<li><strong>Sem máscaras individuais:</strong> Escrita afeta todos os 16 bits simultaneamente</li>
 </ol>
-<p>A união entre o <code>U_CONTROLPATH</code> e o <code>U_DATAPATH</code> conclui o processador de ciclo único, formando um núcleo coeso capaz de executar o conjunto de instruções RV32I.</p>
+<hr />
+<h2 id="9-referencias">9. Referências</h2>
+<ul>
+<li><strong>RTL Source:</strong> <code>rtl/perips/gpio/gpio_controller.vhd</code></li>
+<li><strong>Testbench:</strong> <code>sim/perips/test_gpio_controller.py</code></li>
+<li><strong>IEEE Std 1076:</strong> VHDL Language Reference Manual</li>
+</ul>
+<hr />
 
 
 
@@ -2049,7 +2298,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="March 14, 2026 05:23:49 UTC">March 14, 2026 05:23:49</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="May 2, 2026 01:49:03 UTC">May 2, 2026 01:49:03</span>
   </span>
 
     
@@ -2087,7 +2336,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../../intro/setup/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Requisitos e Setup">
+          <a href="../../hardware/interrupts/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Subsistema de Interrupções">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -2097,20 +2346,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Requisitos e Setup
+                Subsistema de Interrupções
               </div>
             </div>
           </a>
         
         
           
-          <a href="../multi-cycle/" class="md-footer__link md-footer__link--next" aria-label="Next: Microarquitetura Multiciclo">
+          <a href="../uart_controller/" class="md-footer__link md-footer__link--next" aria-label="Next: Controlador UART">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Microarquitetura Multiciclo
+                Controlador UART
               </div>
             </div>
             <div class="md-footer__button md-icon">

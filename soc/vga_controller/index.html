@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://RISC-V-Azedinha.github.io/RISC-V/intro/setup/">
+        <link rel="canonical" href="https://RISC-V-Azedinha.github.io/RISC-V/soc/vga_controller/">
       
       
-        <link rel="prev" href="../..">
+        <link rel="prev" href="../../software/linker/">
       
       
-        <link rel="next" href="../../hardware/single-cycle/">
+        <link rel="next" href="../../dev/fpga_build/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Requisitos e Setup - RISC-V SOC</title>
+        <title>Controlador VGA - RISC-V SOC</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#requisitos-e-setup" class="md-skip">
+        <a href="#vga-controller" class="md-skip">
           Skip to content
         </a>
       
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Requisitos e Setup
+              Controlador VGA
             
           </span>
         </div>
@@ -211,12 +211,10 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
+      <li class="md-tabs__item">
         <a href="../.." class="md-tabs__link">
           
   
@@ -273,11 +271,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../soc/vga_controller/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
           
   
   
@@ -378,29 +378,24 @@
       
   
   
-    
   
   
-  
     
     
     
     
       
-        
-        
-      
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
         
           
-          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="">
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
             
   
   
@@ -418,7 +413,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_1">
             <span class="md-nav__icon md-icon"></span>
             
@@ -461,37 +456,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Requisitos e Setup
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../intro/setup/" class="md-nav__link">
         
   
   
@@ -507,81 +475,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#automacao-via-makefile" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Automação via Makefile
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#limpeza-do-projeto" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Limpeza do Projeto
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#compilacao-de-software" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Compilação de Software
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#simulacao-com-cocotb" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Simulação com Cocotb
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#atalhos-e-comandos-uteis" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Atalhos e Comandos Úteis
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -594,7 +487,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../quickstart.md" class="md-nav__link">
+      <a href="../../intro/quickstart.md" class="md-nav__link">
         
   
   
@@ -763,7 +656,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../soc/gpio_controller/" class="md-nav__link">
+      <a href="../gpio_controller/" class="md-nav__link">
         
   
   
@@ -791,7 +684,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../soc/uart_controller/" class="md-nav__link">
+      <a href="../uart_controller/" class="md-nav__link">
         
   
   
@@ -936,24 +829,29 @@
       
   
   
+    
   
   
+  
     
     
     
     
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
             
   
   
@@ -971,7 +869,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -986,10 +884,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../soc/vga_controller/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Controlador VGA
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1005,6 +930,154 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-visao-geral" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Visão Geral
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-principio-de-funcionamento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Princípio de Funcionamento
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Princípio de Funcionamento">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-sinais-de-sincronismo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Sinais de Sincronismo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-area-ativa" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Área Ativa
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-memoria-de-video" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Memória de Vídeo
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Memória de Vídeo">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-enderecamento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Endereçamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-interface-com-software" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Interface com Software
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Interface com Software">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-cores-pre-definidas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Cores Pré-definidas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-exemplo-desenho-de-uma-linha" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Exemplo: Desenho de uma Linha
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-integracao-no-soc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Integração no SoC
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1354,10 +1427,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#automacao-via-makefile" class="md-nav__link">
+  <a href="#1-visao-geral" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Automação via Makefile
+        1. Visão Geral
       
     </span>
   </a>
@@ -1365,43 +1438,116 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#limpeza-do-projeto" class="md-nav__link">
+  <a href="#2-principio-de-funcionamento" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Limpeza do Projeto
+        2. Princípio de Funcionamento
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Princípio de Funcionamento">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-sinais-de-sincronismo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Sinais de Sincronismo
       
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#compilacao-de-software" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#22-area-ativa" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Compilação de Software
+        2.2 Área Ativa
       
     </span>
   </a>
   
 </li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
         <li class="md-nav__item">
-  <a href="#simulacao-com-cocotb" class="md-nav__link">
+  <a href="#3-memoria-de-video" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Simulação com Cocotb
+        3. Memória de Vídeo
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Memória de Vídeo">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-enderecamento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Endereçamento
       
     </span>
   </a>
   
 </li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
         <li class="md-nav__item">
-  <a href="#atalhos-e-comandos-uteis" class="md-nav__link">
+  <a href="#4-interface-com-software" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Atalhos e Comandos Úteis
+        4. Interface com Software
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Interface com Software">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-cores-pre-definidas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Cores Pré-definidas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-exemplo-desenho-de-uma-linha" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Exemplo: Desenho de uma Linha
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-integracao-no-soc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Integração no SoC
       
     </span>
   </a>
@@ -1428,49 +1574,160 @@
   
 
 
-<h1 id="requisitos-e-setup">Requisitos e Setup</h1>
-<div class="admonition warning">
-<p class="admonition-title">Dependências do Sistema</p>
-<p>Para compilar, simular e interagir com este projeto, instale as seguintes ferramentas e certifique-se de que elas estão no seu PATH:</p>
-</div>
+<h1 id="vga-controller">VGA Controller</h1>
+<hr />
+<h2 id="1-visao-geral">1. Visão Geral</h2>
+<p>O <strong>VGA Controller</strong> é um periférico de saída de vídeo que permite ao processador RISC-V exibir gráficos em monitores VGA padrão.</p>
+<table>
+<thead>
+<tr>
+<th>Característica</th>
+<th>Valor</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Resolução</strong></td>
+<td>640×480 pixels</td>
+</tr>
+<tr>
+<td><strong>Taxa de Atualização</strong></td>
+<td>60 Hz</td>
+</tr>
+<tr>
+<td><strong>Profundidade de Cor</strong></td>
+<td>8 bits/pixel (RGB332)</td>
+</tr>
+<tr>
+<td><strong>VRAM</strong></td>
+<td>320×240 = 76.800 bytes</td>
+</tr>
+<tr>
+<td><strong>Clock do Sistema</strong></td>
+<td>100 MHz</td>
+</tr>
+<tr>
+<td><strong>Pixel Clock</strong></td>
+<td>25 MHz</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="2-principio-de-funcionamento">2. Princípio de Funcionamento</h2>
+<p>O padrão VGA utiliza o princípio da <strong>varredura eletrônica</strong> (raster scan), onde o monitor varre a tela linha por linha, da esquerda para direita e de cima para baixo.</p>
+<h3 id="21-sinais-de-sincronismo">2.1 Sinais de Sincronismo</h3>
+<p>Para que o monitor know quando reposicionar o feixe de elétrons, dois sinais são utilizados:</p>
 <ul>
-<li><strong>GHDL</strong>: Simulador VHDL open-source.</li>
-<li><strong>GTKWave</strong>: Visualizador de formas de onda.</li>
-<li><strong>RISC-V GCC Toolchain</strong>: Necessário para compilar os softwares C/Assembly nativamente para a arquitetura (<code>riscv64-unknown-elf-gcc</code>).</li>
-<li><strong>COCOTB</strong>: Framework Python para testbenches baseados em corrotinas.</li>
-<li><strong>Python 3.10+</strong>: Necessário para rodar o Cocotb, utilitários de build e drivers de host.</li>
-<li><strong>Xilinx Vivado</strong>: Opcional. Apenas se for realizar a síntese e gravação na placa FPGA (Nexys 4 DDR).</li>
+<li><strong>H_SYNC (Horizontal)</strong>: Indica o momento de retornar ao início da linha</li>
+<li><strong>V_SYNC (Vertical)</strong>: Indica o momento de retornar ao topo da tela</li>
 </ul>
-<h2 id="automacao-via-makefile">Automação via Makefile</h2>
-<p>Todos os comandos devem ser executados a partir da raiz do repositório. O Makefile automatiza completamente o fluxo de simulação, compilação de software, visualização e síntese.</p>
-<p>O sistema de build foi projetado para ser multiplataforma, detectando automaticamente se você está operando em um ambiente Linux nativo ou WSL (Windows Subsystem for Linux), ajustando as chamadas de executáveis (como vivado.exe ou python.exe) conforme necessário.</p>
-<h2 id="limpeza-do-projeto">Limpeza do Projeto</h2>
-<p>Remove todos os artefatos de build gerados (arquivos HEX, BIN, formas de onda e diretórios temporários):</p>
-<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>make<span class="w"> </span>clean
-</span></code></pre></div>
-<h2 id="compilacao-de-software">Compilação de Software</h2>
-<p>Compile um programa escrito em C ou Assembly (localizado no diretório sw/apps/) para uso na simulação ou FPGA:</p>
-<div class="highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>make<span class="w"> </span>sw<span class="w"> </span><span class="nv">SW</span><span class="o">=</span>&lt;program_name&gt;
-</span></code></pre></div>
-<h2 id="simulacao-com-cocotb">Simulação com Cocotb</h2>
-<p>Rode testes automatizados informando o nome do testbench (TEST) e da entidade de topo (TOP). Opcionalmente, você pode especificar qual microarquitetura testar (CORE) e injetar um software na memória durante a inicialização (SW):</p>
-<div class="highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>make<span class="w"> </span>cocotb<span class="w"> </span><span class="o">[</span><span class="nv">CORE</span><span class="o">=</span>&lt;core&gt;<span class="o">]</span><span class="w"> </span><span class="nv">TEST</span><span class="o">=</span>&lt;testbench_name&gt;<span class="w"> </span><span class="nv">TOP</span><span class="o">=</span>&lt;top_level&gt;<span class="w"> </span><span class="o">[</span><span class="nv">SW</span><span class="o">=</span>&lt;program_name&gt;<span class="o">]</span>
-</span></code></pre></div>
-<div class="admonition example">
-<p class="admonition-title">Visualização de Ondas</p>
-<p>Para abrir a última simulação gerada no GTKWave e analisar os sinais lógicos em detalhes, execute:</p>
-<div class="highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>make<span class="w"> </span>view<span class="w"> </span><span class="o">[</span><span class="nv">CORE</span><span class="o">=</span>&lt;core&gt;<span class="o">]</span><span class="w"> </span><span class="nv">TEST</span><span class="o">=</span>&lt;testbench_name&gt;
-</span></code></pre></div>
-</div>
-<h2 id="atalhos-e-comandos-uteis">Atalhos e Comandos Úteis</h2>
-<p>Já existem atalhos configurados no Makefile para facilitar a listagem de arquivos e execução de tarefas comuns:</p>
+<p>O monitor VGA espera pulses de sincronismo em intervalos específicos para controlar o posicionamento do feixe.</p>
+<h3 id="22-area-ativa">2.2 Área Ativa</h3>
+<p>Apenas uma região central da imagem (640×480 pixels) é visível. Os intervalos entre os pulses de sincronismo (front porch, back porch, sync pulse) são necessários para que o monitor processe o sinal, mas não aparecem na tela.</p>
+<hr />
+<h2 id="3-memoria-de-video">3. Memória de Vídeo</h2>
+<p>A <strong>VRAM</strong> (Video RAM) armazena os dados de pixel que serão exibidos na tela. O sistema utiliza uma <strong>Dual-Port RAM</strong> que permite acesso simultâneo de duas entidades independentes:</p>
 <ul>
-<li><code>make info</code>: Mostra as configurações do sistema, paths e detecção de ferramentas instaladas.</li>
-<li><code>make list-apps</code>: Lista todos os programas em C/Assembly disponíveis para compilação.</li>
-<li><code>make list-tests</code>: Lista todos os testbenches prontos para serem simulados (separados por integração, unidade e periféricos).</li>
-<li><code>make fpga</code>: Sintetiza o hardware, implementa e gera o bitstream utilizando os scripts Tcl do Vivado.</li>
-<li><code>make upload SW=&lt;program_name&gt;</code>: Envia o software compilado diretamente para a memória do processador na FPGA através da comunicação serial UART.</li>
+<li><strong>Porta A (CPU)</strong>: O processador RISC-V escreve dados de pixel nesta porta para atualizar a tela</li>
+<li><strong>Porta B (VGA)</strong>: O controlador VGA lê continuamente os dados para gerar a imagem</li>
 </ul>
+<p>Esta separação permite que a CPU escreva na memória a qualquer momento, sem interferir na leitura contínua feita pelo controlador de vídeo.</p>
+<h3 id="31-enderecamento">3.1 Endereçamento</h3>
+<p>A VRAM é organizada como um array linear de 76.800 bytes (320 × 240). Cada byte representa um pixel no formato RGB332:</p>
+<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>bit 7-5: Vermelho (3 bits)
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>bit 4-2: Verde   (3 bits)  
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>bit 1-0: Azul    (2 bits)
+</span></code></pre></div>
+<p>O endereço de cada pixel é calculado como:</p>
+<div class="highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>endereço = (y × 320) + x
+</span></code></pre></div>
+<hr />
+<h2 id="4-interface-com-software">4. Interface com Software</h2>
+<p>A HAL VGA (<code>hal_vga.h</code>) fornece uma API simples para manipulação de gráficos:</p>
+<div class="highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1">// Inicializa o controlador</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">hal_vga_init</span><span class="p">();</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1">// Limpa a tela com uma cor</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">hal_vga_clear</span><span class="p">(</span><span class="n">VGA_BLACK</span><span class="p">);</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1">// Desenha um pixel</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">hal_vga_plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">VGA_RED</span><span class="p">);</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="c1">// Desenha um retângulo</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="n">hal_vga_rect</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span><span class="w"> </span><span class="mi">50</span><span class="p">,</span><span class="w"> </span><span class="n">VGA_GREEN</span><span class="p">);</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="c1">// Espera o próximo quadro (para sincronização)</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="n">hal_vga_vsync_wait</span><span class="p">();</span>
+</span></code></pre></div>
+<h3 id="41-cores-pre-definidas">4.1 Cores Pré-definidas</h3>
+<p>A HAL define cores básicas em formato RGB332:</p>
+<table>
+<thead>
+<tr>
+<th>Cor</th>
+<th>Valor</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>VGA_BLACK</code></td>
+<td>0x00</td>
+</tr>
+<tr>
+<td><code>VGA_WHITE</code></td>
+<td>0xFF</td>
+</tr>
+<tr>
+<td><code>VGA_RED</code></td>
+<td>0xE0</td>
+</tr>
+<tr>
+<td><code>VGA_GREEN</code></td>
+<td>0x1C</td>
+</tr>
+<tr>
+<td><code>VGA_BLUE</code></td>
+<td>0x03</td>
+</tr>
+<tr>
+<td><code>VGA_YELLOW</code></td>
+<td>0xFC</td>
+</tr>
+<tr>
+<td><code>VGA_CYAN</code></td>
+<td>0x1F</td>
+</tr>
+<tr>
+<td><code>VGA_MAGENTA</code></td>
+<td>0xE3</td>
+</tr>
+</tbody>
+</table>
+<h3 id="42-exemplo-desenho-de-uma-linha">4.2 Exemplo: Desenho de uma Linha</h3>
+<div class="highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kt">void</span><span class="w"> </span><span class="nf">draw_line</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">x0</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">y0</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">x1</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">y1</span><span class="p">,</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">color</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">dx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">abs</span><span class="p">(</span><span class="n">x1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">x0</span><span class="p">);</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">dy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="n">abs</span><span class="p">(</span><span class="n">y1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">y0</span><span class="p">);</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">sx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">x0</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">x1</span><span class="p">)</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">sy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">y0</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">y1</span><span class="p">)</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">err</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dx</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">dy</span><span class="p">;</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">    </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">        </span><span class="n">hal_vga_plot</span><span class="p">(</span><span class="n">x0</span><span class="p">,</span><span class="w"> </span><span class="n">y0</span><span class="p">,</span><span class="w"> </span><span class="n">color</span><span class="p">);</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">x0</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">x1</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">y0</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">y1</span><span class="p">)</span><span class="w"> </span><span class="k">break</span><span class="p">;</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">e2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">err</span><span class="p">;</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">e2</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">dy</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">err</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">dy</span><span class="p">;</span><span class="w"> </span><span class="n">x0</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">sx</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">e2</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">dx</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">err</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">dx</span><span class="p">;</span><span class="w"> </span><span class="n">y0</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">sy</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="p">}</span>
+</span></code></pre></div>
+<hr />
+<h2 id="5-integracao-no-soc">5. Integração no SoC</h2>
+<p>O VGA Controller conecta-se ao barramento do SoC como um periférico mapeado em memória:</p>
+<div class="highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>Endereço Base: 0x30000000
+</span></code></pre></div>
+<p>A CPU acessa a VRAM escrevendo bytes diretamente neste intervalo de endereços. O controlador de vídeo lê esses dados autonomamente para gerar a imagem.</p>
+<hr />
+<p><em>Documento simplificado. Para detalhes de implementação RTL, consulte o código fonte em <code>fpga/hw/peripherals/vga/</code>.</em></p>
 
 
 
@@ -1491,7 +1748,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="March 14, 2026 04:22:30 UTC">March 14, 2026 04:22:30</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="April 25, 2026 03:49:55 UTC">April 25, 2026 03:49:55</span>
   </span>
 
     
@@ -1529,7 +1786,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../.." class="md-footer__link md-footer__link--prev" aria-label="Previous: Visão Geral">
+          <a href="../../software/linker/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Linker Scripts">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -1539,20 +1796,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Visão Geral
+                Linker Scripts
               </div>
             </div>
           </a>
         
         
           
-          <a href="../../hardware/single-cycle/" class="md-footer__link md-footer__link--next" aria-label="Next: Microarquitetura Monociclo">
+          <a href="../../dev/fpga_build/" class="md-footer__link md-footer__link--next" aria-label="Next: Fluxo de Síntese (FPGA)">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Microarquitetura Monociclo
+                Fluxo de Síntese (FPGA)
               </div>
             </div>
             <div class="md-footer__button md-icon">
