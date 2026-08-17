@@ -19,6 +19,25 @@ static uint32_t buffer_inputs[MAX_K_DIM];
 
 uint8_t uart_read_byte() { return hal_uart_getc(); }
 
+// ------------------------------------------------------------
+// Gera os dados sintéticos do tile `idx` (determinístico a partir de idx, para
+// poder ser regenerado tile a tile sem manter todos os tiles em memória ao
+// mesmo tempo, tanto na passada serial quanto na pipelined).
+// ------------------------------------------------------------
+static void gen_tile_data(uint32_t idx, uint32_t k_dim, uint8_t sparsity) {
+    uint32_t lfsr = 0xACE1u ^ (idx * 0x9E3779B9u);
+    for (uint32_t i = 0; i < k_dim; i++) {
+        lfsr = (lfsr >> 1) ^ (-(lfsr & 1u) & 0xB400u);
+
+        if ((lfsr % 100) < sparsity) {
+            buffer_inputs[i] = 0;
+        } else {
+            buffer_inputs[i] = lfsr;
+        }
+        buffer_weights[i] = lfsr * 13;
+    }
+}
+
 uint32_t uart_read_u32() {
     uint32_t val = 0;
     val |= ((uint32_t)hal_uart_getc() << 24);
@@ -138,6 +157,111 @@ int main() {
             // ------------------------------------------------------------
             uart_write_u64(total_cpu_cycles);
             uart_write_u64(total_npu_cycles);
+        }
+
+        // ------------------------------------------------------------
+        // BENCHMARK ENCADEADO (Double Buffering / Ping-Pong)
+        // Roda `num_tiles` tiles de GEMM em sequência, uma vez no modo serial
+        // (carga -> compute -> drenagem, tudo em série, como hoje) e outra vez
+        // no modo pipelined (o próximo tile é carregado nos bancos físicos
+        // livres enquanto a NPU ainda está BUSY computando o tile atual).
+        // Reporta os dois totais de ciclos via UART para comparação de ganho.
+        // ------------------------------------------------------------
+        else if (cmd == 'P') {
+            uint32_t k_dim     = uart_read_u32();
+            uint8_t  num_tiles = uart_read_byte();
+            uint8_t  sparsity  = uart_read_byte();
+
+            if (k_dim > MAX_K_DIM) k_dim = MAX_K_DIM;
+
+            MMIO32(NPU_BASE_ADDR + 0x44) = 1;
+            MMIO32(NPU_BASE_ADDR + 0x40) = 8;
+            MMIO32(NPU_BASE_ADDR + 0x48) = 0;
+
+            // --------------------------------------------------------
+            // PASSADA 1: SERIAL (baseline) — carga e compute em série, tile a tile.
+            // --------------------------------------------------------
+            uint64_t t_serial_start = hal_timer_get_cycles();
+
+            for (uint32_t t = 0; t < num_tiles; t++) {
+                gen_tile_data(t, k_dim, sparsity);
+
+                MMIO32(NPU_BASE_ADDR + 0x04) = NPU_CMD_RST_WR_W | NPU_CMD_RST_WR_I;
+
+                // Pesos E inputs via DMA: um laço de escrita por CPU (~milhares de
+                // ciclos por word num core multi_cycle) dominaria completamente o
+                // tempo de cada tile e mascararia qualquer ganho do double buffering
+                // — a carga precisa ser rápida o bastante pra ser da mesma ordem de
+                // grandeza do cômputo, senão não há o que sobrepor.
+                hal_dma_memcpy((uint32_t)buffer_inputs, NPU_BASE_ADDR + 0x14, k_dim, 1);
+                hal_dma_memcpy((uint32_t)buffer_weights, NPU_BASE_ADDR + 0x10, k_dim, 1);
+
+                MMIO32(NPU_BASE_ADDR + 0x08) = k_dim;
+                MMIO32(NPU_BASE_ADDR + 0x04) = NPU_CMD_START | NPU_CMD_ACC_CLEAR |
+                                                NPU_CMD_RST_W_RD | NPU_CMD_RST_I_RD;
+
+                while (!(MMIO32(NPU_BASE_ADDR + 0x00) & NPU_STATUS_BUSY));
+                while (!(MMIO32(NPU_BASE_ADDR + 0x00) & NPU_STATUS_DONE));
+
+                uint32_t trash;
+                for (int r = 0; r < 4; r++) {
+                    while (!(MMIO32(NPU_BASE_ADDR + 0x00) & NPU_STATUS_OUT_VLD));
+                    trash = MMIO32(NPU_BASE_ADDR + 0x18);
+                }
+                (void)trash;
+            }
+
+            uint64_t total_serial_cycles = hal_timer_get_cycles() - t_serial_start;
+
+            // --------------------------------------------------------
+            // PASSADA 2: PIPELINED (Double Buffering) — o tile N+1 é carregado
+            // nos bancos ping-pong enquanto a NPU ainda está BUSY com o tile N.
+            // --------------------------------------------------------
+            uint64_t t_pipe_start = hal_timer_get_cycles();
+
+            int wr_bank = 0;
+            gen_tile_data(0, k_dim, sparsity);
+            MMIO32(NPU_BASE_ADDR + 0x04) = NPU_CMD_RST_WR_W | NPU_CMD_RST_WR_I;
+            hal_dma_memcpy((uint32_t)buffer_inputs, NPU_BASE_ADDR + 0x14, k_dim, 1);
+            hal_dma_memcpy((uint32_t)buffer_weights, NPU_BASE_ADDR + 0x10, k_dim, 1);
+
+            for (uint32_t t = 0; t < num_tiles; t++) {
+                MMIO32(NPU_BASE_ADDR + 0x08) = k_dim;
+                MMIO32(NPU_BASE_ADDR + 0x04) = NPU_CMD_START | NPU_CMD_ACC_CLEAR |
+                                                NPU_CMD_RST_W_RD | NPU_CMD_RST_I_RD |
+                                                NPU_CMD_RST_WR_W | NPU_CMD_RST_WR_I |
+                                                NPU_CMD_DBUF_EN;
+                wr_bank ^= 1; // espelha a troca de banco que o hardware acabou de fazer
+
+                while (!(MMIO32(NPU_BASE_ADDR + 0x00) & NPU_STATUS_BUSY));
+
+                // Sobrepõe a carga do PRÓXIMO tile com o cômputo do tile atual.
+                // Pesos e inputs mudam em TODO tile neste benchmark (GEMM puro),
+                // então, ao contrário do cnn_server, não há lado estático pra
+                // "primar" uma única vez — os dois bancos recebem dado novo
+                // sempre. wr_bank só é usado aqui pra documentar a simetria com
+                // o padrão usado em cnn_server.c.
+                if (t + 1 < num_tiles) {
+                    gen_tile_data(t + 1, k_dim, sparsity);
+                    hal_dma_memcpy((uint32_t)buffer_inputs, NPU_BASE_ADDR + 0x14, k_dim, 1);
+                    hal_dma_memcpy((uint32_t)buffer_weights, NPU_BASE_ADDR + 0x10, k_dim, 1);
+                }
+
+                while (!(MMIO32(NPU_BASE_ADDR + 0x00) & NPU_STATUS_DONE));
+
+                uint32_t trash;
+                for (int r = 0; r < 4; r++) {
+                    while (!(MMIO32(NPU_BASE_ADDR + 0x00) & NPU_STATUS_OUT_VLD));
+                    trash = MMIO32(NPU_BASE_ADDR + 0x18);
+                }
+                (void)trash;
+            }
+
+            uint64_t total_pipe_cycles = hal_timer_get_cycles() - t_pipe_start;
+            (void)wr_bank;
+
+            uart_write_u64(total_serial_cycles);
+            uart_write_u64(total_pipe_cycles);
         }
     }
     return 0;

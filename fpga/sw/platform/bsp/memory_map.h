@@ -81,6 +81,10 @@
 #define NPU_CMD_RST_I_RD    (1 << 5)                            // Reseta leitura de Inputs (Reuso)
 #define NPU_CMD_RST_WR_W    (1 << 6)                            // Reseta escrita de Pesos
 #define NPU_CMD_RST_WR_I    (1 << 7)                            // Reseta escrita de Inputs
+#define NPU_CMD_DBUF_EN     (1 << 8)                            // Double Buffering (Ping-Pong) neste START:
+                                                                 // troca os bancos físicos de Pesos/Inputs.
+                                                                 // Só tem efeito em bitstreams gerados com
+                                                                 // DOUBLE_BUFFER => true no npu_top.
 
 // FLAGS (0x48)
 #define NPU_FLAG_RELU       (1 << 0)                            // 1 = Ativa ReLU na saída

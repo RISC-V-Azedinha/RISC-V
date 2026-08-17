@@ -72,6 +72,21 @@ set_property -dict { PACKAGE_PIN D4    IOSTANDARD LVCMOS33 } [get_ports { UART_T
 set_property -dict { PACKAGE_PIN E5    IOSTANDARD LVCMOS33 } [get_ports { UART_RTS_i }];
 
 ## =========================================================================================================================
+## Exceções de Timing (Multicycle Paths)
+## =========================================================================================================================
+
+## IR -> flag Zero da ALU (resolução de branch, S_EX_BR)
+##
+## O core multi_cycle mantém r_IR estável durante toda a execução de uma instrução (vários
+## ciclos de clock), e no estado S_EX_BR a FSM só usa r_alu_zero no SEGUNDO microestado, quando
+## esse registrador já teve um ciclo inteiro para se estabilizar (ver comentário em
+## rtl/core/multi_cycle/core/main_fsm.vhd, sinal s_br_wait_q). O caminho combinacional
+## IR -> gerador de imediato -> ALU -> flag Zero tem portanto 2 ciclos de clock disponíveis,
+## não 1 (o padrão assumido pelo STA), daí o multicycle path abaixo.
+set_multicycle_path -setup 2 -from [get_cells U_CORE/U_DATAPATH/r_IR_reg[*]] -to [get_cells U_CORE/U_CONTROLPATH/r_alu_zero_reg]
+set_multicycle_path -hold  1 -from [get_cells U_CORE/U_DATAPATH/r_IR_reg[*]] -to [get_cells U_CORE/U_CONTROLPATH/r_alu_zero_reg]
+
+## =========================================================================================================================
 ## Interface VGA
 ## =========================================================================================================================
 

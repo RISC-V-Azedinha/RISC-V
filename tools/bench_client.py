@@ -14,13 +14,28 @@ def run_benchmark(ser, k_dim, sparsity):
     """ Envia o comando de benchmark para o SoC e retorna os ciclos """
     cmd = struct.pack('>B I B', ord('B'), k_dim, sparsity)
     ser.write(cmd)
-    
+
     res = ser.read(16)
     if len(res) == 16:
         cpu_cycles, npu_cycles = struct.unpack('>Q Q', res)
         return cpu_cycles, npu_cycles
     else:
         print(f"Timeout a processar K={k_dim}")
+        return 0, 0
+
+def run_pipelined_benchmark(ser, k_dim, num_tiles, sparsity=0):
+    """ Comando 'P': roda `num_tiles` tiles de GEMM em série e depois em modo
+    pipelined (Double Buffering / Ping-Pong da NPU), devolvendo os dois totais
+    de ciclos para medir o ganho da sobreposição carga/cômputo. """
+    cmd = struct.pack('>B I B B', ord('P'), k_dim, num_tiles, sparsity)
+    ser.write(cmd)
+
+    res = ser.read(16)
+    if len(res) == 16:
+        serial_cycles, pipelined_cycles = struct.unpack('>Q Q', res)
+        return serial_cycles, pipelined_cycles
+    else:
+        print(f"Timeout a processar K={k_dim}, tiles={num_tiles}")
         return 0, 0
 
 def main():
@@ -57,6 +72,31 @@ def main():
         results_sparse['speedup'].append(sp_s)
 
         print(f"{k:<6} | {cpu_d:<12} | {npu_d:<12} | {sp_d:>6.1f}x | {cpu_s:<15}")
+
+    # =========================================================================
+    # BENCHMARK DE DOUBLE BUFFERING (comando 'P': GEMM em série vs pipelined)
+    # =========================================================================
+    # Roda o MESMO conjunto de tiles duas vezes no hardware: uma vez carregando
+    # e computando cada tile em série (baseline), outra vez sobrepondo a carga
+    # do tile N+1 (DMA de pesos + escrita de inputs) com o cômputo do tile N
+    # via Ping-Pong (DBUF_EN). Mede o ganho real da técnica, não só se ela "roda".
+    print("\nA medir o ganho do Double Buffering (Pipeline) da NPU...")
+    print(f"{'Tiles':<6} | {'Serial (ciclos)':<16} | {'Pipelined (ciclos)':<19} | {'Speedup':<8}")
+    print("-" * 60)
+
+    K_DBUF = 512
+    TILES_VALUES = [2, 4, 8, 16, 32]
+    dbuf_results = {'tiles': TILES_VALUES, 'serial': [], 'pipelined': [], 'speedup': []}
+
+    for n_tiles in TILES_VALUES:
+        serial_cycles, pipe_cycles = run_pipelined_benchmark(ser, K_DBUF, n_tiles, sparsity=0)
+        sp = serial_cycles / pipe_cycles if pipe_cycles > 0 else 0
+        dbuf_results['serial'].append(serial_cycles)
+        dbuf_results['pipelined'].append(pipe_cycles)
+        dbuf_results['speedup'].append(sp)
+        print(f"{n_tiles:<6} | {serial_cycles:<16} | {pipe_cycles:<19} | {sp:>6.2f}x")
+
+    print("-" * 60)
 
     ser.close()
 
@@ -198,9 +238,25 @@ def main():
     # Finalização
     # -------------------------------------------------------------------------
     plt.tight_layout()
-    fig.subplots_adjust(wspace=0.25) 
+    fig.subplots_adjust(wspace=0.25)
     plt.savefig("figura_benchmark_tcc.png", dpi=400, bbox_inches='tight', transparent=False)
     print("Gráfico final gerado como 'figura_benchmark_tcc.png'")
+
+    # -------------------------------------------------------------------------
+    # Gráfico (d): Ganho do Double Buffering (Ping-Pong)
+    # -------------------------------------------------------------------------
+    fig_db, ax_db = plt.subplots(figsize=(6, 5))
+    ax_db.plot(dbuf_results['tiles'], dbuf_results['speedup'], marker='D', markersize=6,
+               linewidth=2, color='#673ab7', label='Speedup (Pipelined / Serial)')
+    ax_db.axhline(y=1.0, color='#9e9e9e', linestyle=':', linewidth=1.5, label='Sem ganho (1.0x)')
+    ax_db.set_xlabel('Número de Tiles no Lote')
+    ax_db.set_ylabel('Speedup')
+    ax_db.set_title(f'(d) Ganho do Double Buffering ($K={K_DBUF}$)', pad=12, fontweight='bold')
+    ax_db.legend(loc='best', fontsize=9.5)
+    plt.tight_layout()
+    plt.savefig("figura_double_buffering_tcc.png", dpi=400, bbox_inches='tight', transparent=False)
+    print("Gráfico do double buffering gerado como 'figura_double_buffering_tcc.png'")
+
     plt.show()
 
 if __name__ == '__main__':

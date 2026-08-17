@@ -417,6 +417,9 @@ begin
     s_npu_rst_n <= not s_sys_rst;
 
     U_NPU: entity work.npu_top
+        generic map (
+            DOUBLE_BUFFER => true
+        )
         port map (
             clk => CLK_i, rst_n => s_npu_rst_n, soc_en_i => s_soc_en_sys, vld_i => s_npu_vld, we_i => s_npu_we, addr_i => s_npu_addr, data_i => s_npu_data_tx, data_o => s_npu_data_rx, rdy_o => s_npu_rdy, irq_done_o => s_npu_irq
         );

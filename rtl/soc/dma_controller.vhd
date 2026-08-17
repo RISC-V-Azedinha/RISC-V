@@ -77,13 +77,23 @@ architecture rtl of dma_controller is
     -- Edge Guard (Interface de Configuração)
     signal r_cfg_rdy : std_logic := '0';
 
+    -- Espelha "r_rd_count /= 0", atualizado apenas nos dois eventos que mudam
+    -- r_rd_count (carga de config e decremento por leitura). Existe para tirar
+    -- a comparação de 32 bits do caminho combinacional que vai até a
+    -- arbitragem do crossbar: s_rd_req selecionava o dono do barramento (e,
+    -- por consequência, todo o barramento de endereço/WE do escravo) a cada
+    -- ciclo, então esse comparador dominava quase todo o top de piores
+    -- caminhos de setup do design. Com o flag pré-computado, os consumidores
+    -- só leem um bit já pronto no registrador.
+    signal r_rd_pending : std_logic := '0';
+
 begin
 
     cfg_rdy_o <= r_cfg_rdy;
 
     -- Requisições de Barramento ativas continuamente baseadas no estado da FIFO interna
     -- Limite de leitura alterado para < 32
-    s_rd_req <= '1' when (r_busy = '1' and r_rd_count > 0 and r_fifo_count < 32 and soc_en_i /= '0') else '0';
+    s_rd_req <= '1' when (r_busy = '1' and r_rd_pending = '1' and r_fifo_count < 32 and soc_en_i /= '0') else '0';
 
     m_rd_vld_o  <= s_rd_req;
     m_rd_addr_o <= std_logic_vector(r_src_addr);
@@ -111,6 +121,7 @@ begin
                 r_wr_valid_reg   <= '0';
                 r_wr_data_reg    <= (others => '0');
                 r_cfg_rdy        <= '0';
+                r_rd_pending     <= '0';
                 irq_done_o       <= '0';
             else
                 v_fifo_push := false;
@@ -126,9 +137,10 @@ begin
                         case cfg_addr_i is
                             when x"0" => r_src_addr <= unsigned(cfg_data_i);
                             when x"4" => r_dst_addr <= unsigned(cfg_data_i);
-                            when x"8" => 
-                                r_rd_count <= unsigned(cfg_data_i);
-                                r_wr_count <= unsigned(cfg_data_i);
+                            when x"8" =>
+                                r_rd_count   <= unsigned(cfg_data_i);
+                                r_wr_count   <= unsigned(cfg_data_i);
+                                r_rd_pending <= '1' when unsigned(cfg_data_i) /= 0 else '0';
                             when x"C" =>
                                 if cfg_data_i(0) = '1' then
                                     r_busy       <= '1';
@@ -142,17 +154,18 @@ begin
                     end if;
                 end if;
 
-                if r_busy = '1' and r_rd_count = 0 and r_wr_count = 0 and r_fifo_count = 0 then
+                if r_busy = '1' and r_rd_pending = '0' and r_wr_count = 0 and r_fifo_count = 0 then
                     r_busy <= '0';
                 end if;
 
                 -- 2. READ ENGINE (Estágio 1 - Produtor em True Burst)
                 if s_rd_req = '1' and m_rd_rdy_i = '1' then
                     r_fifo(to_integer(r_fifo_wr)) <= m_rd_data_i;
-                    r_fifo_wr  <= r_fifo_wr + 1;
-                    r_src_addr <= r_src_addr + 4;
-                    r_rd_count <= r_rd_count - 1;
-                    v_fifo_push := true;
+                    r_fifo_wr    <= r_fifo_wr + 1;
+                    r_src_addr   <= r_src_addr + 4;
+                    r_rd_count   <= r_rd_count - 1;
+                    r_rd_pending <= '0' when r_rd_count = 1 else '1';
+                    v_fifo_push  := true;
                 end if;
 
                 -- 3. WRITE ENGINE (Estágio 2 - Buffer de Saída Registrado)

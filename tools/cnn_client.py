@@ -163,8 +163,57 @@ class NPUDriverEdge:
         res = self.ser.read(10)
         return struct.unpack('>10b', res)
 
-    def close(self): 
+    def inferir_lote_serial(self, imagens_int8):
+        """ Classifica uma lista de imagens uma de cada vez (comando 0xFF,
+        repetido): manda, espera a resposta, só então manda a próxima. Serve de
+        baseline pra comparar com o modo pipelined (double buffering). """
+        t0 = time.time()
+        preds = [int(np.argmax(self.inferir(img))) for img in imagens_int8]
+        return preds, time.time() - t0
+
+    def inferir_lote_pipelined(self, imagens_int8):
+        """ Comando 0xEE: envia todas as imagens em sequência, sem esperar a
+        resposta de uma antes de mandar a próxima. O SoC sobrepõe a recepção
+        da PRÓXIMA imagem (via UART) com a classificação da ATUAL na NPU —
+        double buffering em nível de imagem, espelhando o ping-pong que já
+        existe dentro da NPU para pesos/inputs. """
+        n = len(imagens_int8)
+        t0 = time.time()
+        self.ser.write(struct.pack('>B H', 0xEE, n))
+        for img in imagens_int8:
+            self.ser.write(img.tobytes())
+
+        preds = []
+        for _ in range(n):
+            res = self.ser.read(10)
+            preds.append(int(np.argmax(struct.unpack('>10b', res))))
+        return preds, time.time() - t0
+
+    def close(self):
         self.ser.close()
+
+def rodar_benchmark_lote(driver, n_imagens=30):
+    """ Gera `n_imagens` imagens sintéticas (mesma faixa de valores que a GUI
+    envia) e compara o tempo total do modo serial (0xFF repetido) contra o
+    modo pipelined/double-buffered (0xEE), pra mostrar o ganho de sobrepor a
+    recepção da próxima imagem com o cômputo da atual. """
+    rng = np.random.default_rng(42)
+    imagens = [np.clip(rng.integers(0, 128, size=784), 0, 127).astype(np.int8) for _ in range(n_imagens)]
+
+    print(f"\n--- BENCHMARK DE LOTE ({n_imagens} imagens) ---")
+
+    preds_serial, t_serial = driver.inferir_lote_serial(imagens)
+    print(f"Serial (0xFF x{n_imagens})     : {t_serial*1000:8.1f} ms  ({t_serial*1000/n_imagens:.2f} ms/imagem)")
+
+    preds_pipe, t_pipe = driver.inferir_lote_pipelined(imagens)
+    print(f"Pipelined (0xEE, Double Buf) : {t_pipe*1000:8.1f} ms  ({t_pipe*1000/n_imagens:.2f} ms/imagem)")
+
+    if preds_serial != preds_pipe:
+        print("[AVISO] Predições divergiram entre o modo serial e o pipelined — verifique o firmware.")
+
+    speedup = t_serial / t_pipe if t_pipe > 0 else 0
+    print(f"Speedup: {speedup:.2f}x")
+    print("-" * 48)
 
 # ==============================================================================
 # INTERFACE GRÁFICA TKINTER (Real-Time Inference)
@@ -251,7 +300,10 @@ if __name__ == "__main__":
     w_conv, b_conv, w_fc, b_fc = treinar_e_extrair()
     driver = NPUDriverEdge(SERIAL_PORT, BAUD_RATE)
     driver.upload_modelo(w_conv, b_conv, w_fc, b_fc)
-    
+
+    if "--benchmark" in sys.argv:
+        rodar_benchmark_lote(driver)
+
     print("\n[INFO] Rede Conv2D armazenada no SoC com Sucesso. Abrindo Interface...")
     app = EdgeAI_App(driver)
     app.iniciar()
