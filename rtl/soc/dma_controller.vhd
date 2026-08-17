@@ -65,7 +65,14 @@ architecture rtl of dma_controller is
     signal r_fifo_count : unsigned(5 downto 0); -- Necessita de 6 bits para contar de 0 até 32
 
     signal s_rd_req : std_logic;
-    signal s_wr_req : std_logic;
+
+    -- Estágio de saída registrado do lado de escrita: desacopla a leitura da FIFO
+    -- interna (armazenamento distribuído, leitura assíncrona indexada) do mesmo ciclo
+    -- em que o dado atravessa o crossbar até o escravo de destino. A vazão sustentada
+    -- não muda (o estágio é realimentado a cada ciclo livre); só a latência da
+    -- primeira palavra de cada rajada aumenta em 1 ciclo.
+    signal r_wr_valid_reg : std_logic := '0';
+    signal r_wr_data_reg  : std_logic_vector(31 downto 0) := (others => '0');
 
     -- Edge Guard (Interface de Configuração)
     signal r_cfg_rdy : std_logic := '0';
@@ -77,19 +84,18 @@ begin
     -- Requisições de Barramento ativas continuamente baseadas no estado da FIFO interna
     -- Limite de leitura alterado para < 32
     s_rd_req <= '1' when (r_busy = '1' and r_rd_count > 0 and r_fifo_count < 32 and soc_en_i /= '0') else '0';
-    s_wr_req <= '1' when (r_busy = '1' and r_wr_count > 0 and r_fifo_count > 0 and soc_en_i /= '0') else '0';
 
     m_rd_vld_o  <= s_rd_req;
     m_rd_addr_o <= std_logic_vector(r_src_addr);
 
-    m_wr_vld_o  <= s_wr_req;
-    m_wr_we_o   <= s_wr_req;
+    m_wr_vld_o  <= r_wr_valid_reg;
+    m_wr_we_o   <= r_wr_valid_reg;
     m_wr_addr_o <= std_logic_vector(r_dst_addr);
-    m_wr_data_o <= r_fifo(to_integer(r_fifo_rd));
+    m_wr_data_o <= r_wr_data_reg;
 
     process(clk_i)
         variable v_fifo_push : boolean;
-        variable v_fifo_pop  : boolean;
+        variable v_fifo_pull : boolean;
     begin
         if rising_edge(clk_i) then
             if rst_i = '1' then
@@ -102,11 +108,13 @@ begin
                 r_fifo_wr        <= (others => '0');
                 r_fifo_rd        <= (others => '0');
                 r_fifo_count     <= (others => '0');
+                r_wr_valid_reg   <= '0';
+                r_wr_data_reg    <= (others => '0');
                 r_cfg_rdy        <= '0';
                 irq_done_o       <= '0';
             else
                 v_fifo_push := false;
-                v_fifo_pop  := false;
+                v_fifo_pull := false;
                 irq_done_o  <= '0';
 
                 -- 1. ESCRITA DE CONFIGURAÇÃO (Edge Guard para a CPU)
@@ -147,14 +155,14 @@ begin
                     v_fifo_push := true;
                 end if;
 
-                -- 3. WRITE ENGINE (Estágio 2 - Consumidor desimpedido para Streaming Contínuo)
-                if s_wr_req = '1' and m_wr_rdy_i = '1' then
-                    r_fifo_rd <= r_fifo_rd + 1;
+                -- 3. WRITE ENGINE (Estágio 2 - Buffer de Saída Registrado)
+
+                -- 3a. Dreno: o barramento consome a palavra que já está no registrador de saída
+                if r_wr_valid_reg = '1' and m_wr_rdy_i = '1' then
                     if r_ctrl_fixed_dst = '0' then
                         r_dst_addr <= r_dst_addr + 4;
                     end if;
                     r_wr_count <= r_wr_count - 1;
-                    v_fifo_pop := true;
 
                     if r_wr_count = 1 then
                         r_busy <= '0';
@@ -162,10 +170,26 @@ begin
                     end if;
                 end if;
 
-                -- 4. ATUALIZAÇÃO DO ESTADO DA FIFO
-                if v_fifo_push and not v_fifo_pop then
+                -- 3b. Pré-busca: alimenta o registrador de saída quando ele está livre
+                -- (ou ficando livre neste ciclo, por causa do dreno acima) e há dado
+                -- disponível na FIFO interna. Mantém a FIFO cheia sempre que possível,
+                -- então em streaming contínuo a vazão continua 1 palavra/ciclo.
+                if (r_wr_valid_reg = '0') or (m_wr_rdy_i = '1') then
+                    if r_busy = '1' and r_wr_count > 0 and r_fifo_count > 0 and soc_en_i /= '0' then
+                        r_wr_valid_reg <= '1';
+                        r_wr_data_reg  <= r_fifo(to_integer(r_fifo_rd));
+                        r_fifo_rd      <= r_fifo_rd + 1;
+                        v_fifo_pull    := true;
+                    else
+                        r_wr_valid_reg <= '0';
+                    end if;
+                end if;
+
+                -- 4. ATUALIZAÇÃO DO ESTADO DA FIFO (armazenamento interno apenas; o
+                -- registrador de saída acima não entra nessa contagem)
+                if v_fifo_push and not v_fifo_pull then
                     r_fifo_count <= r_fifo_count + 1;
-                elsif v_fifo_pop and not v_fifo_push then
+                elsif v_fifo_pull and not v_fifo_push then
                     r_fifo_count <= r_fifo_count - 1;
                 end if;
 

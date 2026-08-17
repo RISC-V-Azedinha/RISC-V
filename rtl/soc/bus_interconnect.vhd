@@ -176,6 +176,9 @@ architecture rtl of bus_interconnect is
 
     type owner_arr_t is array (valid_slave_t) of master_id_t;
 
+    -- Alvo decodificado de cada mestre (calculado uma única vez por avaliação)
+    type master_target_arr_t is array (valid_master_t) of slave_t;
+
     -- ========================================================================================
     -- SINAIS INTERNOS
     -- ========================================================================================
@@ -314,57 +317,73 @@ begin
 
     -- ========================================================================================
     -- 4. O CORAÇÃO DO CROSSBAR: ROTEAMENTO E ARBITRAGEM COMBINACIONAL (VHDL-2008 'all')
+    --
+    -- Reestruturado para indexação ESTÁTICA por escravo (em vez de um laço por mestre que
+    -- mutava um único array 'v_owner' indexado por um alvo dependente de dado). Na versão
+    -- anterior, a dependência RAW da variável forçava o sintetizador a encadear em série a
+    -- avaliação dos 3 mestres sobre o array inteiro de 9 posições, mesmo quando cada mestre
+    -- mirava um escravo diferente - isso criava caminhos combinacionais artificiais entre
+    -- owner_reg de escravos sem relação nenhuma entre si (ex.: contador do DMA acoplado à
+    -- lógica de posse do PLIC), e o place&route espalhava esse cone por todo o chip.
+    --
+    -- Aqui, cada escravo 's' é uma constante de laço (unrolled em elaboração), então a
+    -- comparação decodifica(addr) = s é estática por instância - sem dependência cruzada
+    -- entre escravos. Prioridade mantida IDÊNTICA à anterior: sticky lock > DMA_RD > DMA_WR
+    -- > CPU (validada por sim/soc/unit/test_bus_interconnect.py).
     -- ========================================================================================
-    process(all) 
-        variable target  : slave_t;
-        variable v_owner : owner_arr_t; -- VARIÁVEL: Atualiza imediatamente no laço!
+    process(all)
+        variable v_mtarget : master_target_arr_t;
+        variable v_owner   : master_id_t;
     begin
-        -- Estado padrão: Desconecta todos os escravos e carrega o lock atual para a variável
+        -- Decodifica o alvo de cada mestre uma única vez (evita recomputar 9x por mestre)
+        for m in valid_master_t loop
+            if m_req(m).vld = '1' then
+                v_mtarget(m) := decodifica(m_req(m).addr);
+            else
+                v_mtarget(m) := SLV_NONE;
+            end if;
+        end loop;
+
+        -- Estado padrão dos mestres: rdy='1' se ocioso ou se bateu em endereço não mapeado
+        -- (Bus Fault - evita deadlock), rdy='0' se está com um pedido válido pendente.
+        for m in valid_master_t loop
+            m_rsp(m).data <= (others => '0');
+            if m_req(m).vld = '1' and v_mtarget(m) /= SLV_NONE then
+                m_rsp(m).rdy <= '0'; -- Aguarda ser atendido
+            else
+                m_rsp(m).rdy <= '1'; -- Ocioso ou Bus Fault
+            end if;
+        end loop;
+
+        -- Arbitragem e roteamento POR ESCRAVO (índice estático 's')
         for s in valid_slave_t loop
+
             s_req(s).addr <= (others => '0');
             s_req(s).data <= (others => '0');
             s_req(s).we   <= (others => '0');
             s_req(s).vld  <= '0';
-            
-            v_owner(s)    := owner_reg(s); -- Inicializa a variável com o estado sequencial
-        end loop;
 
-        -- Estado padrão: Mestres recebem rdy='1' e data=0 (Evita deadlock em bus fault)
-        for m in valid_master_t loop
-            m_rsp(m).data <= (others => '0');
-            if m_req(m).vld = '1' then
-                m_rsp(m).rdy <= '0'; -- Aguarda ser atendido
+            if owner_reg(s) /= MST_NONE then
+                v_owner := owner_reg(s);                    -- Trava sticky (transação em curso)
+            elsif v_mtarget(MST_DMA_RD) = s then
+                v_owner := MST_DMA_RD;
+            elsif v_mtarget(MST_DMA_WR) = s then
+                v_owner := MST_DMA_WR;
+            elsif v_mtarget(MST_CPU) = s then
+                v_owner := MST_CPU;
             else
-                m_rsp(m).rdy <= '1'; -- Mestre ocioso
+                v_owner := MST_NONE;
             end if;
-        end loop;
 
-        -- Resolução de Acessos (Prioridade fixa: CPU -> DMA_RD -> DMA_WR)
-        for m in valid_master_t loop
-            if m_req(m).vld = '1' then
-                target := decodifica(m_req(m).addr);
+            owner_comb(s) <= v_owner;
 
-                if target /= SLV_NONE then
-                    -- AVALIA A VARIÁVEL: Se a CPU pegou, o DMA já vai enxergar ocupado!
-                    if v_owner(target) = MST_NONE or v_owner(target) = m then
-                        
-                        v_owner(target) := m;                -- Atualiza a variável NA HORA
-                        s_req(target)   <= m_req(m);         -- Conecta os sinais de ida
-                        m_rsp(m)        <= s_rsp(target);    -- Conecta os sinais de volta
-                        
-                    end if;
-                else
-                    -- Bus Fault: Acesso a endereço não mapeado
-                    m_rsp(m).rdy <= '1';
-                end if;
+            if v_owner /= MST_NONE then
+                s_req(s)        <= m_req(v_owner);   -- Conecta os sinais de ida
+                m_rsp(v_owner)  <= s_rsp(s);          -- Conecta os sinais de volta
             end if;
+
         end loop;
 
-        -- Por fim, descarrega o resultado final da variável para o sinal que alimenta os registradores
-        for s in valid_slave_t loop
-            owner_comb(s) <= v_owner(s);
-        end loop;
-        
     end process;
 
     -- ========================================================================================
