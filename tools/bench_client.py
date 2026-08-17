@@ -130,7 +130,7 @@ def main():
     ax1.fill_between(K_VALUES, npu_max_empirico, teto_teorico, color='#ef9a9a', alpha=0.2, hatch='\\\\')
     
     y_texto_inanicao = npu_max_empirico * ((teto_teorico / npu_max_empirico) ** 0.5)
-    ax1.text(32, y_texto_inanicao, 'Zona de Inanição de Dados\n(Gargalo do Barramento DMA)', color='#c62828', 
+    ax1.text(32, y_texto_inanicao, 'Zona de Inanição de Dados\n(Gargalo do Barramento)', color='#c62828', 
              fontsize=10, fontweight='bold', ha='center',
              bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="none", alpha=0.8))
 
