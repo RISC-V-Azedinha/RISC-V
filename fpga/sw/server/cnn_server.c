@@ -1,6 +1,6 @@
 /**
- * @file conv2d_server.c
- * @brief Servidor NPU com Im2Col para acelerar Conv2D usando 100% da matriz 4x4
+ * @file cnn_server.c
+ * @brief Servidor NPU com Im2Col otimizado (DMA ativado para Conv2D)
  */
 
 #include <stdint.h>
@@ -17,25 +17,17 @@
 // =========================================================
 // ALOCAÇÃO DE MEMÓRIA (PESOS, BIASES E BUFFERS)
 // =========================================================
-
-// Camada 1: Conv2D (1 Canal In, 4 Canais Out, Kernel 3x3)
-// in_features = 9 pixels por patch. out_features = 4 filtros.
-__attribute__((aligned(4))) uint32_t W_conv[9];   // 9 palavras empacotadas (cada uma tem os 4 filtros)
-__attribute__((aligned(4))) int32_t  B_conv[4];   // 4 biases para os 4 filtros
-
-// Camada 2: Fully Connected (Flatten -> 10 Classes)
-// Flattened: 13 * 13 patches * 4 canais = 676 neurónios de entrada. Saída = 10 classes.
-// Empacotamento: ceil(10/4) = 3 chunks. 3 chunks * 676 in_features = 2028 words.
+__attribute__((aligned(4))) uint32_t W_conv[9];
+__attribute__((aligned(4))) int32_t  B_conv[4];
 __attribute__((aligned(4))) uint32_t W_fc[2028];  
-__attribute__((aligned(4))) int32_t  B_fc[12];    // 10 classes, com padding para 12 (múltiplo de 4)
+__attribute__((aligned(4))) int32_t  B_fc[12];
 
-// Buffers de Dados (Entradas, Intermédios e Saídas)
-__attribute__((aligned(4))) int8_t input_image[784];      // Imagem original (28x28)
-__attribute__((aligned(4))) int8_t patches[172][9];       // 169 patches + 3 de padding = 172 patches (múltiplo de 4)
-__attribute__((aligned(4))) int8_t conv_out[172 * 4];     // Saída da Conv (172 patches * 4 filtros)
-__attribute__((aligned(4))) int8_t fc_out[10];            // Logits finais
+__attribute__((aligned(4))) int8_t input_image[784];
+__attribute__((aligned(4))) int8_t patches[172][9];
+__attribute__((aligned(4))) uint32_t patches_packed[43][9]; 
+__attribute__((aligned(4))) int8_t conv_out[172 * 4];
+__attribute__((aligned(4))) int8_t fc_out[10];
 
-// Função auxiliar para ler palavras de 32-bits via UART
 uint32_t uart_read_uint32_be(void) {
     uint32_t val = 0;
     val |= ((uint32_t)hal_uart_getc() & 0xFF) << 24;
@@ -50,8 +42,6 @@ uint32_t uart_read_uint32_be(void) {
 // =========================================================
 void image_to_columns(int8_t* img, int8_t patch_matrix[][9]) {
     int p = 0;
-    // Imagem 28x28. Janela de 3x3. Stride de 2.
-    // Resulta numa grelha de saída de 13x13 (169 patches)
     for (int y = 0; y <= 28 - 3; y += 2) {
         for (int x = 0; x <= 28 - 3; x += 2) {
             patch_matrix[p][0] = img[(y+0)*28 + x+0];
@@ -66,78 +56,91 @@ void image_to_columns(int8_t* img, int8_t patch_matrix[][9]) {
             p++;
         }
     }
-    // Preenchimento (Padding) com zeros para que o número de patches seja múltiplo de 4
     for(; p < 172; p++) {
         for(int i = 0; i < 9; i++) patch_matrix[p][i] = 0;
     }
 }
 
 // =========================================================
-// 2. INFERÊNCIA DA CONV2D (EFICIÊNCIA DE 100%)
+// NOVO: EMPACOTAMENTE PARA O DMA (32-bits alinhado)
 // =========================================================
-void npu_run_conv(uint32_t* weights, int32_t* biases, int8_t in_patches[][9], int8_t* out_acts) {
-    MMIO32(NPU_BASE_ADDR + 0x44) = 1;   // Multiplicador da quantização
-    MMIO32(NPU_BASE_ADDR + 0x40) = 8;   // Shift da quantização
-    MMIO32(NPU_BASE_ADDR + 0x48) = 1;   // Ativar ReLU para a Conv2D
-
-    // Configurar biases dos 4 filtros
-    for (int b = 0; b < 4; b++) {
-        MMIO32(NPU_BASE_ADDR + 0x80 + (b * 4)) = biases[b];
-    }
-
-    // Carregar os 9 pesos via DMA (uma vez para toda a convolução)
-    MMIO32(NPU_BASE_ADDR + 0x04) = (1 << 6); 
-    hal_dma_memcpy((uint32_t)weights, NPU_BASE_ADDR + 0x10, 9, 1);
-
-    // Processar os patches de 4 em 4 usando as 4 linhas da NPU
+void pack_patches_for_dma(int8_t patch_matrix[][9], uint32_t packed_matrix[][9]) {
     for (int p = 0; p < 172; p += 4) {
-        
-        MMIO32(NPU_BASE_ADDR + 0x08) = 9;    // 9 pixels por patch
-        MMIO32(NPU_BASE_ADDR + 0x04) = 0xC1; // Reset & Clear ACC
-
-        // Alimentar as 4 linhas da NPU simultaneamente
+        int block = p / 4;
         for (int k = 0; k < 9; k++) {
-            uint32_t packed_in = 0;
-            packed_in |= ((uint32_t)in_patches[p+3][k] & 0xFF) << 24; // Linha 3 = Patch 3
-            packed_in |= ((uint32_t)in_patches[p+2][k] & 0xFF) << 16; // Linha 2 = Patch 2
-            packed_in |= ((uint32_t)in_patches[p+1][k] & 0xFF) << 8;  // Linha 1 = Patch 1
-            packed_in |= ((uint32_t)in_patches[p+0][k] & 0xFF) << 0;  // Linha 0 = Patch 0
-            MMIO32(NPU_BASE_ADDR + 0x14) = packed_in; 
-        }
-
-        MMIO32(NPU_BASE_ADDR + 0x04) = 0x36; // START MAC
-
-        while (!(MMIO32(NPU_BASE_ADDR + 0x00) & (1 << 0))); // Wait BUSY
-        while (!(MMIO32(NPU_BASE_ADDR + 0x00) & (1 << 1))); // Wait DONE
-        
-        // Ler os resultados das 4 janelas. No arranjo sistólico com shift down, 
-        // a linha inferior (Linha 3) sai primeiro do acumulador.
-        for (int r = 3; r >= 0; r--) {
-            while (!(MMIO32(NPU_BASE_ADDR + 0x00) & (1 << 3))); 
-            uint32_t valid_res = MMIO32(NPU_BASE_ADDR + 0x18);
-            
-            out_acts[(p + r) * 4 + 0] = (int8_t)((valid_res >> 0)  & 0xFF); // Filtro 0
-            out_acts[(p + r) * 4 + 1] = (int8_t)((valid_res >> 8)  & 0xFF); // Filtro 1
-            out_acts[(p + r) * 4 + 2] = (int8_t)((valid_res >> 16) & 0xFF); // Filtro 2
-            out_acts[(p + r) * 4 + 3] = (int8_t)((valid_res >> 24) & 0xFF); // Filtro 3
+            uint32_t packed = 0;
+            // Empacota as 4 linhas em uma palavra de 32 bits (Little Endian)
+            packed |= ((uint32_t)patch_matrix[p+3][k] & 0xFF) << 24; 
+            packed |= ((uint32_t)patch_matrix[p+2][k] & 0xFF) << 16; 
+            packed |= ((uint32_t)patch_matrix[p+1][k] & 0xFF) << 8;  
+            packed |= ((uint32_t)patch_matrix[p+0][k] & 0xFF) << 0;  
+            packed_matrix[block][k] = packed;
         }
     }
 }
 
 // =========================================================
-// 3. INFERÊNCIA FULLY CONNECTED CLÁSSICA (EFICIÊNCIA DE 25%)
+// 2. INFERÊNCIA DA CONV2D (Otimizada via DMA)
 // =========================================================
-void npu_run_fc(uint32_t* weights, int32_t* biases, int8_t* inputs, int8_t* outputs, int in_feat, int out_feat) {
+void npu_run_conv(uint32_t* weights, int32_t* biases, uint32_t in_packed[][9], int8_t* out_acts) {
     MMIO32(NPU_BASE_ADDR + 0x44) = 1;   
-    MMIO32(NPU_BASE_ADDR + 0x40) = 8;  
-    MMIO32(NPU_BASE_ADDR + 0x48) = 0; // Desativar ReLU na saída
+    MMIO32(NPU_BASE_ADDR + 0x40) = 8;   
+    MMIO32(NPU_BASE_ADDR + 0x48) = 1;   
 
-    MMIO32(NPU_BASE_ADDR + 0x04) = 0xC1; 
-
-    // Enviar todas as ativações (apenas para a Linha 0)
-    for (int k = 0; k < in_feat; k++) {
-        MMIO32(NPU_BASE_ADDR + 0x14) = inputs[k] & 0xFF; 
+    // Configurar biases
+    for (int b = 0; b < 4; b++) {
+        MMIO32(NPU_BASE_ADDR + 0x80 + (b * 4)) = biases[b];
     }
+
+    // Carregar pesos via DMA
+    MMIO32(NPU_BASE_ADDR + 0x04) = (1 << 6); 
+    hal_dma_memcpy((uint32_t)weights, NPU_BASE_ADDR + 0x10, 9, 1);
+
+    // Processar os 43 blocos de patches (172 patches / 4)
+    for (int block = 0; block < 43; block++) {
+        
+        MMIO32(NPU_BASE_ADDR + 0x08) = 9;    
+        MMIO32(NPU_BASE_ADDR + 0x04) = 0xC1; 
+
+        // NOVO: CPU repassa a transferência de ativações ao DMA (Destino Fixo = 1)
+        hal_dma_memcpy((uint32_t)in_packed[block], NPU_BASE_ADDR + 0x14, 9, 1);
+
+        MMIO32(NPU_BASE_ADDR + 0x04) = 0x36; 
+
+        while (!(MMIO32(NPU_BASE_ADDR + 0x00) & (1 << 0))); 
+        while (!(MMIO32(NPU_BASE_ADDR + 0x00) & (1 << 1))); 
+        
+        int p = block * 4;
+        for (int r = 3; r >= 0; r--) {
+            while (!(MMIO32(NPU_BASE_ADDR + 0x00) & (1 << 3))); 
+            uint32_t valid_res = MMIO32(NPU_BASE_ADDR + 0x18);
+            
+            out_acts[(p + r) * 4 + 0] = (int8_t)((valid_res >> 0)  & 0xFF);
+            out_acts[(p + r) * 4 + 1] = (int8_t)((valid_res >> 8)  & 0xFF);
+            out_acts[(p + r) * 4 + 2] = (int8_t)((valid_res >> 16) & 0xFF);
+            out_acts[(p + r) * 4 + 3] = (int8_t)((valid_res >> 24) & 0xFF);
+        }
+    }
+}
+
+// =========================================================
+// 3. INFERÊNCIA FULLY CONNECTED CLÁSSICA (entradas via DMA)
+// =========================================================
+// Uma ativação por palavra (byte 0 = linha 0 do arranjo), montadas na RAM e
+// enviadas à porta de entradas em uma única transferência de DMA.
+__attribute__((aligned(4))) uint32_t fc_in_words[676];
+
+void npu_run_fc(uint32_t* weights, int32_t* biases, int8_t* inputs, int8_t* outputs, int in_feat, int out_feat) {
+    MMIO32(NPU_BASE_ADDR + 0x44) = 1;
+    MMIO32(NPU_BASE_ADDR + 0x40) = 8;
+    MMIO32(NPU_BASE_ADDR + 0x48) = 0;
+
+    MMIO32(NPU_BASE_ADDR + 0x04) = 0xC1;
+
+    for (int k = 0; k < in_feat; k++) {
+        fc_in_words[k] = (uint32_t)inputs[k] & 0xFF;
+    }
+    hal_dma_memcpy((uint32_t)fc_in_words, NPU_BASE_ADDR + 0x14, in_feat, 1);
 
     int chunk_idx = 0;
     for (int chunk_start = 0; chunk_start < out_feat; chunk_start += 4) {
@@ -160,7 +163,6 @@ void npu_run_fc(uint32_t* weights, int32_t* biases, int8_t* inputs, int8_t* outp
         while (!(MMIO32(NPU_BASE_ADDR + 0x00) & (1 << 1))); 
 
         uint32_t trash, valid_res;
-        // As 3 linhas de baixo não têm dados úteis neste modo
         while (!(MMIO32(NPU_BASE_ADDR + 0x00) & (1 << 3))); trash = MMIO32(NPU_BASE_ADDR + 0x18);
         while (!(MMIO32(NPU_BASE_ADDR + 0x00) & (1 << 3))); trash = MMIO32(NPU_BASE_ADDR + 0x18);
         while (!(MMIO32(NPU_BASE_ADDR + 0x00) & (1 << 3))); trash = MMIO32(NPU_BASE_ADDR + 0x18);
@@ -206,7 +208,6 @@ int main(void) {
             hal_uart_putc('D');
         }
         else if (cmd == 0xFF) {
-            // Recebe 1 única imagem de 28x28 (latência otimizada)
             for(int i = 0; i < 784; i++) input_image[i] = (int8_t)hal_uart_getc();
 
             REG_LEDS = 0x0000;
@@ -214,14 +215,16 @@ int main(void) {
             // 1. Recortar a imagem em 169 patches + padding
             image_to_columns(input_image, patches);
             
-            // 2. Executar a Conv2D em 4x4 (Vazão altíssima)
-            npu_run_conv(W_conv, B_conv, patches, conv_out);
+            // 2. Pré-empacotar os patches na RAM no formato da NPU
+            pack_patches_for_dma(patches, patches_packed);
             
-            // 3. Executar a Camada FC final
-            // Passamos apenas os 676 neurónios úteis (169 patches * 4 canais)
+            // 3. Executar a Conv2D em 4x4 (Alimentada por DMA!)
+            npu_run_conv(W_conv, B_conv, patches_packed, conv_out);
+            
+            // 4. Executar a Camada FC final
             npu_run_fc(W_fc, B_fc, conv_out, fc_out, 676, 10);
 
-            // 4. Argmax e devolução dos resultados
+            // 5. Argmax e devolução dos resultados
             int8_t max_logit = -128;
             int predicted_digit = 0;
             
