@@ -23,9 +23,8 @@ __attribute__((aligned(4))) uint32_t W_fc[2028];
 __attribute__((aligned(4))) int32_t  B_fc[12];
 
 __attribute__((aligned(4))) int8_t input_image[784];
-__attribute__((aligned(4))) int8_t patches[172][9];
-__attribute__((aligned(4))) uint32_t patches_packed[43][9]; 
-__attribute__((aligned(4))) int8_t conv_out[172 * 4];
+__attribute__((aligned(4))) uint32_t patches_packed[43][9];  // entradas da Conv no formato da NPU (43 grupos x 9 palavras)
+__attribute__((aligned(4))) uint32_t fc_in_words[172 * 4];   // saídas da Conv = entradas da densa (1 ativação por palavra)
 __attribute__((aligned(4))) int8_t fc_out[10];
 
 uint32_t uart_read_uint32_be(void) {
@@ -38,43 +37,33 @@ uint32_t uart_read_uint32_be(void) {
 }
 
 // =========================================================
-// 1. EXTRAÇÃO DE PATCHES (IM2COL)
+// 1. IM2COL + EMPACOTAMENTO NUMA ÚNICA PASSADA
 // =========================================================
-void image_to_columns(int8_t* img, int8_t patch_matrix[][9]) {
-    int p = 0;
-    for (int y = 0; y <= 28 - 3; y += 2) {
-        for (int x = 0; x <= 28 - 3; x += 2) {
-            patch_matrix[p][0] = img[(y+0)*28 + x+0];
-            patch_matrix[p][1] = img[(y+0)*28 + x+1];
-            patch_matrix[p][2] = img[(y+0)*28 + x+2];
-            patch_matrix[p][3] = img[(y+1)*28 + x+0];
-            patch_matrix[p][4] = img[(y+1)*28 + x+1];
-            patch_matrix[p][5] = img[(y+1)*28 + x+2];
-            patch_matrix[p][6] = img[(y+2)*28 + x+0];
-            patch_matrix[p][7] = img[(y+2)*28 + x+1];
-            patch_matrix[p][8] = img[(y+2)*28 + x+2];
-            p++;
-        }
-    }
-    for(; p < 172; p++) {
-        for(int i = 0; i < 9; i++) patch_matrix[p][i] = 0;
-    }
-}
+// Monta, direto da imagem, as palavras que a NPU consome na Conv2D: a palavra k do
+// grupo g traz o pixel k das janelas 4g..4g+3 (byte r = janela 4g+r = linha r do arranjo).
+// Janelas 3x3 com passo 2: a janela p = 13u + v começa no pixel (2u, 2v) da imagem 28x28.
+// As janelas 169..171 (preenchimento) apontam para um bloco de zeros.
+static const int8_t zeros[64];
+static const uint8_t k_off[9] = { 0, 1, 2, 28, 29, 30, 56, 57, 58 };
 
-// =========================================================
-// NOVO: EMPACOTAMENTE PARA O DMA (32-bits alinhado)
-// =========================================================
-void pack_patches_for_dma(int8_t patch_matrix[][9], uint32_t packed_matrix[][9]) {
-    for (int p = 0; p < 172; p += 4) {
-        int block = p / 4;
+void image_to_packed(const int8_t* img, uint32_t packed[][9]) {
+    int u = 0, v = 0;
+    for (int g = 0; g < 43; g++) {
+        const int8_t* q[4];
+        for (int r = 0; r < 4; r++) {
+            if (u < 13) {
+                q[r] = img + 56 * u + 2 * v;
+                if (++v == 13) { v = 0; u++; }
+            } else {
+                q[r] = zeros;
+            }
+        }
         for (int k = 0; k < 9; k++) {
-            uint32_t packed = 0;
-            // Empacota as 4 linhas em uma palavra de 32 bits (Little Endian)
-            packed |= ((uint32_t)patch_matrix[p+3][k] & 0xFF) << 24; 
-            packed |= ((uint32_t)patch_matrix[p+2][k] & 0xFF) << 16; 
-            packed |= ((uint32_t)patch_matrix[p+1][k] & 0xFF) << 8;  
-            packed |= ((uint32_t)patch_matrix[p+0][k] & 0xFF) << 0;  
-            packed_matrix[block][k] = packed;
+            int o = k_off[k];
+            packed[g][k] = ((uint32_t)(uint8_t)q[0][o])
+                         | ((uint32_t)(uint8_t)q[1][o] << 8)
+                         | ((uint32_t)(uint8_t)q[2][o] << 16)
+                         | ((uint32_t)(uint8_t)q[3][o] << 24);
         }
     }
 }
@@ -82,43 +71,44 @@ void pack_patches_for_dma(int8_t patch_matrix[][9], uint32_t packed_matrix[][9])
 // =========================================================
 // 2. INFERÊNCIA DA CONV2D (Otimizada via DMA)
 // =========================================================
-void npu_run_conv(uint32_t* weights, int32_t* biases, uint32_t in_packed[][9], int8_t* out_acts) {
-    MMIO32(NPU_BASE_ADDR + 0x44) = 1;   
-    MMIO32(NPU_BASE_ADDR + 0x40) = 8;   
-    MMIO32(NPU_BASE_ADDR + 0x48) = 1;   
+void npu_run_conv(uint32_t* weights, int32_t* biases, uint32_t in_packed[][9], uint32_t* out_words) {
+    MMIO32(NPU_BASE_ADDR + 0x44) = 1;
+    MMIO32(NPU_BASE_ADDR + 0x40) = 8;
+    MMIO32(NPU_BASE_ADDR + 0x48) = 1;
 
     // Configurar biases
     for (int b = 0; b < 4; b++) {
         MMIO32(NPU_BASE_ADDR + 0x80 + (b * 4)) = biases[b];
     }
 
-    // Carregar pesos via DMA
-    MMIO32(NPU_BASE_ADDR + 0x04) = (1 << 6); 
+    // Pesos (9 palavras) e entradas dos 43 blocos (43 x 9 = 387 palavras) vão para
+    // as memórias locais da NPU em apenas duas transferências de DMA.
+    MMIO32(NPU_BASE_ADDR + 0x04) = 0xC1;   // zera os ponteiros de escrita
     hal_dma_memcpy((uint32_t)weights, NPU_BASE_ADDR + 0x10, 9, 1);
+    hal_dma_memcpy((uint32_t)in_packed, NPU_BASE_ADDR + 0x14, 43 * 9, 1);
+
+    MMIO32(NPU_BASE_ADDR + 0x08) = 9;      // K = 9 palavras por passagem
 
     // Processar os 43 blocos de patches (172 patches / 4)
     for (int block = 0; block < 43; block++) {
-        
-        MMIO32(NPU_BASE_ADDR + 0x08) = 9;    
-        MMIO32(NPU_BASE_ADDR + 0x04) = 0xC1; 
+        // START + ACC_CLEAR + reinício da leitura dos pesos: os mesmos 9 pesos são
+        // relidos a cada bloco, e o ponteiro de leitura das entradas segue para as
+        // 9 palavras do bloco seguinte. No primeiro bloco, as duas leituras começam do zero.
+        MMIO32(NPU_BASE_ADDR + 0x04) = (block == 0) ? 0x36 : 0x16;
 
-        // NOVO: CPU repassa a transferência de ativações ao DMA (Destino Fixo = 1)
-        hal_dma_memcpy((uint32_t)in_packed[block], NPU_BASE_ADDR + 0x14, 9, 1);
+        while (!(MMIO32(NPU_BASE_ADDR + 0x00) & (1 << 0)));
+        while (!(MMIO32(NPU_BASE_ADDR + 0x00) & (1 << 1)));
 
-        MMIO32(NPU_BASE_ADDR + 0x04) = 0x36; 
-
-        while (!(MMIO32(NPU_BASE_ADDR + 0x00) & (1 << 0))); 
-        while (!(MMIO32(NPU_BASE_ADDR + 0x00) & (1 << 1))); 
-        
         int p = block * 4;
         for (int r = 3; r >= 0; r--) {
-            while (!(MMIO32(NPU_BASE_ADDR + 0x00) & (1 << 3))); 
+            while (!(MMIO32(NPU_BASE_ADDR + 0x00) & (1 << 3)));
             uint32_t valid_res = MMIO32(NPU_BASE_ADDR + 0x18);
-            
-            out_acts[(p + r) * 4 + 0] = (int8_t)((valid_res >> 0)  & 0xFF);
-            out_acts[(p + r) * 4 + 1] = (int8_t)((valid_res >> 8)  & 0xFF);
-            out_acts[(p + r) * 4 + 2] = (int8_t)((valid_res >> 16) & 0xFF);
-            out_acts[(p + r) * 4 + 3] = (int8_t)((valid_res >> 24) & 0xFF);
+            // Canal j da janela p+r, já como palavra: é o formato que a densa envia por DMA.
+
+            out_words[(p + r) * 4 + 0] = (valid_res >> 0) & 0xFF;
+            out_words[(p + r) * 4 + 1] = (valid_res >> 8) & 0xFF;
+            out_words[(p + r) * 4 + 2] = (valid_res >> 16) & 0xFF;
+            out_words[(p + r) * 4 + 3] = (valid_res >> 24) & 0xFF;
         }
     }
 }
@@ -126,55 +116,50 @@ void npu_run_conv(uint32_t* weights, int32_t* biases, uint32_t in_packed[][9], i
 // =========================================================
 // 3. INFERÊNCIA FULLY CONNECTED CLÁSSICA (entradas via DMA)
 // =========================================================
-// Uma ativação por palavra (byte 0 = linha 0 do arranjo), montadas na RAM e
-// enviadas à porta de entradas em uma única transferência de DMA.
-__attribute__((aligned(4))) uint32_t fc_in_words[676];
-
-void npu_run_fc(uint32_t* weights, int32_t* biases, int8_t* inputs, int8_t* outputs, int in_feat, int out_feat) {
+void npu_run_fc(uint32_t* weights, int32_t* biases, uint32_t* in_words, int8_t* outputs, int in_feat, int out_feat) {
     MMIO32(NPU_BASE_ADDR + 0x44) = 1;
     MMIO32(NPU_BASE_ADDR + 0x40) = 8;
     MMIO32(NPU_BASE_ADDR + 0x48) = 0;
 
-    MMIO32(NPU_BASE_ADDR + 0x04) = 0xC1;
+    int num_chunks = (out_feat + 3) / 4;
 
-    for (int k = 0; k < in_feat; k++) {
-        fc_in_words[k] = (uint32_t)inputs[k] & 0xFF;
-    }
-    hal_dma_memcpy((uint32_t)fc_in_words, NPU_BASE_ADDR + 0x14, in_feat, 1);
+    // Entradas (uma ativação por palavra, gravadas pela Conv) e pesos dos blocos de 4 neurônios
+    // (num_chunks x in_feat palavras) vão para a NPU em apenas duas transferências de DMA.
+    MMIO32(NPU_BASE_ADDR + 0x04) = 0xC1;   // zera os ponteiros de escrita
+    hal_dma_memcpy((uint32_t)in_words, NPU_BASE_ADDR + 0x14, in_feat, 1);
+    hal_dma_memcpy((uint32_t)weights, NPU_BASE_ADDR + 0x10, num_chunks * in_feat, 1);
 
-    int chunk_idx = 0;
-    for (int chunk_start = 0; chunk_start < out_feat; chunk_start += 4) {
-        
+    MMIO32(NPU_BASE_ADDR + 0x08) = in_feat;
+
+    for (int chunk = 0; chunk < num_chunks; chunk++) {
+        int chunk_start = chunk * 4;
         int chunk_size = (out_feat - chunk_start < 4) ? (out_feat - chunk_start) : 4;
 
         for (int b = 0; b < 4; b++) {
             if (b < chunk_size) MMIO32(NPU_BASE_ADDR + 0x80 + (b * 4)) = biases[chunk_start + b];
-            else MMIO32(NPU_BASE_ADDR + 0x80 + (b * 4)) = 0; 
+            else MMIO32(NPU_BASE_ADDR + 0x80 + (b * 4)) = 0;
         }
 
-        MMIO32(NPU_BASE_ADDR + 0x04) = (1 << 6); 
-        uint32_t src_addr = (uint32_t)(&weights[chunk_idx * in_feat]);
-        hal_dma_memcpy(src_addr, NPU_BASE_ADDR + 0x10, in_feat, 1);
+        // START + ACC_CLEAR + reinício da leitura das entradas: as mesmas ativações são
+        // relidas a cada bloco, e o ponteiro de leitura dos pesos segue para o bloco de
+        // neurônios seguinte. No primeiro bloco, as duas leituras começam do zero.
+        MMIO32(NPU_BASE_ADDR + 0x04) = (chunk == 0) ? 0x36 : 0x26;
 
-        MMIO32(NPU_BASE_ADDR + 0x08) = in_feat; 
-        MMIO32(NPU_BASE_ADDR + 0x04) = 0x36;        
-
-        while (!(MMIO32(NPU_BASE_ADDR + 0x00) & (1 << 0))); 
-        while (!(MMIO32(NPU_BASE_ADDR + 0x00) & (1 << 1))); 
+        while (!(MMIO32(NPU_BASE_ADDR + 0x00) & (1 << 0)));
+        while (!(MMIO32(NPU_BASE_ADDR + 0x00) & (1 << 1)));
 
         uint32_t trash, valid_res;
         while (!(MMIO32(NPU_BASE_ADDR + 0x00) & (1 << 3))); trash = MMIO32(NPU_BASE_ADDR + 0x18);
         while (!(MMIO32(NPU_BASE_ADDR + 0x00) & (1 << 3))); trash = MMIO32(NPU_BASE_ADDR + 0x18);
         while (!(MMIO32(NPU_BASE_ADDR + 0x00) & (1 << 3))); trash = MMIO32(NPU_BASE_ADDR + 0x18);
-        
+        (void)trash;
+
         while (!(MMIO32(NPU_BASE_ADDR + 0x00) & (1 << 3))); valid_res = MMIO32(NPU_BASE_ADDR + 0x18);
 
         if (chunk_size > 0) outputs[chunk_start + 0] = (int8_t)((valid_res >> 0)  & 0xFF);
         if (chunk_size > 1) outputs[chunk_start + 1] = (int8_t)((valid_res >> 8)  & 0xFF);
         if (chunk_size > 2) outputs[chunk_start + 2] = (int8_t)((valid_res >> 16) & 0xFF);
         if (chunk_size > 3) outputs[chunk_start + 3] = (int8_t)((valid_res >> 24) & 0xFF);
-
-        chunk_idx++;
     }
 }
 
@@ -213,16 +198,14 @@ int main(void) {
             REG_LEDS = 0x0000;
 
             // 1. Recortar a imagem em 169 patches + padding
-            image_to_columns(input_image, patches);
+            image_to_packed(input_image, patches_packed);
             
-            // 2. Pré-empacotar os patches na RAM no formato da NPU
-            pack_patches_for_dma(patches, patches_packed);
             
             // 3. Executar a Conv2D em 4x4 (Alimentada por DMA!)
-            npu_run_conv(W_conv, B_conv, patches_packed, conv_out);
+            npu_run_conv(W_conv, B_conv, patches_packed, fc_in_words);
             
             // 4. Executar a Camada FC final
-            npu_run_fc(W_fc, B_fc, conv_out, fc_out, 676, 10);
+            npu_run_fc(W_fc, B_fc, fc_in_words, fc_out, 676, 10);
 
             // 5. Argmax e devolução dos resultados
             int8_t max_logit = -128;
