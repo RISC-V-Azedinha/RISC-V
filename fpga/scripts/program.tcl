@@ -1,8 +1,15 @@
 puts "\n--------------------------------------------------------------------------------------------------------------------------------"
 puts ">>> [6/6] Tentando programar a placa...\n"
 
+source [file join [file dirname [info script]] board.tcl]
+
 set topEntity "soc_top"
-set bitstreamPath "./build/fpga/bitstream/${topEntity}.bit"
+set bitstreamPath "$outputDir/bitstream/${topEntity}.bit"
+
+if {![file exists $bitstreamPath]} {
+    puts "!!! ERRO: Bitstream nao encontrado: $bitstreamPath (rode 'make fpga-build BOARD=$boardName')"
+    exit 1
+}
 
 open_hw_manager
 connect_hw_server

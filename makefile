@@ -42,17 +42,23 @@ VIVADO_BIN  ?= vivado
 PYTHON_BIN  ?= python3
 COM         ?= /dev/ttyUSB1
 
+# Placa alvo: nexys4 | nexys_a7
+BOARD       ?= nexys4
+FPGA_BOARDS := nexys4 nexys_a7
+
 FPGA_SW_DIR     := $(PWD)/fpga/sw
 BUILD_FPGA      := $(PWD)/build/fpga
 BUILD_FPGA_BIN  := $(BUILD_FPGA)/bin
 BUILD_FPGA_BOOT := $(BUILD_FPGA)/boot
-BUILD_FPGA_LOGS := $(BUILD_FPGA)/logs
+BUILD_FPGA_LOGS := $(BUILD_FPGA)/$(BOARD)/logs
 FPGA_SCRIPTS    := $(PWD)/fpga/scripts
 
 # Auto-detecta se o compilador atual suporta/exige a extensão _zicsr
 ZICSR_EXT   := $(shell $(CC) -march=rv32i_zicsr -mabi=ilp32 -E - < /dev/null > /dev/null 2>&1 && echo "_zicsr" || echo "")
 
 BASE_CFLAGS := -march=rv32i$(ZICSR_EXT) -mabi=ilp32 -nostdlib -nostartfiles -g --specs=picolibc.specs
+
+VIVADO_TCLARGS := -tclargs $(BOARD)
 
 
 # =========================================================
@@ -86,6 +92,7 @@ help:
 	@echo "   make fpga-build            Sintetiza e gera o Bitstream/MCS (build.tcl)"
 	@echo "   make fpga-prog             Programa a placa via JTAG (program.tcl)"
 	@echo "   make fpga-flash            Grava o SoC na memória Flash (flash.tcl)"
+	@echo "                              Placa: BOARD=nexys4 (padrão) | BOARD=nexys_a7"
 	@echo "   make upload SW=<app>       Compila o C e envia via UART (ex: COM=/dev/ttyUSB1)"
 	@echo "   make list-apps             Lista todos os apps em C/Assembly disponíveis"
 	@echo " "
@@ -94,7 +101,7 @@ help:
 	@echo "   make clean                 Apaga a pasta build/ e arquivos temporários"
 	@echo " "
 
-.PHONY: clean list-tests fpga upload boot-fpga sw-fpga
+.PHONY: clean list-tests fpga upload boot-fpga sw-fpga check-board fpga-build fpga-prog fpga-flash
 
 # ---------------------------------------------------------
 # 📋 Regra 0: LISTAR TESTES ("make list-tests")
@@ -241,24 +248,28 @@ sw-fpga:
 	$(OBJCOPY) -O verilog $(BUILD_FPGA_BIN)/$(SW).elf $(BUILD_FPGA_BIN)/$(SW).hex
 	@echo ">>> ✅ Binário pronto: $(BUILD_FPGA_BIN)/$(SW).bin"
 
-fpga-build: boot-fpga
-	@echo ">>> ⚡ Sintetizando o projeto e gerando Bitstream/MCS..."
+check-board:
+	@if [ -z "$(filter $(BOARD),$(FPGA_BOARDS))" ] || [ "$(words $(BOARD))" != "1" ]; then \
+		echo "❌ Placa inválida: BOARD=$(BOARD). Opções: $(FPGA_BOARDS)"; exit 1; fi
+
+fpga-build: check-board boot-fpga
+	@echo ">>> ⚡ Sintetizando o projeto e gerando Bitstream/MCS [$(BOARD)]..."
 	@mkdir -p $(BUILD_FPGA_LOGS)
-	@$(VIVADO_BIN) -mode batch -notrace -source $(FPGA_SCRIPTS)/build.tcl -log $(BUILD_FPGA_LOGS)/build.log -journal $(BUILD_FPGA_LOGS)/build.jou
+	@$(VIVADO_BIN) -mode batch -notrace -source $(FPGA_SCRIPTS)/build.tcl -log $(BUILD_FPGA_LOGS)/build.log -journal $(BUILD_FPGA_LOGS)/build.jou $(VIVADO_TCLARGS)
 	@rm -rf .Xil usage_statistics* vivado*.backup* vivado*.str
 	@echo ">>> ✅ Síntese e geração de arquivos concluídas com sucesso."
 
-fpga-prog:
-	@echo ">>> 🔌 Programando a FPGA via JTAG..."
+fpga-prog: check-board
+	@echo ">>> 🔌 Programando a FPGA via JTAG [$(BOARD)]..."
 	@mkdir -p $(BUILD_FPGA_LOGS)
-	@$(VIVADO_BIN) -mode batch -notrace -source $(FPGA_SCRIPTS)/program.tcl -log $(BUILD_FPGA_LOGS)/prog.log -journal $(BUILD_FPGA_LOGS)/prog.jou
+	@$(VIVADO_BIN) -mode batch -notrace -source $(FPGA_SCRIPTS)/program.tcl -log $(BUILD_FPGA_LOGS)/prog.log -journal $(BUILD_FPGA_LOGS)/prog.jou $(VIVADO_TCLARGS)
 	@rm -rf .Xil usage_statistics* vivado*.backup* vivado*.str
 	@echo ">>> ✅ FPGA programada com sucesso."
 
-fpga-flash:
-	@echo ">>> 💾 Gravando o SoC na memória Flash..."
+fpga-flash: check-board
+	@echo ">>> 💾 Gravando o SoC na memória Flash [$(BOARD)]..."
 	@mkdir -p $(BUILD_FPGA_LOGS)
-	@$(VIVADO_BIN) -mode batch -notrace -source $(FPGA_SCRIPTS)/flash.tcl -log $(BUILD_FPGA_LOGS)/flash.log -journal $(BUILD_FPGA_LOGS)/flash.jou
+	@$(VIVADO_BIN) -mode batch -notrace -source $(FPGA_SCRIPTS)/flash.tcl -log $(BUILD_FPGA_LOGS)/flash.log -journal $(BUILD_FPGA_LOGS)/flash.jou $(VIVADO_TCLARGS)
 	@rm -rf .Xil usage_statistics* vivado*.backup* vivado*.str
 	@echo ">>> ✅ Gravação na Flash concluída com sucesso."
 
