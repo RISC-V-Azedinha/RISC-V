@@ -79,3 +79,14 @@ set_property -dict { PACKAGE_PIN B11   IOSTANDARD LVCMOS33 } [get_ports { VGA_HS
 set_property -dict { PACKAGE_PIN B12   IOSTANDARD LVCMOS33 } [get_ports { VGA_VS_o }];
 
 ## =========================================================================================================================
+## Displays de 7 Segmentos (Ânodos AN0 - AN7, ativos em nível baixo) - mantidos apagados pelo SoC
+## =========================================================================================================================
+
+set_property -dict { PACKAGE_PIN N6    IOSTANDARD LVCMOS33 } [get_ports { SEG_AN_o[0] }];
+set_property -dict { PACKAGE_PIN M6    IOSTANDARD LVCMOS33 } [get_ports { SEG_AN_o[1] }];
+set_property -dict { PACKAGE_PIN M3    IOSTANDARD LVCMOS33 } [get_ports { SEG_AN_o[2] }];
+set_property -dict { PACKAGE_PIN N5    IOSTANDARD LVCMOS33 } [get_ports { SEG_AN_o[3] }];
+set_property -dict { PACKAGE_PIN N2    IOSTANDARD LVCMOS33 } [get_ports { SEG_AN_o[4] }];
+set_property -dict { PACKAGE_PIN N4    IOSTANDARD LVCMOS33 } [get_ports { SEG_AN_o[5] }];
+set_property -dict { PACKAGE_PIN L1    IOSTANDARD LVCMOS33 } [get_ports { SEG_AN_o[6] }];
+set_property -dict { PACKAGE_PIN M1    IOSTANDARD LVCMOS33 } [get_ports { SEG_AN_o[7] }];

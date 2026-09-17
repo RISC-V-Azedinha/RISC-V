@@ -40,7 +40,9 @@ entity soc_top is
         VGA_VS_o    : out std_logic;
         VGA_R_o     : out std_logic_vector(3 downto 0);
         VGA_G_o     : out std_logic_vector(3 downto 0);
-        VGA_B_o     : out std_logic_vector(3 downto 0)
+        VGA_B_o     : out std_logic_vector(3 downto 0);
+
+        SEG_AN_o    : out std_logic_vector(7 downto 0)
     );
 end entity;
 
@@ -403,6 +405,10 @@ begin
         port map (
             clk => CLK_i, rst => s_sys_rst, we_i => s_vga_we, addr_i => s_vga_addr, data_i => s_vga_data_tx, data_o => s_vga_data_rx, rdy_o => s_vga_rdy, vld_i => s_vga_vld, vga_hs_o => VGA_HS_o, vga_vs_o => VGA_VS_o, vga_r_o => VGA_R_o, vga_g_o => VGA_G_o, vga_b_o => VGA_B_o
         );
+
+    -- Displays de 7 segmentos não utilizados: ânodos ativos em nível baixo, mantidos em '1' (apagados).
+    -- Sem isso o pull-down padrão dos pinos não usados acende os dígitos fracamente.
+    SEG_AN_o <= (others => '1');
 
     U_CLINT: entity work.clint
         port map (
