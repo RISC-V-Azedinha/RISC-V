@@ -25,6 +25,7 @@ REG_CTRL = 0xC    # Registrador de controle
 
 CTRL_START     = 1 << 0
 CTRL_FIXED_DST = 1 << 1
+CTRL_FIXED_SRC = 1 << 2
 CTRL_BUSY      = 1 << 0
 
 # ==============================================================================
@@ -177,6 +178,38 @@ async def test_fixed_dst_npu(dut):
     
     assert npu_writes == [10, 20, 30], f"NPU recebeu dados errados: {npu_writes}"
     log_success("Modo NPU (Fixed Destination) OK")
+
+
+@cocotb.test()
+async def test_fixed_src_npu_fifo(dut):
+    log_header("Iniciando Teste NPU (Fixed Src: esvaziar a FIFO de saída)")
+    await setup_dut(dut)
+
+    # Cada leitura do endereço da FIFO devolve o próximo resultado (como a O_DATA da NPU)
+    class FifoMock(dict):
+        def __init__(self, values):
+            super().__init__()
+            self.values = list(values)
+        def get(self, addr, default=None):
+            if addr == 0x9018:
+                return self.values.pop(0)
+            return super().get(addr, default)
+
+    fifo_vals = [random.randint(0, 0xFFFFFFFF) for _ in range(40)]   # Mais que a FIFO interna do DMA
+    mem = FifoMock(fifo_vals)
+    start_bus_slave(dut, mem, latency_cycles=3)                       # Escravo segura o rdy (FIFO esperando dado)
+
+    await cfg_write(dut, REG_SRC, 0x9018)
+    await cfg_write(dut, REG_DST, 0x5000)
+    await cfg_write(dut, REG_CNT, len(fifo_vals))
+    await cfg_write(dut, REG_CTRL, CTRL_START | CTRL_FIXED_SRC)
+    assert (await read_status(dut)) & CTRL_FIXED_SRC, "Bit FIXED_SRC não aparece no status"
+
+    assert await wait_dma_done(dut, timeout_cycles=5000), "Timeout"
+    got = [mem.get(0x5000 + 4*i) for i in range(len(fifo_vals))]
+    assert not mem.values, f"Sobraram {len(mem.values)} leituras: a origem não ficou fixa"
+    assert got == fifo_vals, "Dados fora de ordem no destino"
+    log_success("Modo Fixed Source (FIFO -> RAM) OK")
 
 
 @cocotb.test()

@@ -22,6 +22,7 @@ typedef struct {
 #define DMA_CTRL_START      (1 << 0) // Escrita: Inicia transferência
 #define DMA_CTRL_BUSY       (1 << 0) // Leitura: 1 = Ocupado
 #define DMA_CTRL_FIXED_DST  (1 << 1) // 1 = Destino Fixo (Útil para NPU/FIFO)
+#define DMA_CTRL_FIXED_SRC  (1 << 2) // 1 = Origem Fixa (ex.: esvaziar a FIFO de saída da NPU)
 
 // =============================================================================
 // PROTÓTIPOS
@@ -41,5 +42,14 @@ int hal_dma_is_busy(void);
  * @param fixed_dst Se 1, não incrementa o endereço de destino (ex: escrita em FIFO).
  */
 void hal_dma_memcpy(uint32_t src, uint32_t dst, uint32_t size_words, int fixed_dst);
+
+/**
+ * @brief Cópia com origem fixa: lê sempre o mesmo endereço (ex.: a FIFO de saída da NPU,
+ *        que segura o barramento até ter dado) e grava em posições consecutivas.
+ * * @param src Endereço de origem (fixo).
+ * @param dst Endereço de destino (incrementa).
+ * @param size_words Número de palavras de 32 bits.
+ */
+void hal_dma_drain(uint32_t src, uint32_t dst, uint32_t size_words);
 
 #endif // HAL_DMA_H

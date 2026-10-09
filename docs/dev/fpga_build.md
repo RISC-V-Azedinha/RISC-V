@@ -113,7 +113,8 @@ set targetPart "xc7a100tcsg324-1"
 # 2. Leitura de arquivos fonte (VHDL + XDC)
 read_vhdl ./pkg/*.vhd
 read_vhdl ./rtl/core/*.vhd
-read_xdc ./fpga/constraints/pins.xdc
+read_xdc ./fpga/constraints/common.xdc
+read_xdc ./fpga/constraints/$boardName.xdc
 
 # 3. Síntese
 synth_design -top $topEntity -part $targetPart
@@ -124,18 +125,18 @@ place_design
 route_design
 
 # 5. Geração do bitstream
-write_bitstream ./build/fpga/bitstream/soc_top.bit
+write_bitstream ./build/fpga/$boardName/bitstream/soc_top.bit
 ```
 
-A execução deste script via linha de comando (`vivado -mode batch -source build.tcl`) produz o bitstream sem abrir a GUI do Vivado. Esta abordagem é essencial para pipelines de integração contínua e reprodutibilidade.
+A execução deste script via linha de comando (`vivado -mode batch -source build.tcl -tclargs <placa>`, ou `make fpga-build BOARD=<placa>`) produz o bitstream sem abrir a GUI do Vivado. Esta abordagem é essencial para pipelines de integração contínua e reprodutibilidade.
 
 ---
 
 ## 2. Restrições Físicas e Temporais (Constraints)
 
-### 2.1 Ancoragem Física (pins.xdc)
+### 2.1 Ancoragem Física (nexys4.xdc / nexys_a7.xdc)
 
-O arquivo de constraints `pins.xdc` (Xilinx Design Constraints) faz a ligação entre a lógica descrita em VHDL e o mundo físico dos pinos metálicos do encapsulamento da FPGA. Cada declaração no XDC especifica o mapeamento de uma porta lógica (definida na entidade VHDL `soc_top`) a um pino específico do dispositivo.
+Os arquivos de pinagem `nexys4.xdc` e `nexys_a7.xdc` (Xilinx Design Constraints) faz a ligação entre a lógica descrita em VHDL e o mundo físico dos pinos metálicos do encapsulamento da FPGA. Cada declaração no XDC especifica o mapeamento de uma porta lógica (definida na entidade VHDL `soc_top`) a um pino específico do dispositivo.
 
 #### Mapeamento Porta → Pino
 

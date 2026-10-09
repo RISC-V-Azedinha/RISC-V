@@ -5,14 +5,13 @@
 # Nome do Top Level
 set topEntity "soc_top"
 
-# Parte da FPGA (Digilent Nexys 4)
-set targetPart "xc7a100tcsg324-1"
+# Placa alvo (define targetPart, xdcFiles e outputDir)
+source [file join [file dirname [info script]] board.tcl]
 
 # Arquitetura do Core (multi_cycle)
 set coreArch "multi_cycle"
 
 # Define diretórios de saída
-set outputDir "./build/fpga"
 set bitDir    "$outputDir/bitstream"
 set rptDir    "$outputDir/reports"
 set dcpDir    "$outputDir/checkpoints"
@@ -85,14 +84,15 @@ read_dir "./rtl/perips" "*.vhd"
 # SoC Top Level
 read_dir "./rtl/soc" "*.vhd"
 
-# Constraints
-set xdc_file "./fpga/constraints/pins.xdc" 
-if {[file exists $xdc_file]} {
-    puts "    + Lendo Constraints: [file tail $xdc_file]"
-    read_xdc $xdc_file
-} else {
-    puts "!!! ERRO: Arquivo de constraints nao encontrado: $xdc_file"
-    exit 1
+# Constraints (comuns + pinagem da placa)
+foreach xdc_file $xdcFiles {
+    if {[file exists $xdc_file]} {
+        puts "    + Lendo Constraints: [file tail $xdc_file]"
+        read_xdc $xdc_file
+    } else {
+        puts "!!! ERRO: Arquivo de constraints nao encontrado: $xdc_file"
+        exit 1
+    }
 }
 
 # ==========================================================================================
@@ -121,7 +121,13 @@ puts ">>> [4/6] Opt, Place & Route...\n"
 if {[catch {
     opt_design -quiet
     place_design -quiet
+    # Otimização física pós-placement: replica drivers de alto fanout e refaz caminhos críticos
+    phys_opt_design -quiet
     route_design -quiet
+    # Se ainda houver violação, uma passada pós-roteamento costuma fechar folgas pequenas
+    if {[get_property SLACK [get_timing_paths -max_paths 1 -nworst 1 -setup]] < 0} {
+        phys_opt_design -quiet
+    }
 } err]} {
     puts "\n!!! FALHA NA IMPLEMENTACAO !!!"
     puts "$err"
@@ -154,8 +160,8 @@ write_cfgmem -force -format mcs -size 16 -interface SPIx4 -loadbit "up 0x0 $bitD
 puts " "
 puts "================================================================"
 puts "   SUCESSO! Arquivos gerados:"
-puts "   Bitstream: $outputDir/${topEntity}.bit"
-puts "   Flash MCS: $outputDir/${topEntity}.mcs"
+puts "   Bitstream: $bitDir/${topEntity}.bit"
+puts "   Flash MCS: $bitDir/${topEntity}.mcs"
 puts "================================================================"
 
 if {[file exists "clockInfo.txt"]} {

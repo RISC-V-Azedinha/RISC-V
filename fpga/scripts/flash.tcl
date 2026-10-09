@@ -1,8 +1,15 @@
 puts "\n--------------------------------------------------------------------------------------------------------------------------------"
 puts ">>> Gravando SoC na memoria Flash...\n"
 
+source [file join [file dirname [info script]] board.tcl]
+
 set topEntity "soc_top"
-set mcsPath "./build/fpga/bitstream/${topEntity}.mcs"
+set mcsPath "$outputDir/bitstream/${topEntity}.mcs"
+
+if {![file exists $mcsPath]} {
+    puts "!!! ERRO: Arquivo MCS nao encontrado: $mcsPath (rode 'make fpga-build BOARD=$boardName')"
+    exit 1
+}
 
 open_hw_manager
 connect_hw_server
@@ -15,8 +22,12 @@ current_hw_device $device
 set target [current_hw_target]
 set_property PARAM.FREQUENCY 3000000 $target
 
-# Configura o chip Spansion exato que a GUI detectou
-set cfgmem_obj [lindex [get_cfgmem_parts {s25fl128sxxxxxx0-spi-x1_x2_x4}] 0]
+# Configura a memoria Flash da placa (definida em board.tcl)
+set cfgmem_obj [lindex [get_cfgmem_parts $flashPart] 0]
+if {$cfgmem_obj eq ""} {
+    puts "!!! ERRO: Memoria Flash '$flashPart' nao reconhecida pelo Vivado (defina FLASH_PART=...)"
+    exit 1
+}
 set mem_device [create_hw_cfgmem -hw_device $device $cfgmem_obj]
 
 puts ">>> Dispositivo Flash configurado: [get_property NAME $cfgmem_obj]"

@@ -80,11 +80,38 @@ architecture rtl of dual_port_ram is
     signal r_rdy_a : std_logic := '0';
     signal r_rdy_b : std_logic := '0';
 
+    -- ====================================================================
+    -- PORTA B: LEITURA SEQUENCIAL (PRÉ-BUSCA) E ESCRITA EM 1 CICLO
+    -- ====================================================================
+    -- Ao responder uma leitura no endereço A, a porta já lê A+1. Se o pedido seguinte for
+    -- exatamente A+1 (leitura), a resposta sai no mesmo ciclo (rdy combinacional), e assim por
+    -- diante: uma palavra por ciclo em leituras sequenciais (DMA). Qualquer outro pedido,
+    -- inclusive uma escrita, descarta a pré-busca e espera um ciclo, então o dado nunca fica
+    -- velho (a porta A é só de leitura). Escritas são confirmadas no próprio ciclo (rdy
+    -- combinacional). O endereço das BRAMs só depende de registradores para escolher entre a
+    -- pré-busca e o pedido (o seletor tem fanout para todas as BRAMs da memória).
+    signal r_pf_valid : std_logic := '0';
+    signal r_pf_addr  : unsigned(ADDR_WIDTH-1 downto 0) := (others => '0');
+    signal s_pf_hit   : std_logic;
+    signal s_wr_b     : std_logic;
+    signal s_pf_sel   : std_logic;                       -- Este ciclo lê o endereço pré-buscado + 1 (registrado)
+    signal s_wr_ok    : std_logic;                       -- Escrita aceita neste ciclo
+    signal s_addr_b   : unsigned(ADDR_WIDTH-1 downto 0); -- Endereço único da porta (inferência de BRAM)
+
 begin
 
     -- Roteamento contínuo
     rdy_a_o <= r_rdy_a;
-    rdy_b_o <= r_rdy_b;
+    s_wr_b   <= '1' when we_b /= (we_b'range => '0') else '0';
+    s_pf_hit <= '1' when vld_b_i = '1' and s_wr_b = '0' and r_pf_valid = '1' and unsigned(addr_b) = r_pf_addr else '0';
+
+    -- Um único endereço por ciclo na porta B: com pré-busca ativa (ou no ciclo da resposta de
+    -- uma leitura nova), o seguinte ao pré-buscado; senão, o do pedido
+    s_pf_sel <= r_pf_valid or r_rdy_b;
+    s_addr_b <= r_pf_addr + 1 when s_pf_sel = '1' else unsigned(addr_b);
+    s_wr_ok  <= vld_b_i and s_wr_b and not s_pf_sel;
+
+    rdy_b_o <= r_rdy_b or s_pf_hit or s_wr_ok;
 
     -- ============================================================================================================
     -- PORTA A
@@ -123,31 +150,50 @@ begin
     -- ============================================================================================================
     process(clk)
     begin
-
         if rising_edge(clk) then
-
             -- Default: Remove o ACK para garantir que dure apenas 1 ciclo
             r_rdy_b <= '0';
 
-            -- Edge Guard: Executa o acesso APENAS se tem pedido e ainda não respondemos
-            if vld_b_i = '1' and r_rdy_b = '0' then
-                
-                r_rdy_b <= '1';
-                
-                -- Leitura (Read-First)
-                data_b_o <= ram(to_integer(unsigned(addr_b)));
-                
-                -- Escrita controlada por byte enable
+            -- Memória: uma leitura (read-first) e, se for o caso, uma escrita, no mesmo endereço
+            data_b_o <= ram(to_integer(s_addr_b));
+            -- Write enable por byte: só vld, o próprio we(i) e o seletor registrado (sem passar pelo
+            -- OU dos bytes, que fica só no rdy)
+            if vld_b_i = '1' and s_pf_sel = '0' then
                 for i in 0 to (DATA_WIDTH/8)-1 loop
                     if we_b(i) = '1' then
-                        ram(to_integer(unsigned(addr_b)))(8*i+7 downto 8*i) := data_b_i(8*i+7 downto 8*i);
+                        ram(to_integer(s_addr_b))(8*i+7 downto 8*i) := data_b_i(8*i+7 downto 8*i);
                     end if;
                 end loop;
-                
             end if;
 
-        end if;
+            -- Controle do handshake e da pré-busca
+            if s_pf_hit = '1' then
+                -- Leitura sequencial: respondida neste ciclo com o dado pré-buscado; busca o próximo
+                r_pf_addr <= r_pf_addr + 1;
 
+            elsif r_rdy_b = '1' then
+                -- Ciclo da resposta: o mestre ainda mostra o pedido atendido; pré-busca o seguinte
+                r_pf_addr  <= r_pf_addr + 1;
+                r_pf_valid <= '1';
+
+            elsif s_wr_ok = '1' then
+                -- Escrita: confirmada neste ciclo (rdy combinacional)
+                null;
+
+            elsif vld_b_i = '1' and r_pf_valid = '1' then
+                -- Pedido fora da sequência: descarta a pré-busca e atende no ciclo seguinte
+                r_pf_valid <= '0';
+
+            elsif vld_b_i = '1' then
+                -- Leitura nova (Edge Guard): responde no ciclo seguinte
+                r_rdy_b    <= '1';
+                r_pf_valid <= '0';
+                r_pf_addr  <= unsigned(addr_b);
+
+            else
+                r_pf_valid <= '0';
+            end if;
+        end if;
     end process;
 
 end architecture;

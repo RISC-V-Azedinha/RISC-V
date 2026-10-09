@@ -370,10 +370,20 @@ O timer de 64 bits é implementado como dois registradores de 32 bits, permitind
 | `0x10` | `WRITE_W` | WO | Porta de escrita de pesos |
 | `0x14` | `WRITE_A` | WO | Porta de escrita de ativações |
 | `0x18` | `READ_OUT` | RO | Porta de leitura de resultados |
+| `0x1C` | `WRITE_IMG` | WO | Porta da imagem crua do im2col em hardware |
+| `0x20` | `W_BASE` | RW | Base da região de pesos na RAM local (pesos residentes) |
+| `0x24` | `I_BASE` | RW | Base da região de ativações na RAM local |
+| `0x28` | `IM2COL_EN` | RW | 1 = ativações geradas pelo im2col em hardware |
+| `0x2C` | `IM2COL_GEOM` | RW | Geometria: `IN_W`, `OUT_W`, `STRIDE`, `KW` |
+| `0x30` | `IM2COL_NWIN` | RW | Total de janelas da convolução |
+| `0x0C` | `DESC` | WO | Programa de descritores de camada (processador de comandos) |
+| `0x34` | `TILES` | RW | Tiles por START, volta dos ponteiros à base, bias por tile e banco inicial de bias |
+| `0x38` | `OUT_CFG` | RW | Formato da saída: linhas em ordem / uma ativação por palavra / LOOP (saída na RAM de Inputs) |
+| `0x3C` | `MODE` | RW | Bit 0 GEMV; bit 1 STREAM_I; bit 2 STREAM_W; bit 3 OVERLAP (tiles encadeados) |
 | `0x40` | `QUANT_CFG` | RW | Configuração de quantização (shift, zero-point) |
 | `0x44` | `QUANT_MULT` | RW | Multiplicador PPU |
 | `0x48` | `FLAGS` | RW | Flags de controle (ReLU) |
-| `0x80` | `BIAS_BASE` | RW | Endereço base do vetor de bias |
+| `0x80`–`0xFC` | `BIAS` | RW | Banco de bias: 8 tiles × 4 colunas |
 
 **Bits de status (STATUS):**
 
