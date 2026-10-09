@@ -138,7 +138,15 @@ entity bus_interconnect is
         plic_data_o         : out std_logic_vector(31 downto 0);
         plic_we_o           : out std_logic;
         plic_vld_o          : out std_logic;
-        plic_rdy_i          : in  std_logic
+        plic_rdy_i          : in  std_logic;
+
+        -- Cartão SD (SPI)
+        sd_addr_o           : out std_logic_vector(3 downto 0);
+        sd_data_i           : in  std_logic_vector(31 downto 0);
+        sd_data_o           : out std_logic_vector(31 downto 0);
+        sd_we_o             : out std_logic;
+        sd_vld_o            : out std_logic;
+        sd_rdy_i            : in  std_logic
     );
 end entity;
 
@@ -147,11 +155,11 @@ architecture rtl of bus_interconnect is
     -- ========================================================================================
     -- DEFINIÇÕES DE TIPOS E ABSTRAÇÕES
     -- ========================================================================================
-    type slave_t is (SLV_NONE, SLV_ROM, SLV_RAM, SLV_UART, SLV_GPIO, SLV_VGA, SLV_NPU, SLV_DMA, SLV_CLINT, SLV_PLIC);
+    type slave_t is (SLV_NONE, SLV_ROM, SLV_RAM, SLV_UART, SLV_GPIO, SLV_VGA, SLV_NPU, SLV_DMA, SLV_CLINT, SLV_PLIC, SLV_SD);
     type master_id_t is (MST_NONE, MST_DMA_RD, MST_DMA_WR, MST_CPU);
 
     -- Subtipos válidos para usar como índices de Array
-    subtype valid_slave_t is slave_t range SLV_ROM to SLV_PLIC;
+    subtype valid_slave_t is slave_t range SLV_ROM to SLV_SD;
     subtype valid_master_t is master_id_t range MST_DMA_RD to MST_CPU;
 
     -- Records para encapsular os sinais do barramento
@@ -206,6 +214,7 @@ architecture rtl of bus_interconnect is
             when x"4" => return SLV_DMA;
             when x"5" => return SLV_CLINT;
             when x"6" => return SLV_PLIC;
+            when x"7" => return SLV_SD;
             when x"8" => return SLV_RAM;
             when x"9" => return SLV_NPU;
             when others => return SLV_NONE;
@@ -269,6 +278,7 @@ begin
     s_rsp(SLV_DMA).data   <= dma_data_i;   s_rsp(SLV_DMA).rdy   <= dma_rdy_i;
     s_rsp(SLV_CLINT).data <= clint_data_i; s_rsp(SLV_CLINT).rdy <= clint_rdy_i;
     s_rsp(SLV_PLIC).data  <= plic_data_i;  s_rsp(SLV_PLIC).rdy  <= plic_rdy_i;
+    s_rsp(SLV_SD).data    <= sd_data_i;    s_rsp(SLV_SD).rdy    <= sd_rdy_i;
 
     -- Pedidos para os Escravos (Do Crossbar, fatiando os endereços corretamente)
     rom_addr_b_o  <= s_req(SLV_ROM).addr;
@@ -313,6 +323,11 @@ begin
     plic_data_o   <= s_req(SLV_PLIC).data;
     plic_we_o     <= '1' when s_req(SLV_PLIC).we /= "0000" else '0';
     plic_vld_o    <= s_req(SLV_PLIC).vld;
+
+    sd_addr_o     <= s_req(SLV_SD).addr(3 downto 0);
+    sd_data_o     <= s_req(SLV_SD).data;
+    sd_we_o       <= '1' when s_req(SLV_SD).we /= "0000" else '0';
+    sd_vld_o      <= s_req(SLV_SD).vld;
 
 
     -- ========================================================================================

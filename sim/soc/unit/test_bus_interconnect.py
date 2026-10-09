@@ -69,6 +69,7 @@ def model_addr_decode(addr):
     if nibble == 0x4: return "DMA"
     if nibble == 0x5: return "CLINT" 
     if nibble == 0x6: return "PLIC"
+    if nibble == 0x7: return "SD"
     if nibble == 0x8: return "RAM"
     if nibble == 0x9: return "NPU"
     return "NONE"
@@ -155,6 +156,7 @@ async def test_fuzzing_map(dut):
             "DMA":  int(dut.dma_vld_o.value),
             "CLINT": int(dut.clint_vld_o.value), 
             "PLIC":  int(dut.plic_vld_o.value),  
+            "SD":    int(dut.sd_vld_o.value),
             "RAM":  int(dut.ram_vld_b_o.value),
             "NPU":  int(dut.npu_vld_o.value)
         }
@@ -178,6 +180,7 @@ async def test_fuzzing_map(dut):
             elif target == "NPU":  dut.npu_data_i.value = mock_data;  dut.npu_rdy_i.value = 1
             elif target == "CLINT": dut.clint_data_i.value = mock_data; dut.clint_rdy_i.value = 1
             elif target == "PLIC": dut.plic_data_i.value = mock_data; dut.plic_rdy_i.value = 1
+            elif target == "SD":   dut.sd_data_i.value = mock_data;   dut.sd_rdy_i.value = 1
             
             await settle()
             assert int(dut.cpu_rdy_o.value) == 1, f"Ready não retornou para {target}"
@@ -204,6 +207,7 @@ async def test_fuzzing_map(dut):
         dut.npu_rdy_i.value = 0
         dut.clint_rdy_i.value = 0
         dut.plic_rdy_i.value = 0
+        dut.sd_rdy_i.value = 0
 
     log_success(f"Fuzzing OK ({ITERATIONS} endereços)")
 

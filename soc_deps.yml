@@ -183,6 +183,9 @@ targets:
     uart_controller:
     - rtl/perips/uart/uart_controller.vhd
     - sim/perips/unit/test_uart_controller.py
+    sd_spi:
+    - rtl/perips/sd/sd_spi.vhd
+    - sim/perips/unit/test_sd_spi.py
   soc:
     plic:
     - rtl/soc/plic.vhd

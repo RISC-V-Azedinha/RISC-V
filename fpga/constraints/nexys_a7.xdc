@@ -176,3 +176,16 @@ set_property -dict { PACKAGE_PIN H2    IOSTANDARD LVCMOS33 } [get_ports { PMOD_J
 set_property -dict { PACKAGE_PIN G4    IOSTANDARD LVCMOS33 } [get_ports { PMOD_JD_io[5] }];
 set_property -dict { PACKAGE_PIN G2    IOSTANDARD LVCMOS33 } [get_ports { PMOD_JD_io[6] }];
 set_property -dict { PACKAGE_PIN F3    IOSTANDARD LVCMOS33 } [get_ports { PMOD_JD_io[7] }];
+
+## =========================================================================================================================
+## Slot de microSD (modo SPI: SCK, CMD = MOSI, DAT0 = MISO, DAT3 = CS)
+## =========================================================================================================================
+
+set_property -dict { PACKAGE_PIN E2    IOSTANDARD LVCMOS33 } [get_ports { SD_RESET_o }];
+set_property -dict { PACKAGE_PIN A1    IOSTANDARD LVCMOS33 PULLUP true } [get_ports { SD_CD_i }];
+set_property -dict { PACKAGE_PIN B1    IOSTANDARD LVCMOS33 } [get_ports { SD_SCK_o }];
+set_property -dict { PACKAGE_PIN C1    IOSTANDARD LVCMOS33 } [get_ports { SD_CMD_o }];
+set_property -dict { PACKAGE_PIN C2    IOSTANDARD LVCMOS33 PULLUP true } [get_ports { SD_DAT0_i }];
+set_property -dict { PACKAGE_PIN E1    IOSTANDARD LVCMOS33 } [get_ports { SD_DAT_o[1] }];
+set_property -dict { PACKAGE_PIN F1    IOSTANDARD LVCMOS33 } [get_ports { SD_DAT_o[2] }];
+set_property -dict { PACKAGE_PIN D2    IOSTANDARD LVCMOS33 } [get_ports { SD_DAT_o[3] }];

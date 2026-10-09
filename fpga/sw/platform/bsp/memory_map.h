@@ -19,6 +19,7 @@
 #define VGA_BASE_ADDR       0x30000000
 #define CLINT_BASE_ADDR     0x50000000
 #define PLIC_BASE_ADDR      0x60000000
+#define SD_BASE_ADDR        0x70000000
 #define NPU_BASE_ADDR       0x90000000
 
 /* ============================================================================================================== */
@@ -68,6 +69,20 @@
 // LEDs RGB (PWM de 8 bits por cor, 0x00RRGGBB)
 #define RGB_BASE_ADDR           (GPIO_BASE_ADDR + 0x280)
 #define RGB_REG(n)              MMIO32(RGB_BASE_ADDR + 4 * (n))  // n = 0 (LD16) ou 1 (LD17)
+
+/* ============================================================================================================== */
+/* CARTÃO MICROSD (MESTRE SPI)                                                                                    */
+/* ============================================================================================================== */
+
+#define SD_REG_DATA         MMIO32(SD_BASE_ADDR + 0x00)        // Escrita: envia um byte; leitura: byte recebido
+#define SD_REG_CTRL         MMIO32(SD_BASE_ADDR + 0x04)        // bit 0 CS, bit 1 PWR (alimentação do cartão)
+#define SD_REG_DIV          MMIO32(SD_BASE_ADDR + 0x08)        // f_SCK = 100 MHz / (2 (DIV + 1)); mínimo 1
+#define SD_REG_STATUS       MMIO32(SD_BASE_ADDR + 0x0C)        // bit 0 BUSY, bit 1 CD (cartão no slot)
+
+#define SD_CTRL_CS          (1 << 0)
+#define SD_CTRL_PWR         (1 << 1)
+#define SD_STATUS_BUSY      (1 << 0)
+#define SD_STATUS_CD        (1 << 1)
 
 /* ============================================================================================================== */
 /* VGA DEFINITIONS (Preservado para compatibilidade com hal_vga.c)                                                */

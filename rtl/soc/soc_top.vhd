@@ -56,7 +56,15 @@ entity soc_top is
         -- Displays de 7 segmentos (ativos em nível baixo)
         SEG_CAT_o   : out std_logic_vector(6 downto 0);                       -- CA..CG
         SEG_DP_o    : out std_logic;
-        SEG_AN_o    : out std_logic_vector(7 downto 0)
+        SEG_AN_o    : out std_logic_vector(7 downto 0);
+
+        -- Slot de microSD (modo SPI)
+        SD_SCK_o    : out std_logic;
+        SD_CMD_o    : out std_logic;                                          -- MOSI
+        SD_DAT0_i   : in  std_logic := '1';                                   -- MISO
+        SD_DAT_o    : out std_logic_vector(3 downto 1);                       -- DAT3 = CS; DAT1 e DAT2 em 1
+        SD_RESET_o  : out std_logic;                                          -- 1 = cartão sem alimentação
+        SD_CD_i     : in  std_logic := '1'                                    -- 0 = cartão no slot
     );
 end entity;
 
@@ -143,6 +151,12 @@ architecture rtl of soc_top is
     signal s_plic_data_tx             : std_logic_vector(31 downto 0);
     signal s_plic_we                  : std_logic;
     signal s_plic_vld, s_plic_rdy     : std_logic;
+
+    signal s_sd_addr                  : std_logic_vector(3 downto 0);
+    signal s_sd_data_rx               : std_logic_vector(31 downto 0);
+    signal s_sd_data_tx               : std_logic_vector(31 downto 0);
+    signal s_sd_we                    : std_logic;
+    signal s_sd_vld, s_sd_rdy         : std_logic;
 
     -- === Auxiliares =============================================================================================
     signal s_irq_external             : std_logic;
@@ -387,7 +401,15 @@ begin
             plic_data_o   => s_plic_data_tx, 
             plic_we_o     => s_plic_we, 
             plic_vld_o    => s_plic_vld, 
-            plic_rdy_i    => s_plic_rdy
+            plic_rdy_i    => s_plic_rdy,
+
+            -- Interface do cartão SD
+            sd_addr_o     => s_sd_addr,
+            sd_data_i     => s_sd_data_rx,
+            sd_data_o     => s_sd_data_tx,
+            sd_we_o       => s_sd_we,
+            sd_vld_o      => s_sd_vld,
+            sd_rdy_i      => s_sd_rdy
         );
 
     -- ============================================================================================================
@@ -449,6 +471,14 @@ begin
         port map (
             Clk_i => CLK_i, Reset_i => s_sys_rst, Addr_i => s_plic_addr, Data_i => s_plic_data_tx, Data_o => s_plic_data_rx, We_i => s_plic_we, Vld_i => s_plic_vld, Rdy_o => s_plic_rdy, Irq_Sources_i => s_plic_sources, Irq_Req_o => s_irq_external
         );
+
+    U_SD: entity work.sd_spi
+        port map (
+            clk => CLK_i, rst => s_sys_rst, vld_i => s_sd_vld, we_i => s_sd_we, addr_i => s_sd_addr, data_i => s_sd_data_tx, data_o => s_sd_data_rx, rdy_o => s_sd_rdy,
+            sd_sck_o => SD_SCK_o, sd_mosi_o => SD_CMD_o, sd_miso_i => SD_DAT0_i, sd_cs_n_o => SD_DAT_o(3), sd_reset_o => SD_RESET_o, sd_cd_n_i => SD_CD_i
+        );
+
+    SD_DAT_o(2 downto 1) <= "11";                       -- Sem uso no modo SPI
 
     s_npu_rst_n <= not s_sys_rst;
 
