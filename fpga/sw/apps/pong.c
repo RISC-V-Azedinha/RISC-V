@@ -2,6 +2,7 @@
 #include "hal/hal_vga.h"
 #include "hal/hal_uart.h"
 #include "memory_map.h"
+#include "hal/hal_gpio.h"
 
 // =========================================================
 // 1. MATH HELPERS (Bare-Metal)
@@ -163,7 +164,7 @@ void main() {
 
     hal_uart_init();
     hal_vga_init();
-    volatile uint32_t *leds = (volatile uint32_t *)GPIO_BASE_ADDR;
+    volatile uint32_t *leds = &GPIO_REG(GPIO_LED, GPIO_REG_OUT);
     
     int score = 0;
     int state = 0; 
@@ -236,6 +237,7 @@ void main() {
                     ball.dy = -ball.dy;
                     score++;
                     *leds = score; // Placar nos LEDs
+                    hal_seg7_write_dec(score);  // e no display
                     
                     // Aumenta velocidade a cada 3 pontos
                     int temp_score = score;

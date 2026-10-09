@@ -7,12 +7,7 @@
 #include "memory_map.h"
 #include "hal/hal_uart.h"
 #include "hal/hal_dma.h"
-
-// =========================================================
-// DEFINIÇÕES DE HARDWARE E PERIFÉRICOS
-// =========================================================
-#define GPIO_BASE  0x20000000
-#define REG_LEDS   (*(volatile uint32_t *)(GPIO_BASE + 0x00))
+#include "hal/hal_gpio.h"
 
 // =========================================================
 // ALOCAÇÃO DE MEMÓRIA (PESOS, BIASES E BUFFERS)
@@ -130,9 +125,9 @@ void npu_infer(const int8_t* img, int8_t* outputs) {
 int main(void) {
     hal_uart_init();
     
-    REG_LEDS = 0xFFFF;
+    hal_leds_write(0xFFFF);
     for (volatile int i = 0; i < 200000; i++); 
-    REG_LEDS = 0x0000;
+    hal_leds_write(0x0000);
 
     while(1) {
         uint8_t cmd = hal_uart_getc();
@@ -160,7 +155,7 @@ int main(void) {
         else if (cmd == 0xFF) {
             for(int i = 0; i < 784; i++) input_image[i] = (int8_t)hal_uart_getc();
 
-            REG_LEDS = 0x0000;
+            hal_leds_write(0x0000);
 
             // 1. Conv2D + densa: um programa de descritores e a imagem, por DMA
             npu_infer(input_image, fc_out);
@@ -173,7 +168,8 @@ int main(void) {
                 if (fc_out[i] > max_logit) { max_logit = fc_out[i]; predicted_digit = i; }
                 hal_uart_putc((char)fc_out[i]);
             }
-            REG_LEDS = (1 << predicted_digit);
+            hal_leds_write(1 << predicted_digit);                       // LED do dígito previsto
+            hal_seg7_write_dec(predicted_digit);                        // e o dígito no display
         }
     }
     return 0;

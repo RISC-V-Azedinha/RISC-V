@@ -93,7 +93,7 @@ entity bus_interconnect is
         uart_rdy_i          : in  std_logic;
 
         -- GPIO
-        gpio_addr_o         : out std_logic_vector(3 downto 0);
+        gpio_addr_o         : out std_logic_vector(9 downto 0);
         gpio_data_i         : in  std_logic_vector(31 downto 0);
         gpio_data_o         : out std_logic_vector(31 downto 0);
         gpio_we_o           : out std_logic;
@@ -284,7 +284,7 @@ begin
     uart_we_o     <= '1' when s_req(SLV_UART).we /= "0000" else '0';
     uart_vld_o    <= s_req(SLV_UART).vld;
 
-    gpio_addr_o   <= s_req(SLV_GPIO).addr(3 downto 0);
+    gpio_addr_o   <= s_req(SLV_GPIO).addr(9 downto 0);
     gpio_data_o   <= s_req(SLV_GPIO).data;
     gpio_we_o     <= '1' when s_req(SLV_GPIO).we /= "0000" else '0';
     gpio_vld_o    <= s_req(SLV_GPIO).vld;

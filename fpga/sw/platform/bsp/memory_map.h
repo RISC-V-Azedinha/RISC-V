@@ -36,6 +36,40 @@
 #define UART_CMD_RX_FLUSH       (1 << 2)
 
 /* ============================================================================================================== */
+/* GPIO: PORTAS (DIREÇÃO + PINO), DISPLAYS DE 7 SEGMENTOS E LEDs RGB                                              */
+/* ============================================================================================================== */
+
+// Portas: cada uma ocupa 0x40 bytes a partir de GPIO_BASE_ADDR (ver hal/hal_gpio.h)
+#define GPIO_PORT_STRIDE        0x40
+#define GPIO_PORT_BASE(p)       (GPIO_BASE_ADDR + GPIO_PORT_STRIDE * (p))
+
+#define GPIO_REG_IN             0x00    // RO: estado dos pinos
+#define GPIO_REG_OUT            0x04    // RW: valor de saída
+#define GPIO_REG_DIR            0x08    // RW: 1 = saída, 0 = entrada
+#define GPIO_REG_OUTSET         0x0C    // WO: liga os pinos marcados
+#define GPIO_REG_OUTCLR         0x10    // WO: desliga os pinos marcados
+#define GPIO_REG_OUTTGL         0x14    // WO: inverte os pinos marcados
+#define GPIO_REG_IE             0x18    // RW: habilita a interrupção do pino
+#define GPIO_REG_IES            0x1C    // RW: borda da interrupção (0 = subida, 1 = descida)
+#define GPIO_REG_IFG            0x20    // RW: flags de interrupção (escrever 1 limpa)
+
+#define GPIO_REG(p, r)          MMIO32(GPIO_PORT_BASE(p) + (r))
+
+// Displays de 7 segmentos (varredura em hardware)
+#define SEG7_BASE_ADDR          (GPIO_BASE_ADDR + 0x200)
+#define SEG7_REG_CTRL           MMIO32(SEG7_BASE_ADDR + 0x00)   // RW: bit 0 = modo de segmentos crus
+#define SEG7_REG_HEX            MMIO32(SEG7_BASE_ADDR + 0x04)   // RW: nibble i -> dígito i (0 = direita)
+#define SEG7_REG_RAW_LO         MMIO32(SEG7_BASE_ADDR + 0x08)   // RW: segmentos dos dígitos 0..3 (byte i)
+#define SEG7_REG_RAW_HI         MMIO32(SEG7_BASE_ADDR + 0x0C)   // RW: segmentos dos dígitos 4..7
+#define SEG7_REG_DP             MMIO32(SEG7_BASE_ADDR + 0x10)   // RW: pontos decimais (bit i = dígito i)
+#define SEG7_REG_EN             MMIO32(SEG7_BASE_ADDR + 0x14)   // RW: dígitos ligados (bit i = dígito i)
+#define SEG7_CTRL_RAW           (1 << 0)
+
+// LEDs RGB (PWM de 8 bits por cor, 0x00RRGGBB)
+#define RGB_BASE_ADDR           (GPIO_BASE_ADDR + 0x280)
+#define RGB_REG(n)              MMIO32(RGB_BASE_ADDR + 4 * (n))  // n = 0 (LD16) ou 1 (LD17)
+
+/* ============================================================================================================== */
 /* VGA DEFINITIONS (Preservado para compatibilidade com hal_vga.c)                                                */
 /* ============================================================================================================== */
 

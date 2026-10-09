@@ -171,8 +171,15 @@ targets:
     - rtl/perips/vga/vga_peripheral.vhd
     - sim/perips/unit/test_vga_peripheral.py
     gpio_controller:
-    - rtl/perips/gpio/gpio_controller.vhd
-    - sim/perips/unit/test_gpio_controller.py
+      deps:
+      - rtl/perips/gpio/gpio_port.vhd
+      - rtl/perips/gpio/seg7_controller.vhd
+      - rtl/perips/gpio/rgb_pwm.vhd
+      - rtl/perips/gpio/gpio_controller.vhd
+      - sim/perips/wrappers/gpio_controller_wrapper.vhd
+      - sim/perips/unit/test_gpio_controller.py
+      wrapper_top: gpio_controller_wrapper
+      wrapper_src: sim/perips/wrappers/gpio_controller_wrapper.vhd
     uart_controller:
     - rtl/perips/uart/uart_controller.vhd
     - sim/perips/unit/test_uart_controller.py

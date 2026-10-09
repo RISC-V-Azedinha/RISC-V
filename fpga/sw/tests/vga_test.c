@@ -3,7 +3,8 @@
 
 #include <stdint.h>       // Tipos padrão
 #include "hal/hal_vga.h"  // Driver VGA
-#include "memory_map.h"   // Definições de memória (MMIO32, GPIO_BASE_ADDR)
+#include "memory_map.h"   // Definições de memória (MMIO32, GPIO_REG)
+#include "hal/hal_gpio.h"
 
 // Geração de Cores Aleatórias ------------------------------------------------------
 
@@ -31,8 +32,7 @@ void main() {
     uint8_t color = VGA_RED;
     
     // Acesso direto aos LEDs via MMIO (já que não fizemos hal_gpio ainda)
-    // Assumindo GPIO_BASE_ADDR definido no memory_map.h
-    MMIO32(GPIO_BASE_ADDR) = 0; 
+    hal_leds_write(0);
 
     // Bordas
     hal_vga_rect(0, 0, VGA_WIDTH, 2, VGA_WHITE);            // Topo
@@ -74,7 +74,7 @@ void main() {
         // 5. Reação
         if (hit) {
             color = get_random_color();
-            MMIO32(GPIO_BASE_ADDR) += 1; // Incrementa LEDs
+            GPIO_REG(GPIO_LED, GPIO_REG_OUT) += 1; // Incrementa LEDs
         }
 
         // 6. Desenha Novo

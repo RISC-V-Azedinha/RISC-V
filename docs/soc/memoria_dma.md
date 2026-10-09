@@ -288,11 +288,18 @@ Controlador de comunicação serial UART.
 
 #### GPIO (`0x2000_0000`)
 
-Controlador de pinos de entrada/saída de propósito geral.
+Portas de entrada/saída no estilo de microcontrolador (Pmods, LEDs, chaves e botões), displays de 7 segmentos e LEDs RGB. Detalhes em [GPIO Controller](gpio_controller.md).
 
-| Offset | Nome | Acesso | Descrição |
-|--------|------|--------|-----------|
-| `0x00` | `DATA` | RW | Leituras de chaves (switches) e escritas nos LEDs |
+| Offset | Bloco |
+|--------|-------|
+| `0x000` - `0x0FF` | Portas JA, JB, JC e JD (Pmods), 64 bytes cada |
+| `0x100` | Porta LED (LD0..LD15) |
+| `0x140` | Porta SW (SW0..SW15) |
+| `0x180` | Porta BTN (BTNU, BTND, BTNL, BTNR) |
+| `0x200` | Displays de 7 segmentos |
+| `0x280` | LEDs RGB (PWM) |
+
+Registradores de cada porta: `IN` (`0x00`), `OUT` (`0x04`), `DIR` (`0x08`), `OUTSET`/`OUTCLR`/`OUTTGL` (`0x0C`/`0x10`/`0x14`), `IE` (`0x18`), `IES` (`0x1C`) e `IFG` (`0x20`).
 
 ---
 

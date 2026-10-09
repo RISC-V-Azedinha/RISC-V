@@ -80,7 +80,7 @@ set_property -dict { PACKAGE_PIN B11   IOSTANDARD LVCMOS33 } [get_ports { VGA_HS
 set_property -dict { PACKAGE_PIN B12   IOSTANDARD LVCMOS33 } [get_ports { VGA_VS_o }];
 
 ## =========================================================================================================================
-## Displays de 7 Segmentos (Ânodos AN0 - AN7, ativos em nível baixo) - mantidos apagados pelo SoC
+## Displays de 7 Segmentos (Ânodos AN0 - AN7, ativos em nível baixo) - varridos pelo GPIO
 ## =========================================================================================================================
 
 set_property -dict { PACKAGE_PIN J17   IOSTANDARD LVCMOS33 } [get_ports { SEG_AN_o[0] }];
@@ -91,3 +91,88 @@ set_property -dict { PACKAGE_PIN P14   IOSTANDARD LVCMOS33 } [get_ports { SEG_AN
 set_property -dict { PACKAGE_PIN T14   IOSTANDARD LVCMOS33 } [get_ports { SEG_AN_o[5] }];
 set_property -dict { PACKAGE_PIN K2    IOSTANDARD LVCMOS33 } [get_ports { SEG_AN_o[6] }];
 set_property -dict { PACKAGE_PIN U13   IOSTANDARD LVCMOS33 } [get_ports { SEG_AN_o[7] }];
+
+## =========================================================================================================================
+## Displays de 7 Segmentos (Catodos CA - CG e DP, ativos em nível baixo)
+## =========================================================================================================================
+
+set_property -dict { PACKAGE_PIN T10   IOSTANDARD LVCMOS33 } [get_ports { SEG_CAT_o[0] }];
+set_property -dict { PACKAGE_PIN R10   IOSTANDARD LVCMOS33 } [get_ports { SEG_CAT_o[1] }];
+set_property -dict { PACKAGE_PIN K16   IOSTANDARD LVCMOS33 } [get_ports { SEG_CAT_o[2] }];
+set_property -dict { PACKAGE_PIN K13   IOSTANDARD LVCMOS33 } [get_ports { SEG_CAT_o[3] }];
+set_property -dict { PACKAGE_PIN P15   IOSTANDARD LVCMOS33 } [get_ports { SEG_CAT_o[4] }];
+set_property -dict { PACKAGE_PIN T11   IOSTANDARD LVCMOS33 } [get_ports { SEG_CAT_o[5] }];
+set_property -dict { PACKAGE_PIN L18   IOSTANDARD LVCMOS33 } [get_ports { SEG_CAT_o[6] }];
+set_property -dict { PACKAGE_PIN H15   IOSTANDARD LVCMOS33 } [get_ports { SEG_DP_o }];
+
+## =========================================================================================================================
+## Botões (BTNU, BTND, BTNL, BTNR; o BTNC é o reset)
+## =========================================================================================================================
+
+set_property -dict { PACKAGE_PIN M18   IOSTANDARD LVCMOS33 } [get_ports { GPIO_BTN_i[0] }];
+set_property -dict { PACKAGE_PIN P18   IOSTANDARD LVCMOS33 } [get_ports { GPIO_BTN_i[1] }];
+set_property -dict { PACKAGE_PIN P17   IOSTANDARD LVCMOS33 } [get_ports { GPIO_BTN_i[2] }];
+set_property -dict { PACKAGE_PIN M17   IOSTANDARD LVCMOS33 } [get_ports { GPIO_BTN_i[3] }];
+
+## =========================================================================================================================
+## LEDs RGB (LD16 = RGB0, LD17 = RGB1; bit 0 = R, 1 = G, 2 = B)
+## =========================================================================================================================
+
+set_property -dict { PACKAGE_PIN N15   IOSTANDARD LVCMOS33 } [get_ports { RGB0_o[0] }];
+set_property -dict { PACKAGE_PIN M16   IOSTANDARD LVCMOS33 } [get_ports { RGB0_o[1] }];
+set_property -dict { PACKAGE_PIN R12   IOSTANDARD LVCMOS33 } [get_ports { RGB0_o[2] }];
+set_property -dict { PACKAGE_PIN N16   IOSTANDARD LVCMOS33 } [get_ports { RGB1_o[0] }];
+set_property -dict { PACKAGE_PIN R11   IOSTANDARD LVCMOS33 } [get_ports { RGB1_o[1] }];
+set_property -dict { PACKAGE_PIN G14   IOSTANDARD LVCMOS33 } [get_ports { RGB1_o[2] }];
+
+## =========================================================================================================================
+## Pmod JA (bit i da porta = pino i: pinos 1-4 e 7-10 do conector)
+## =========================================================================================================================
+
+set_property -dict { PACKAGE_PIN C17   IOSTANDARD LVCMOS33 } [get_ports { PMOD_JA_io[0] }];
+set_property -dict { PACKAGE_PIN D18   IOSTANDARD LVCMOS33 } [get_ports { PMOD_JA_io[1] }];
+set_property -dict { PACKAGE_PIN E18   IOSTANDARD LVCMOS33 } [get_ports { PMOD_JA_io[2] }];
+set_property -dict { PACKAGE_PIN G17   IOSTANDARD LVCMOS33 } [get_ports { PMOD_JA_io[3] }];
+set_property -dict { PACKAGE_PIN D17   IOSTANDARD LVCMOS33 } [get_ports { PMOD_JA_io[4] }];
+set_property -dict { PACKAGE_PIN E17   IOSTANDARD LVCMOS33 } [get_ports { PMOD_JA_io[5] }];
+set_property -dict { PACKAGE_PIN F18   IOSTANDARD LVCMOS33 } [get_ports { PMOD_JA_io[6] }];
+set_property -dict { PACKAGE_PIN G18   IOSTANDARD LVCMOS33 } [get_ports { PMOD_JA_io[7] }];
+
+## =========================================================================================================================
+## Pmod JB (bit i da porta = pino i: pinos 1-4 e 7-10 do conector)
+## =========================================================================================================================
+
+set_property -dict { PACKAGE_PIN D14   IOSTANDARD LVCMOS33 } [get_ports { PMOD_JB_io[0] }];
+set_property -dict { PACKAGE_PIN F16   IOSTANDARD LVCMOS33 } [get_ports { PMOD_JB_io[1] }];
+set_property -dict { PACKAGE_PIN G16   IOSTANDARD LVCMOS33 } [get_ports { PMOD_JB_io[2] }];
+set_property -dict { PACKAGE_PIN H14   IOSTANDARD LVCMOS33 } [get_ports { PMOD_JB_io[3] }];
+set_property -dict { PACKAGE_PIN E16   IOSTANDARD LVCMOS33 } [get_ports { PMOD_JB_io[4] }];
+set_property -dict { PACKAGE_PIN F13   IOSTANDARD LVCMOS33 } [get_ports { PMOD_JB_io[5] }];
+set_property -dict { PACKAGE_PIN G13   IOSTANDARD LVCMOS33 } [get_ports { PMOD_JB_io[6] }];
+set_property -dict { PACKAGE_PIN H16   IOSTANDARD LVCMOS33 } [get_ports { PMOD_JB_io[7] }];
+
+## =========================================================================================================================
+## Pmod JC (bit i da porta = pino i: pinos 1-4 e 7-10 do conector)
+## =========================================================================================================================
+
+set_property -dict { PACKAGE_PIN K1    IOSTANDARD LVCMOS33 } [get_ports { PMOD_JC_io[0] }];
+set_property -dict { PACKAGE_PIN F6    IOSTANDARD LVCMOS33 } [get_ports { PMOD_JC_io[1] }];
+set_property -dict { PACKAGE_PIN J2    IOSTANDARD LVCMOS33 } [get_ports { PMOD_JC_io[2] }];
+set_property -dict { PACKAGE_PIN G6    IOSTANDARD LVCMOS33 } [get_ports { PMOD_JC_io[3] }];
+set_property -dict { PACKAGE_PIN E7    IOSTANDARD LVCMOS33 } [get_ports { PMOD_JC_io[4] }];
+set_property -dict { PACKAGE_PIN J3    IOSTANDARD LVCMOS33 } [get_ports { PMOD_JC_io[5] }];
+set_property -dict { PACKAGE_PIN J4    IOSTANDARD LVCMOS33 } [get_ports { PMOD_JC_io[6] }];
+set_property -dict { PACKAGE_PIN E6    IOSTANDARD LVCMOS33 } [get_ports { PMOD_JC_io[7] }];
+
+## =========================================================================================================================
+## Pmod JD (bit i da porta = pino i: pinos 1-4 e 7-10 do conector)
+## =========================================================================================================================
+
+set_property -dict { PACKAGE_PIN H4    IOSTANDARD LVCMOS33 } [get_ports { PMOD_JD_io[0] }];
+set_property -dict { PACKAGE_PIN H1    IOSTANDARD LVCMOS33 } [get_ports { PMOD_JD_io[1] }];
+set_property -dict { PACKAGE_PIN G1    IOSTANDARD LVCMOS33 } [get_ports { PMOD_JD_io[2] }];
+set_property -dict { PACKAGE_PIN G3    IOSTANDARD LVCMOS33 } [get_ports { PMOD_JD_io[3] }];
+set_property -dict { PACKAGE_PIN H2    IOSTANDARD LVCMOS33 } [get_ports { PMOD_JD_io[4] }];
+set_property -dict { PACKAGE_PIN G4    IOSTANDARD LVCMOS33 } [get_ports { PMOD_JD_io[5] }];
+set_property -dict { PACKAGE_PIN G2    IOSTANDARD LVCMOS33 } [get_ports { PMOD_JD_io[6] }];
+set_property -dict { PACKAGE_PIN F3    IOSTANDARD LVCMOS33 } [get_ports { PMOD_JD_io[7] }];

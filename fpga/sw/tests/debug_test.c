@@ -1,7 +1,7 @@
 #include <stdint.h>
 
 #define GPIO_BASE 0x20000000
-#define REG_LEDS  (*(volatile uint32_t *)(GPIO_BASE + 0x00))
+#define REG_LEDS  (*(volatile uint32_t *)(GPIO_BASE + 0x104))   // Porta de LEDs: registrador OUT
 
 void main() {
     // Variáveis locais (O GCC vai tentar colocá-las direto nos registradores)

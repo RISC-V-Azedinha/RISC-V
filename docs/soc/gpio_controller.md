@@ -4,176 +4,133 @@
 
 ## 1. Visão Geral
 
-O **GPIO Controller** é um periférico de Entrada/Saída de Uso Geral integrado ao barramento do SoC. Este módulo gerencia a comunicação entre o processador RISC-V e dispositivos físicos externos, especificamente:
+O **GPIO Controller** (`rtl/perips/gpio/`) liga o SoC aos recursos de entrada e saída da placa (Nexys A7 ou Nexys 4). Ele segue o modelo de um microcontrolador: os pinos são agrupados em **portas**, e o software escolhe **a direção de cada pino** e depois lê ou escreve o pino.
 
-- **16 pinos de saída** conectados a LEDs
-- **16 pinos de entrada** conectados a chaves (switches)
+| Recurso | Bloco | Detalhe |
+| --- | --- | --- |
+| Pmods JA, JB, JC, JD | 4 portas de 8 pinos | Entrada ou saída por pino (tri-state), interrupção por borda |
+| LEDs LD0..LD15 | Porta de 16 pinos | Só saída |
+| Chaves SW0..SW15 | Porta de 16 pinos | Só entrada, com filtro de repique (1 ms) e interrupção |
+| Botões BTNU, BTND, BTNL, BTNR | Porta de 4 pinos | Só entrada, com filtro e interrupção (o BTNC é o reset do SoC) |
+| 8 displays de 7 segmentos | `seg7_controller` | Varredura em hardware, modo hexadecimal ou segmentos crus |
+| LEDs RGB LD16 e LD17 | `rgb_pwm` | PWM de 8 bits por cor, com brilho máximo de 1/8 |
 
-A arquitetura utiliza um protocolo de handshake para comunicação síncrona com o barramento do sistema, garantindo integridade de dados através de sinais de validade (`vld_i`) e prontidão (`rdy_o`).
+A interrupção do GPIO é a **fonte 4 do PLIC** (`PLIC_SOURCE_GPIO`): o OU das interrupções habilitadas de todas as portas.
 
----
+## 2. Organização do Hardware
 
-## 2. Diagrama de Blocos
+| Arquivo | Função |
+| --- | --- |
+| `gpio_controller.vhd` | Decodifica o endereço, instancia os blocos e registra a leitura (handshake de latência 1) |
+| `gpio_port.vhd` | Uma porta: registradores, sincronização dos pinos, filtro de repique e detecção de borda |
+| `seg7_controller.vhd` | Multiplexação dos 8 dígitos, decodificador hexadecimal |
+| `rgb_pwm.vhd` | Contador de PWM e comparação com o brilho de cada cor |
 
-![Diagrama de Blocos](../images/GPIO/GPIO-Diagrama_de_blocos.svg)
-
----
+No `soc_top`, cada pino de Pmod é um `inout`: ele só é dirigido quando a sua direção é saída; caso contrário fica em alta impedância e pode ser lido. Os pinos de cada placa estão em `fpga/constraints/nexys_a7.xdc` e `nexys4.xdc`.
 
 ## 3. Mapa de Memória
 
-| Offset | Nome          | Direção | Descrição                              | Acesso  |
-|--------|---------------|---------|----------------------------------------|---------|
-| `0x0`  | `LEDS`        | R/W     | Registrador de dados dos LEDs         | Leitura/Escrita |
-| `0x4`  | `SWITCHES`    | R      | Registrador de estado das chaves      | Somente Leitura |
+O GPIO ocupa `0x2000_0000` a `0x2000_03FF`. Cada bloco ocupa 64 bytes (`addr[9:6]` escolhe o bloco e `addr[5:2]` o registrador).
 
-### Detalhamento dos Registradores
+| Endereço | Bloco |
+| --- | --- |
+| `0x2000_0000` | Porta JA (Pmod JA) |
+| `0x2000_0040` | Porta JB (Pmod JB) |
+| `0x2000_0080` | Porta JC (Pmod JC) |
+| `0x2000_00C0` | Porta JD (Pmod JD) |
+| `0x2000_0100` | Porta LED (LD0..LD15) |
+| `0x2000_0140` | Porta SW (SW0..SW15) |
+| `0x2000_0180` | Porta BTN (bit 0 = BTNU, 1 = BTND, 2 = BTNL, 3 = BTNR) |
+| `0x2000_0200` | Displays de 7 segmentos |
+| `0x2000_0280` | LEDs RGB |
 
-![Detalhamento dos Registradores](../images/GPIO/GPIO-Detalhamento_dos_Registradores.svg)
+### 3.1 Registradores de uma Porta
 
----
+Os nomes seguem os microcontroladores (MSP430, STM32): `IN`, `OUT` e `DIR` para os dados, e registradores de *set/clear/toggle* atômicos, que mudam só os pinos marcados sem ler-modificar-escrever.
 
-## 4. Arquitetura de Registradores
+| Offset | Nome | Acesso | Descrição |
+| --- | --- | --- | --- |
+| `0x00` | `IN` | RO | Estado dos pinos (sincronizado com 2 flip-flops; com filtro nas chaves e botões). Na porta de LEDs, lê `OUT` |
+| `0x04` | `OUT` | RW | Valor de saída |
+| `0x08` | `DIR` | RW | Direção: bit 1 = saída, 0 = entrada. Fixo em 1 nos LEDs e em 0 nas chaves e botões |
+| `0x0C` | `OUTSET` | WO | `OUT <= OUT or valor` |
+| `0x10` | `OUTCLR` | WO | `OUT <= OUT and not valor` |
+| `0x14` | `OUTTGL` | WO | `OUT <= OUT xor valor` |
+| `0x18` | `IE` | RW | Habilita a interrupção de cada pino |
+| `0x1C` | `IES` | RW | Borda da interrupção: 0 = subida, 1 = descida |
+| `0x20` | `IFG` | RW | Flag de borda de cada pino (marcada mesmo com `IE = 0`); escrever 1 limpa |
 
-### 4.1 Registrador `r_leds`
+Pmods: o bit *i* da porta é o pino *i* do conector na ordem 1, 2, 3, 4, 7, 8, 9, 10 (os pinos 5/11 são GND e 6/12, 3,3 V).
 
-**Tipo:** `std_logic_vector(15 downto 0)` - registrador interno  
-**Propósito:** Armazenar o estado lógico dos 16 pinos de saída conectados aos LEDs  
-**Localização física:** Sinal interno no domínio de clock  
+### 3.2 Displays de 7 Segmentos (`0x2000_0200`)
 
-```vhdl
-signal r_leds : std_logic_vector(15 downto 0);
+| Offset | Nome | Descrição |
+| --- | --- | --- |
+| `0x00` | `CTRL` | Bit 0 `RAW`: 0 = modo hexadecimal, 1 = segmentos crus |
+| `0x04` | `HEX` | Nibble *i* → dígito *i* (dígito 0 à direita) |
+| `0x08` | `RAW_LO` | Segmentos crus dos dígitos 0..3 (byte *i* = dígito *i*) |
+| `0x0C` | `RAW_HI` | Segmentos crus dos dígitos 4..7 |
+| `0x10` | `DP` | Ponto decimal de cada dígito (modo hexadecimal) |
+| `0x14` | `EN` | Dígitos ligados; 0 após o reset (displays apagados) |
+
+Segmentos crus: bit 0 = a, ..., bit 6 = g, bit 7 = ponto; 1 = aceso. O controlador acende um dígito por vez durante 2^14 ciclos (164 µs), o que dá cerca de 760 quadros por segundo.
+
+### 3.3 LEDs RGB (`0x2000_0280`)
+
+| Offset | Nome | Descrição |
+| --- | --- | --- |
+| `0x00` | `RGB0` | LD16: `0x00RRGGBB`, brilho 0..255 de cada cor |
+| `0x04` | `RGB1` | LD17 |
+
+Os LEDs RGB da placa são muito fortes ligados direto, então o PWM tem 2048 passos e o brilho (0..255) cobre só os 256 primeiros: o brilho máximo é 1/8 do LED ligado direto (generic `PWM_DIM = 3`). Cada passo dura 4 ciclos, o que dá cerca de 12 kHz.
+
+## 4. Funcionamento de uma Porta
+
+1. **Sincronização:** os pinos externos passam por dois flip-flops antes de qualquer uso (evita metaestabilidade).
+2. **Filtro de repique (chaves e botões):** a cada 1 ms o valor é amostrado; um pino só muda quando duas amostras seguidas concordam.
+3. **Borda:** o valor atual é comparado com o do ciclo anterior; a borda escolhida em `IES` marca `IFG`.
+4. **Interrupção:** `irq = OU(IFG and IE)`. O tratador lê `IFG`, escreve de volta os bits que tratou (limpando-os) e o PLIC é liberado. Uma borda que chega no mesmo ciclo da limpeza não se perde.
+
+## 5. Uso pelo Software
+
+A HAL fica em `fpga/sw/platform/bsp/hal/hal_gpio.h`:
+
+```c
+#include "hal/hal_gpio.h"
+
+hal_gpio_set_dir(GPIO_JA, 0, GPIO_OUTPUT);     // pino 1 do Pmod JA como saída
+hal_gpio_write(GPIO_JA, 0, 1);                  // liga o pino
+if (hal_gpio_read(GPIO_BTN, GPIO_BTN_UP)) { }   // lê o BTNU
+
+hal_leds_write(0x00FF);                         // LEDs
+uint16_t sw = hal_switches_read();              // chaves
+
+hal_seg7_write_dec(1234);                       // displays: 1234
+hal_rgb_set(RGB_LD16, 0, 255, 0);               // LD16 verde
+
+hal_gpio_irq_enable(GPIO_BTN, GPIO_BTN_LEFT, GPIO_EDGE_RISING);   // interrupção (PLIC fonte 4)
 ```
 
-#### Comportamento
-
-| Condição              | Ação                                      |
-|-----------------------|-------------------------------------------|
-| `rst = '1'`           | `r_leds <= (others => '0')` (reset)       |
-| `vld_i = '1'` E `we_i = '1'` E `addr_i = 0x0` | `r_leds <= data_i(15 downto 0)` |
-| Caso contrário        | Mantém valor atual (latched)              |
-
-#### Conexão Física
-
-```vhdl
-gpio_leds <= r_leds;  -- Saída combinacional para os pinos físicos
-```
-
-A saída `gpio_leds` é uma conexão direta (wire) do registrador, atualizando-se imediatamente quando `r_leds` muda.
-
-### 4.2 Sinal `gpio_sw`
-
-**Tipo:** `std_logic_vector(15 downto 0)` - porta de entrada  
-**Propósito:** Refletir o estado físico das 16 chaves (switches) externas  
-**Características:** Não é um registrador; é uma leitura direta do hardware externo  
-
-```vhdl
-gpio_sw : in std_logic_vector(15 downto 0);  -- declaração na porta
-```
-
-#### Fluxo de Dados
-
-```
-gpio_sw (pino físico) ──────────────► data_o(15 downto 0) quando addr_i = 0x4
-                                      (via multiplexador no processo)
-```
-
-### 4.3 Interação Direção Dados
-
-Este módulo implementa uma **separação fixa de direção**:
-
-![Interação Direção Dados](../images/GPIO/GPIO-Arquitetura_de_Direção_de_Dados.svg)
-
-**Nota:** Este módulo **não possui** um registrador de direção (direction register) como em GPIO tradicionais. A direção é fixa:
-- Bits 15:0 dos LEDs → **sempre saída**
-- Bits 15:0 dos Switches → **sempre entrada**
-
----
-
-## 5. Lógica de Interface
-
-### 5.1 Sinais do Barramento
-
-| Sinal    | Direção | Tipo       | Descrição                                      |
-|----------|---------|------------|------------------------------------------------|
-| `clk`    | Input   | `std_logic`| Clock do sistema (síncrono)                    |
-| `rst`    | Input   | `std_logic`| Reset síncrono (ativo alto)                    |
-| `vld_i`  | Input   | `std_logic`| Validade: indica transação válida no barramento |
-| `we_i`   | Input   | `std_logic`| Write Enable: '1'=escrita, '0'=leitura         |
-| `addr_i` | Input   | `slv(3:0)` | Offset do endereço (seleciona registrador)     |
-| `data_i` | Input   | `slv(31:0)`| Dados de entrada (escrita da CPU)              |
-| `data_o` | Output  | `slv(31:0)`| Dados de saída (leitura para CPU)              |
-| `rdy_o`  | Output  | `std_logic`| Ready: indica que o periférico respondeu      |
-
-### 5.2 Decodificação de Endereço
-
-```
-addr_i (bits)           Seleção
-─────────────────────────────────
-0000 (0x0)              Registrador de LEDs (r_leds)
-0100 (0x4)              Registrador de Switches (gpio_sw)
-outros                  Nenhuma ação (null)
-```
-
----
+O programa `fpga/sw/tests/gpio_test.c` testa todos os blocos na placa (com autoverificação pela UART) e depois serve de demonstração: os LEDs seguem as chaves, os botões geram interrupções contadas no display e mudam a cor dos LEDs RGB.
 
 ## 6. Protocolo de Handshake
-
-### 6.1 Descrição
 
 O GPIO Controller implementa um protocolo **handshake com latência 1** para comunicação com o barramento do SoC:
 
 ![Protocolo de Handshake](../images/GPIO/GPIO-Protocolo_de_Handshake.svg)
 
-### 6.2 Diagrama de Estados do Handshake
+| Ciclo | `vld_i` | `we_i` | `rdy_o` | Ação |
+|-------|---------|--------|---------|------|
+| N     | 1       | 0/1    | 0       | CPU inicia a transação; numa escrita, o registrador é atualizado na borda seguinte |
+| N+1   | 0       | -      | 1       | GPIO responde (numa leitura, com o dado registrado) |
+| N+2   | -       | -      | 0       | Idle novamente |
 
-![Diagrama de Estados do Handshake](../images/GPIO/GPIO-Diagrama_de_Estados_do_Handshake.svg)
+## 7. Verificação
 
-### 6.3 Timing do Handshake
+O testbench `sim/perips/unit/test_gpio_controller.py` (8 testes) usa o wrapper `sim/perips/wrappers/gpio_controller_wrapper.vhd`, com filtro, varredura e PWM acelerados:
 
-| Ciclo | `vld_i` | `we_i` | `addr_i` | `data_i` | `rdy_o` | Ação |
-|-------|---------|--------|----------|----------|---------|------|
-| N     | 1       | 0/1    | 0x0/0x4  | valor    | 0       | CPU inicia transação |
-| N+1   | 0       | -      | -        | -        | 1       | GPIO responde |
-| N+2   | -       | -      | -        | -        | 0       | Idle novamente |
+```bash
+make test-unit-gpio_controller CORE_ARCH=perips
+```
 
----
-
-## 7. Tabela de Operações Completa
-
-| `vld_i` | `we_i` | `addr_i` | `data_i`     | `data_o`      | `rdy_o` | Ação                                    |
-|---------|--------|----------|--------------|---------------|---------|-----------------------------------------|
-| 0       | X      | X        | X            | (zera)        | 0       | Nenhuma operação                        |
-| 1       | 1      | 0x0      | `xxxx_xxxx`  | (zera)        | 1       | Escrita em `r_leds`                     |
-| 1       | 1      | 0x4      | X            | (zera)        | 1       | Escrita ignorada (endereço read-only)   |
-| 1       | 1      | Outro    | X            | (zera)        | 1       | Escrita ignorada (endereço inválido)    |
-| 1       | 0      | 0x0      | X            | `r_leds`      | 1       | Leitura de LEDs                         |
-| 1       | 0      | 0x4      | X            | `gpio_sw`     | 1       | Leitura de Switches                     |
-| 1       | 0      | Outro    | X            | (zera)        | 1       | Leitura inválida (retorna 0)            |
-
----
-
-## 8. Considerações de Projeto
-
-### 8.1 Domínio de Clock
-
-- **Síncrono:** Todos os registradores operam na borda de subida do `clk`
-- **Reset:** Síncrono, ativo alto, zera `r_leds` para `0x0000`
-
-### 8.2 Latência
-
-- **Latência de resposta:** 1 ciclo de clock
-- A CPU deve aguardar `rdy_o = '1'` antes de considerar a transação completa
-
-### 8.3 Largura de Dados
-
-- Barramento: 32 bits (`data_i`, `data_o`)
-- Dados úteis: 16 bits (LSB)
-- Bits superiores (31:16): Reservados, retornam 0 em leituras
-
-### 8.4 Limitações
-
-1. **Direção fixa:** Não há registrador de direção configurável
-2. **Sem interrupções:** O módulo não suporta geração de interrupções
-3. **Sem máscaras individuais:** Escrita afeta todos os 16 bits simultaneamente
-
----
+Os testes cobrem o estado de reset, a porta de LEDs, a direção dos Pmods, o filtro das chaves, as interrupções dos botões (borda, `IE`, limpeza de `IFG`), os modos dos displays, o ciclo de trabalho do PWM e 300 operações aleatórias comparadas com um modelo.

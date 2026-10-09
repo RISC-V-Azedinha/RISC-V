@@ -1,13 +1,10 @@
 #include <stdint.h>
+#include "hal/hal_gpio.h"
 
 // =========================================================
 // DEFINIÇÕES DE HARDWARE
 // =========================================================
-#define GPIO_BASE 0x20000000
 #define UART_BASE 0x10000000
-
-#define REG_LEDS        (*(volatile uint32_t *)(GPIO_BASE + 0x00))
-#define REG_SW          (*(volatile uint32_t *)(GPIO_BASE + 0x04))
 
 #define REG_UART_DATA   (*(volatile uint32_t *)(UART_BASE + 0x00))
 #define REG_UART_STATUS (*(volatile uint32_t *)(UART_BASE + 0x04))
@@ -66,9 +63,9 @@ void main() {
     volatile int i;
     uint32_t t1 = 0, t2 = 1, nextTerm = 0;
 
-    REG_LEDS = 0xFFFF;
+    hal_leds_write(0xFFFF);
     for (i = 0; i < 500000; i++);
-    REG_LEDS = 0x0000;
+    hal_leds_write(0x0000);
 
     uart_puts("\n\r--------------------------------\n\r");
     uart_puts(" FIBONACCI (User App @ 0x800)\n\r");
@@ -89,7 +86,8 @@ void main() {
             uart_puts("T"); print_dec(count); uart_puts(": ");
             print_dec(nextTerm); uart_puts("\n\r");
 
-            REG_LEDS = nextTerm & 0xFFFF;
+            hal_leds_write(nextTerm & 0xFFFF);                  // LEDs: termo em binário
+            hal_seg7_write_dec(nextTerm);                       // display: termo em decimal
             for (i = 0; i < 100000; i++); // Delay menor
         }
         uart_puts("--- Reiniciando a sequência---\n\r");

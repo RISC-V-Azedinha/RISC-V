@@ -35,6 +35,17 @@ entity soc_top is
 
         GPIO_LEDS_o : out std_logic_vector(15 downto 0);
         GPIO_SW_i   : in  std_logic_vector(15 downto 0);
+        GPIO_BTN_i  : in  std_logic_vector( 3 downto 0) := (others => '0');   -- BTNU, BTND, BTNL, BTNR
+
+        -- Pmods JA..JD (bit i = pino i da porta: pinos 1-4 e 7-10 do conector)
+        PMOD_JA_io  : inout std_logic_vector(7 downto 0);
+        PMOD_JB_io  : inout std_logic_vector(7 downto 0);
+        PMOD_JC_io  : inout std_logic_vector(7 downto 0);
+        PMOD_JD_io  : inout std_logic_vector(7 downto 0);
+
+        -- LEDs RGB LD16 e LD17 (bit 0 = R, 1 = G, 2 = B)
+        RGB0_o      : out std_logic_vector(2 downto 0);
+        RGB1_o      : out std_logic_vector(2 downto 0);
 
         VGA_HS_o    : out std_logic;
         VGA_VS_o    : out std_logic;
@@ -42,6 +53,9 @@ entity soc_top is
         VGA_G_o     : out std_logic_vector(3 downto 0);
         VGA_B_o     : out std_logic_vector(3 downto 0);
 
+        -- Displays de 7 segmentos (ativos em nível baixo)
+        SEG_CAT_o   : out std_logic_vector(6 downto 0);                       -- CA..CG
+        SEG_DP_o    : out std_logic;
         SEG_AN_o    : out std_logic_vector(7 downto 0)
     );
 end entity;
@@ -99,7 +113,7 @@ architecture rtl of soc_top is
     signal s_uart_we                  : std_logic;
     signal s_uart_vld, s_uart_rdy     : std_logic;
 
-    signal s_gpio_addr                : std_logic_vector(3 downto 0);
+    signal s_gpio_addr                : std_logic_vector(9 downto 0);
     signal s_gpio_data_rx             : std_logic_vector(31 downto 0);                 
     signal s_gpio_data_tx             : std_logic_vector(31 downto 0);
     signal s_gpio_we                  : std_logic;
@@ -139,6 +153,11 @@ architecture rtl of soc_top is
     signal s_dma_irq                  : std_logic;
     signal s_npu_irq                  : std_logic;
     signal s_plic_sources             : std_logic_vector(31 downto 0);
+    signal s_gpio_irq                 : std_logic;
+
+    -- Pmods: valor, habilitação de saída (tri-state) e leitura de cada pino
+    signal s_ja_o, s_jb_o, s_jc_o, s_jd_o     : std_logic_vector(7 downto 0);
+    signal s_ja_oe, s_jb_oe, s_jc_oe, s_jd_oe : std_logic_vector(7 downto 0);
 
     -- === Controle de DEBUG ======================================================================================
     signal s_soc_en                   : std_logic;
@@ -178,6 +197,7 @@ begin
         1 => s_uart_irq, 
         2 => s_dma_irq,
         3 => s_npu_irq,
+        4 => s_gpio_irq,
         others => '0'
     );
 
@@ -398,17 +418,27 @@ begin
 
     U_GPIO: entity work.gpio_controller
         port map (
-            clk => CLK_i, rst => s_sys_rst, vld_i => s_gpio_vld, we_i => s_gpio_we, addr_i => s_gpio_addr, data_i => s_gpio_data_tx, data_o => s_gpio_data_rx, rdy_o => s_gpio_rdy, gpio_leds => GPIO_LEDS_o, gpio_sw => GPIO_SW_i
+            clk => CLK_i, rst => s_sys_rst, vld_i => s_gpio_vld, we_i => s_gpio_we, addr_i => s_gpio_addr, data_i => s_gpio_data_tx, data_o => s_gpio_data_rx, rdy_o => s_gpio_rdy, irq_o => s_gpio_irq,
+            ja_i => PMOD_JA_io, jb_i => PMOD_JB_io, jc_i => PMOD_JC_io, jd_i => PMOD_JD_io,
+            ja_o => s_ja_o, jb_o => s_jb_o, jc_o => s_jc_o, jd_o => s_jd_o,
+            ja_oe_o => s_ja_oe, jb_oe_o => s_jb_oe, jc_oe_o => s_jc_oe, jd_oe_o => s_jd_oe,
+            gpio_leds => GPIO_LEDS_o, gpio_sw => GPIO_SW_i, gpio_btn => GPIO_BTN_i,
+            seg_n_o => SEG_CAT_o, dp_n_o => SEG_DP_o, an_n_o => SEG_AN_o,
+            rgb0_o => RGB0_o, rgb1_o => RGB1_o
         );
+
+    -- Tri-state dos Pmods: cada pino só é dirigido quando a sua direção é saída
+    GEN_PMOD: for i in 0 to 7 generate
+        PMOD_JA_io(i) <= s_ja_o(i) when s_ja_oe(i) = '1' else 'Z';
+        PMOD_JB_io(i) <= s_jb_o(i) when s_jb_oe(i) = '1' else 'Z';
+        PMOD_JC_io(i) <= s_jc_o(i) when s_jc_oe(i) = '1' else 'Z';
+        PMOD_JD_io(i) <= s_jd_o(i) when s_jd_oe(i) = '1' else 'Z';
+    end generate;
 
     U_VGA: entity work.vga_peripheral
         port map (
             clk => CLK_i, rst => s_sys_rst, we_i => s_vga_we, addr_i => s_vga_addr, data_i => s_vga_data_tx, data_o => s_vga_data_rx, rdy_o => s_vga_rdy, vld_i => s_vga_vld, vga_hs_o => VGA_HS_o, vga_vs_o => VGA_VS_o, vga_r_o => VGA_R_o, vga_g_o => VGA_G_o, vga_b_o => VGA_B_o
         );
-
-    -- Displays de 7 segmentos não utilizados: ânodos ativos em nível baixo, mantidos em '1' (apagados).
-    -- Sem isso o pull-down padrão dos pinos não usados acende os dígitos fracamente.
-    SEG_AN_o <= (others => '1');
 
     U_CLINT: entity work.clint
         port map (

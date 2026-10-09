@@ -1,6 +1,7 @@
 #include <stdint.h>       // Tipos padrão
 #include "hal/hal_vga.h"  // Usa as funções vga_plot, init, etc.
-#include "memory_map.h"   // Usa MMIO32 e endereços base (para os LEDs)
+#include "memory_map.h"   // Usa MMIO32 e endereços base
+#include "hal/hal_gpio.h" // LEDs
 
 // ===============================================================================
 // MATEMÁTICA DE PONTO FIXO (Q10)
@@ -55,7 +56,7 @@ void main() {
 
     // Acesso direto aos LEDs (Offset 0 na GPIO)
 
-    volatile uint32_t *leds = (volatile uint32_t *)GPIO_BASE_ADDR;
+    volatile uint32_t *leds = &GPIO_REG(GPIO_LED, GPIO_REG_OUT);
     *leds = 0;
 
     // --- Configuração do Fractal ---
