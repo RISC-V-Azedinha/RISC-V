@@ -205,3 +205,59 @@ async def test_ram_double_write_bug(dut):
         assert False, "Violação de Handshake na RAM: O Mestre está perdendo 1 ciclo à toa."
         
     log_success("Edge Guard validado na RAM! Pulso atômico de 1 ciclo.")
+
+async def stream_read_b(dut, base, n, inject_write=None):
+    """ Mestre síncrono estilo DMA na porta B: amostra rdy/dado na borda de subida (valores do
+    ciclo que termina), mantém vld e avança o endereço a cada rdy, sem nunca abandonar um
+    pedido. Devolve os dados e os ciclos gastos. inject_write = (após_k_leituras, endereço, dado). """
+    data, cycles, addr, done_write = [], 0, base, inject_write is None
+    dut.we_b.value = 0
+    dut.addr_b.value = addr
+    dut.vld_b_i.value = 1
+    while True:
+        await RisingEdge(dut.clk)
+        cycles += 1
+        if int(dut.rdy_b_o.value) == 1:
+            if int(dut.we_b.value) != 0:
+                dut.we_b.value = 0                      # escrita confirmada: volta às leituras
+                dut.addr_b.value = addr
+                done_write = True
+                continue
+            data.append(int(dut.data_b_o.value))
+            addr += 1
+            if len(data) == n:
+                dut.vld_b_i.value = 0
+                break
+            if not done_write and len(data) == inject_write[0]:
+                dut.addr_b.value = inject_write[1]
+                dut.data_b_i.value = inject_write[2]
+                dut.we_b.value = 0xF
+            else:
+                dut.addr_b.value = addr
+    await RisingEdge(dut.clk)
+    return data, cycles
+
+@cocotb.test()
+async def test_port_b_sequential_prefetch(dut):
+    """ Leituras sequenciais na porta B saem a 1 palavra/ciclo (pré-busca) e uma escrita no meio
+    do fluxo invalida a pré-busca (nada de dado velho). """
+    log_header("TESTE: Porta B - leitura sequencial com pré-busca")
+    cocotb.start_soon(Clock(dut.clk, 10, unit="ns").start())
+    await reset_dut(dut)
+
+    vals = [random.randint(0, MAX_DATA) for _ in range(64)]
+    for i, v in enumerate(vals):
+        await ram_transaction(dut, 'B', 0x100 + i, 0xF, v)
+
+    data, cycles = await stream_read_b(dut, 0x100, 64)
+    assert data == vals, "Leitura sequencial devolveu dados errados"
+    assert cycles <= 64 + 2, f"Leitura sequencial lenta: {cycles} ciclos para 64 palavras"
+    log_info(f"64 palavras em {cycles} ciclos")
+
+    # Escrita no meio do fluxo, no endereço que acabou de ser pré-buscado
+    new = random.randint(0, MAX_DATA)
+    data, _ = await stream_read_b(dut, 0x100, 32, inject_write=(16, 0x100 + 16, new))
+    expected = vals[:32]
+    expected[16] = new
+    assert data == expected, "Pré-busca entregou dado velho após uma escrita"
+    log_success("Pré-busca correta: 1 palavra/ciclo e coerente com escritas")

@@ -58,6 +58,9 @@ ZICSR_EXT   := $(shell $(CC) -march=rv32i_zicsr -mabi=ilp32 -E - < /dev/null > /
 
 BASE_CFLAGS := -march=rv32i$(ZICSR_EXT) -mabi=ilp32 -nostdlib -nostartfiles -g --specs=picolibc.specs
 
+# Otimização dos apps da FPGA (o bootloader da ROM segue com BASE_CFLAGS puro)
+APP_OPT     ?= -O2 -fno-tree-loop-distribute-patterns  # sem libc: impede o GCC de gerar chamadas a memset/memcpy
+
 VIVADO_TCLARGS := -tclargs $(BOARD)
 
 
@@ -241,7 +244,7 @@ sw-fpga:
 	@src_file=$$(find $(FPGA_SW_DIR)/apps $(FPGA_SW_DIR)/tests $(FPGA_SW_DIR)/server -name "$(SW).c" -o -name "$(SW).s" 2>/dev/null | head -n 1); \
 	if [ -z "$$src_file" ]; then echo "❌ Erro: $(SW) não encontrado"; exit 1; fi; \
 	mkdir -p $(BUILD_FPGA_BIN); \
-	$(CC) $(BASE_CFLAGS) -I$(FPGA_SW_DIR)/platform/bsp -T $(FPGA_SW_DIR)/platform/linker/link.ld \
+	$(CC) $(BASE_CFLAGS) $(APP_OPT) -I$(FPGA_SW_DIR)/platform/bsp -T $(FPGA_SW_DIR)/platform/linker/link.ld \
 		-o $(BUILD_FPGA_BIN)/$(SW).elf $(FPGA_SW_DIR)/platform/startup/start.s \
 		$$(find $(FPGA_SW_DIR)/platform/bsp -name "*.c") $$src_file; \
 	$(OBJCOPY) -O binary $(BUILD_FPGA_BIN)/$(SW).elf $(BUILD_FPGA_BIN)/$(SW).bin; \

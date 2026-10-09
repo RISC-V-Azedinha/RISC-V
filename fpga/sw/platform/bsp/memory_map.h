@@ -58,12 +58,45 @@
 #define NPU_REG_WRITE_W     MMIO32(NPU_BASE_ADDR + 0x10)        // WO: Pesos
 #define NPU_REG_WRITE_A     MMIO32(NPU_BASE_ADDR + 0x14)        // WO: Inputs (Ativações)
 #define NPU_REG_READ_OUT    MMIO32(NPU_BASE_ADDR + 0x18)        // RO: Saída
+#define NPU_REG_WRITE_IMG   MMIO32(NPU_BASE_ADDR + 0x1C)        // WO: Imagem crua do im2col (4 pixels int8)
+
+// Bases das regiões na RAM local (Pesos residentes): os resets de ponteiro voltam para cá
+#define NPU_REG_W_BASE      MMIO32(NPU_BASE_ADDR + 0x20)        // RW: Base da região de Pesos
+#define NPU_REG_I_BASE      MMIO32(NPU_BASE_ADDR + 0x24)        // RW: Base da região de Inputs
+
+// im2col em hardware: as janelas da convolução saem da imagem crua (porta IMG)
+#define NPU_REG_IM2COL_EN   MMIO32(NPU_BASE_ADDR + 0x28)        // RW: 1 = Inputs gerados pelo im2col
+#define NPU_REG_IM2COL_GEOM MMIO32(NPU_BASE_ADDR + 0x2C)        // RW: [7:0] IN_W | [15:8] OUT_W | [19:16] STRIDE | [23:20] KW
+#define NPU_REG_IM2COL_NWIN MMIO32(NPU_BASE_ADDR + 0x30)        // RW: Total de janelas
+
+// Sequenciador de tiles e formato da saída
+#define NPU_REG_TILES       MMIO32(NPU_BASE_ADDR + 0x34)        // RW: [15:0] Tiles por START | bit16 RW_W | bit17 RW_I
+#define NPU_REG_OUT_CFG     MMIO32(NPU_BASE_ADDR + 0x38)        // RW: bit0 ORDER (linhas em ordem) | bit1 UNPACK (1 ativação/palavra)
+#define NPU_TILES_RW_W      (1 << 16)                           // A cada tile, a leitura dos Pesos volta a W_BASE
+#define NPU_TILES_RW_I      (1 << 17)                           // A cada tile, a leitura dos Inputs volta a I_BASE
+#define NPU_OUT_ORDER       (1 << 0)
+#define NPU_OUT_UNPACK      (1 << 1)
+#define NPU_TILES_BIAS      (1 << 18)                           // Tile t usa o vetor de bias t (0x80 + 16t)
+#define NPU_TILES_BIAS_BASE(b) ((uint32_t)(b) << 19)             // Banco de bias do primeiro tile (biases residentes)
+
+// Descritores de camada: programa executado pelo processador de comandos da NPU
+#define NPU_REG_DESC        MMIO32(NPU_BASE_ADDR + 0x0C)        // WO: Porta do programa (Fixed Dest, via DMA)
+#define NPU_STATUS_PROG_END (1 << 4)                            // Programa terminado (fila vazia, último comando = END)
+#define NPU_DESC_WRITE(reg) (0x10000000u | (reg))               // Seguido do dado: escreve um registrador
+#define NPU_DESC_WAIT       0x20000000u                         // Espera a execução corrente terminar
+#define NPU_DESC_END        0x30000000u                         // Fim do programa
+#define NPU_REG_MODE        MMIO32(NPU_BASE_ADDR + 0x3C)        // RW: bit0 GEMV (densa com lote 1 nas 4 linhas)
+#define NPU_MODE_GEMV       (1 << 0)
+#define NPU_MODE_STREAM_I   (1 << 1)                            // Leitura espera o Input chegar (DMA após o START)
+#define NPU_MODE_STREAM_W   (1 << 2)                            // Leitura espera o Peso chegar
+#define NPU_MODE_OVERLAP    (1 << 3)                            // Tiles encadeados (acumuladores sombra)
+#define NPU_OUT_LOOP        (1 << 2)                            // Saída vai para a RAM de Inputs (fusão de camadas)
 
 // Configuração Estática
 #define NPU_REG_QUANT_CFG   MMIO32(NPU_BASE_ADDR + 0x40)        // RW: Shift & Zero Point
 #define NPU_REG_QUANT_MULT  MMIO32(NPU_BASE_ADDR + 0x44)        // RW: Multiplicador PPU
 #define NPU_REG_FLAGS       MMIO32(NPU_BASE_ADDR + 0x48)        // RW: Flags de Controle (ReLU)
-#define NPU_REG_BIAS_BASE   MMIO32(NPU_BASE_ADDR + 0x80)        // RW: Base do vetor de Bias (0x80 a 0x8C)
+#define NPU_REG_BIAS_BASE   MMIO32(NPU_BASE_ADDR + 0x80)        // RW: Banco de Bias (0x80 a 0xFC: 8 tiles x 4 colunas)
 
 // --- BITMASKS ---------------------------------------------------------------------------------------------
 

@@ -32,3 +32,17 @@ void hal_dma_memcpy(uint32_t src, uint32_t dst, uint32_t size_words, int fixed_d
         __asm__ volatile ("nop");
     }
 }
+void hal_dma_drain(uint32_t src, uint32_t dst, uint32_t size_words) {
+    while(hal_dma_is_busy());
+
+    DMA->SRC = src;
+    DMA->DST = dst;
+    DMA->CNT = size_words;
+    DMA->CTRL = DMA_CTRL_START | DMA_CTRL_FIXED_SRC;
+
+    while(hal_dma_is_busy()) {
+        __asm__ volatile ("nop");
+        __asm__ volatile ("nop");
+        __asm__ volatile ("nop");
+    }
+}

@@ -121,7 +121,13 @@ puts ">>> [4/6] Opt, Place & Route...\n"
 if {[catch {
     opt_design -quiet
     place_design -quiet
+    # Otimização física pós-placement: replica drivers de alto fanout e refaz caminhos críticos
+    phys_opt_design -quiet
     route_design -quiet
+    # Se ainda houver violação, uma passada pós-roteamento costuma fechar folgas pequenas
+    if {[get_property SLACK [get_timing_paths -max_paths 1 -nworst 1 -setup]] < 0} {
+        phys_opt_design -quiet
+    }
 } err]} {
     puts "\n!!! FALHA NA IMPLEMENTACAO !!!"
     puts "$err"

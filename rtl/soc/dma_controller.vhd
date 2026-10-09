@@ -55,6 +55,7 @@ architecture rtl of dma_controller is
     signal r_rd_count       : unsigned(31 downto 0);
     signal r_wr_count       : unsigned(31 downto 0);
     signal r_ctrl_fixed_dst : std_logic;
+    signal r_ctrl_fixed_src : std_logic;                       -- Origem fixa (ex.: leitura da FIFO de saída da NPU)
     signal r_busy           : std_logic;
 
     -- Aumento da profundidade da FIFO para 32 posições
@@ -87,13 +88,19 @@ architecture rtl of dma_controller is
     -- só leem um bit já pronto no registrador.
     signal r_rd_pending : std_logic := '0';
 
+    -- Estágio de entrada do dado lido: quebra o caminho combinacional mestre -> crossbar ->
+    -- escravo -> FIFO (BRAM) do DMA. O dado entra na FIFO no ciclo seguinte ao handshake.
+    signal r_in_valid   : std_logic := '0';
+    signal r_in_data    : std_logic_vector(31 downto 0) := (others => '0');
+
 begin
 
     cfg_rdy_o <= r_cfg_rdy;
 
     -- Requisições de Barramento ativas continuamente baseadas no estado da FIFO interna
     -- Limite de leitura alterado para < 32
-    s_rd_req <= '1' when (r_busy = '1' and r_rd_pending = '1' and r_fifo_count < 32 and soc_en_i /= '0') else '0';
+    -- Reserva uma posição da FIFO para o dado que está no estágio de entrada
+    s_rd_req <= '1' when (r_busy = '1' and r_rd_pending = '1' and r_fifo_count < 31 and soc_en_i /= '0') else '0';
 
     m_rd_vld_o  <= s_rd_req;
     m_rd_addr_o <= std_logic_vector(r_src_addr);
@@ -114,6 +121,7 @@ begin
                 r_rd_count       <= (others => '0');
                 r_wr_count       <= (others => '0');
                 r_ctrl_fixed_dst <= '0';
+                r_ctrl_fixed_src <= '0';
                 r_busy           <= '0';
                 r_fifo_wr        <= (others => '0');
                 r_fifo_rd        <= (others => '0');
@@ -122,6 +130,7 @@ begin
                 r_wr_data_reg    <= (others => '0');
                 r_cfg_rdy        <= '0';
                 r_rd_pending     <= '0';
+                r_in_valid       <= '0';
                 irq_done_o       <= '0';
             else
                 v_fifo_push := false;
@@ -149,6 +158,7 @@ begin
                                     r_fifo_count <= (others => '0');
                                 end if;
                                 r_ctrl_fixed_dst <= cfg_data_i(1);
+                                r_ctrl_fixed_src <= cfg_data_i(2);
                             when others => null;
                         end case;
                     end if;
@@ -159,13 +169,24 @@ begin
                 end if;
 
                 -- 2. READ ENGINE (Estágio 1 - Produtor em True Burst)
-                if s_rd_req = '1' and m_rd_rdy_i = '1' then
-                    r_fifo(to_integer(r_fifo_wr)) <= m_rd_data_i;
+                -- Estágio de entrada: o dado do handshake anterior entra na FIFO agora. O dado é
+                -- capturado em todo ciclo (sem clock enable dependente do rdy do escravo) e só é
+                -- usado quando r_in_valid indica que houve handshake.
+                r_in_valid <= '0';
+                r_in_data  <= m_rd_data_i;
+                if r_in_valid = '1' then
+                    r_fifo(to_integer(r_fifo_wr)) <= r_in_data;
                     r_fifo_wr    <= r_fifo_wr + 1;
-                    r_src_addr   <= r_src_addr + 4;
+                    v_fifo_push  := true;
+                end if;
+
+                if s_rd_req = '1' and m_rd_rdy_i = '1' then
+                    r_in_valid   <= '1';
+                    if r_ctrl_fixed_src = '0' then
+                        r_src_addr <= r_src_addr + 4;
+                    end if;
                     r_rd_count   <= r_rd_count - 1;
                     r_rd_pending <= '0' when r_rd_count = 1 else '1';
-                    v_fifo_push  := true;
                 end if;
 
                 -- 3. WRITE ENGINE (Estágio 2 - Buffer de Saída Registrado)
@@ -213,7 +234,7 @@ begin
     cfg_data_o <= std_logic_vector(r_src_addr) when cfg_addr_i = x"0" else
                   std_logic_vector(r_dst_addr) when cfg_addr_i = x"4" else
                   std_logic_vector(r_wr_count) when cfg_addr_i = x"8" else 
-                  (0 => r_busy, 1 => r_ctrl_fixed_dst, others => '0') when cfg_addr_i = x"C" else
+                  (0 => r_busy, 1 => r_ctrl_fixed_dst, 2 => r_ctrl_fixed_src, others => '0') when cfg_addr_i = x"C" else
                   (others => '0');
 
 end architecture;
