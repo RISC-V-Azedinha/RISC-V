@@ -12,7 +12,7 @@ Os **Mestres** são os componentes que possuem "iniciativa". Eles são responsá
 Os **Escravos** são componentes "reativos". Eles nunca iniciam uma conversa; apenas respondem quando um mestre envia uma solicitação para o seu endereço específico.
 
 * **Memórias (RAM/ROM):** Armazenam dados e instruções. Respondem com o conteúdo solicitado ou confirmam a gravação de um dado.
-* **Periféricos (UART, GPIO, VGA, NPU):** Permitem a interação com o mundo exterior. Agem como escravos para que o mestre possa ler status ou configurar seus registradores internos (ex: definir um pino como saída).
+* **Periféricos (UART, GPIO, VGA, cartão microSD, NPU):** Permitem a interação com o mundo exterior. Agem como escravos para que o mestre possa ler status ou configurar seus registradores internos (ex: definir um pino como saída).
 
 ---
 
@@ -25,225 +25,84 @@ O `bus_interconnect` funciona como o "sistema circulatório" do SoC, sendo respo
 
 ---
 
-## Árbitro de Barramento (Bus Arbiter)
+## Crossbar e Arbitragem
 
-Além do interconectador que roteia os sinais para os escravos corretos, o SoC possui um **árbitro de barramento** (`bus_arbiter.vhd`) responsável por gerenciar o acesso ao barramento compartilhado entre múltiplos mestres (como CPU e DMA), evitando conflitos quando dois ou mais mestres tentam utilizar o barramento simultaneamente.
+O `bus_interconnect.vhd` é um **crossbar**: cada escravo tem a sua própria arbitragem, então mestres que acessam escravos diferentes são atendidos **no mesmo ciclo** (a CPU lê a UART enquanto o DMA copia da RAM para a NPU, por exemplo). Só quando dois mestres querem o **mesmo** escravo é que um deles espera.
 
-### 1. Problema da Contenção
-!!! danger "Risco de Falha no Sistema"
-    A contenção ocorre quando dois mestres (por exemplo, CPU e DMA) sinalizam simultaneamente seus sinais de validade (`m0_vld_i='1'` e `m1_vld_i='1'`), tentando iniciar uma transação no barramento no mesmo ciclo de clock. Sem arbitragem, isso causaria:
-    
-    * Corrupção de dados no barramento.
-    * Comportamento indefinido dos escravos.
-    * Possível travamento do sistema.
+### 1. Mestres e Interfaces
 
-### 2. Política de Arbitragem Implementada
-O árbitro implementa uma política de **prioridade fixa** onde o DMA (Mestre 1) possui prioridade absoluta sobre a CPU (Mestre 0):
+| Interface | Mestre | Acesso | Observação |
+| --- | --- | --- | --- |
+| `imem_*` | CPU (busca de instruções) | Leitura | Caminho próprio, fora do crossbar: vai direto à porta A da ROM ou da RAM |
+| `cpu_*` | CPU (dados) | Leitura e escrita | `we` de 4 bits (escrita por byte) |
+| `dma_rd_*` | DMA (leitura) | Só leitura | Lê a origem da cópia |
+| `dma_wr_*` | DMA (escrita) | Só escrita | `we` de 1 bit, replicado para os 4 bytes |
 
-* Quando ambos solicitam acesso simultaneamente, o DMA sempre ganha.
-* A CPU só é atendida quando o DMA não está solicitando.
-* Essa prioridade é implementada na lógica de transição de estado do IDLE.
+O DMA aparece duas vezes como mestre (uma porta de leitura e uma de escrita, que trabalham em paralelo) e uma vez como escravo (`0x4000_0000`), por onde a CPU programa os seus registradores.
 
-### 3. Máquina de Estados do Árbitro
-O árbitro utiliza uma FSM (Finite State Machine) de 5 estados para gerenciar a concessão e revogação do controle do barramento:
+### 2. Decodificação de Endereços
 
-#### Estados da FSM:
-* **IDLE**: Estado ocioso. Monitora as requisições dos mestres (`m0_vld_i` e `m1_vld_i`).
-    * Se `m1_vld_i='1'` → `GRANT_M1` (DMA vence).
-    * Se `m1_vld_i='0'` e `m0_vld_i='1'` → `GRANT_M0` (CPU atendida).
-    * Se nenhum solicita → permanece em `IDLE`.
+O escravo é escolhido pelos 4 bits mais altos do endereço (`addr[31:28]`), e cada escravo recebe só os bits de endereço de que precisa:
 
-* **GRANT_M1**: Concessão ao DMA.
-    * Rota os sinais do DMA para o escravo.
-    * Permanece neste estado enquanto o DMA mantém `m1_vld_i='1'`.
-    * Transiciona para `WAIT_M1` quando recebe `s_rdy_i='1'` (handshake concluído).
+| `addr[31:28]` | Escravo | Bits de endereço repassados |
+| --- | --- | --- |
+| `0x0` | Boot ROM | 32 (porta B; a porta A é da busca de instruções) |
+| `0x1` | UART | 4 |
+| `0x2` | GPIO | 10 |
+| `0x3` | VGA | 17 |
+| `0x4` | DMA (configuração) | 4 |
+| `0x5` | CLINT | 5 |
+| `0x6` | PLIC | 24 |
+| `0x7` | Cartão SD (SPI) | 4 |
+| `0x8` | RAM | 32 (porta B; a porta A é da busca de instruções) |
+| `0x9` | NPU | 32 |
 
-* **GRANT_M0**: Concessão à CPU (similar ao GRANT_M1, mas para a CPU).
-    * Transiciona para `WAIT_M0` ao receber `s_rdy_i='1'`.
+!!! warning "Endereço não mapeado (*bus fault*)"
+    Um acesso a uma região sem escravo (`0xA` a `0xF`) é respondido na hora pelo próprio crossbar, com `rdy = '1'` e dado zero. Assim, um ponteiro errado não trava o mestre esperando um `rdy` que nunca viria.
 
-* **WAIT_M1**: Estado de espera de segurança para o DMA.
-    * Mantém o barramento ocupado, mas **não gera novos válidos para o escravo** (`s_vld_r='0'`).
-    * Aguarda o DMA baixar seu sinal de validade (`m1_vld_i='0'`).
-    * Só libera o barramento (retorna para `IDLE`) quando isso ocorre.
-    * **Propósito**: Evita que o árbitro interprete o 'Valid' antigo como uma nova requisição (prevenindo "double write").
+### 3. Política de Arbitragem
 
-* **WAIT_M0**: Estado de espera de segurança para a CPU (análogo ao WAIT_M1).
+Para cada escravo, o crossbar escolhe o dono da transação nesta ordem:
 
-#### Fluxo em Caso de Contenção:
-1. Ambos mestres solicitam em `IDLE` → árbitro vai para `GRANT_M1` (DMA vence por prioridade).
-2. DMA realiza transação → handshake com escravo (`s_rdy_i='1'`).
-3. Transiciona para `WAIT_M1`.
-4. Permanece em `WAIT_M1` até que DMA baixe `m1_vld_i='0'`.
-5. Retorna para `IDLE` → nova arbitragem pode ocorrer.
-6. CPU fica bloqueada até que o DMA complete e libere o barramento.
+1. **Trava (*sticky lock*)**: se o escravo está no meio de uma transação (ainda não respondeu `rdy`), o mestre que a começou continua com ele;
+2. **DMA de leitura**;
+3. **DMA de escrita**;
+4. **CPU**.
 
-### 4. Mecanismo de Prevenção de Dupla Escrita
-!!! warning "Prevenção de Double Write"
-    Os estados `WAIT_Mx` são cruciais para a correta operação:
-    
-    * Após o escravo sinalizar `s_rdy_i='1'`, o árbitro **não retorna imediatamente para IDLE**.
-    * Em vez disso, entra em `WAIT_Mx` onde força `s_vld_r='0'` (desativando o válido para o escravo).
-    * Só libera o controle do barramento quando o mestre correspondente baixa seu sinal de validade.
-    * Isso garante que o escravo nunca veja dois pulsos de `vld` consecutivos para a mesma transação.
+O DMA tem prioridade porque as suas transferências são longas e sequenciais (alimentam a NPU e a VGA), e a CPU, que normalmente faz poucos acessos espaçados, só perde ciclos quando disputa o mesmo escravo. A trava garante que um mestre de maior prioridade nunca "roube" um escravo lento no meio de uma transação de outro mestre: ela é registrada a cada ciclo em que o escravo ainda está com `rdy = '0'` e é liberada no ciclo em que ele responde.
+
+!!! tip "Por que arbitrar por escravo"
+    A arbitragem é escrita com o escravo como índice fixo de um laço (desenrolado na elaboração). Assim, a lógica de posse de um escravo não depende da de outro, e o sintetizador não cria caminhos combinacionais artificiais entre escravos sem relação (por exemplo, entre o contador do DMA e a posse do PLIC), o que antes prejudicava o *timing*.
 
 ---
 
 ## Protocolo de Sincronização (Handshake)
 
-O protocolo de handshake é fundamental para a operação correta do barramento, especialmente quando lidamos com componentes operando em frequências ou latências diferentes.
+Todas as interfaces usam o mesmo protocolo *ready/valid*:
 
-### Funcionamento Básico do Handshake
-
-O protocolo utiliza dois sinais fundamentais:
-* **`vld` (Valid)**: Sinalizado pelo mestre para indicar que os dados/endereço no barramento são válidos.
-* **`rdy` (Ready)**: Sinalizado pelo escravo para indicar que completou o processamento da transação.
+* **`vld` (Valid)**: o mestre indica que endereço, dado e `we` são válidos e os mantém estáveis;
+* **`rdy` (Ready)**: o escravo indica que concluiu a transação (e, numa leitura, que o dado está em `data`).
 
 > Mais informações do protocolo em [Ready/Valid](../hardware/multi-cycle.md#32-protocolo-de-sincronização-handshake-readyvalid)
 
-### Fluxo de Sinais na Transação
+### Fluxo de uma Transação
 
-1. **Início pela Master**:
-    * Master coloca endereço/dados no barramento.
-    * Master afirma seu sinal `mX_vld_i = '1'`.
-    * Árbitro (se concedido) roteia este sinal para o escravo como `s_vld_o = '1'`.
+1. O mestre coloca endereço e dados e sobe `vld`;
+2. O crossbar decodifica o endereço, arbitra e liga o mestre ao escravo (ida: endereço, dado, `we`, `vld`; volta: dado, `rdy`);
+3. O escravo processa no seu tempo (a RAM em um ciclo; periféricos podem levar vários) e sobe `rdy`;
+4. O mestre vê `rdy`, captura o dado e baixa `vld` no ciclo seguinte; a trava do escravo é liberada.
 
-2. **Processamento pelo Escravo**:
-    * Escravo vê `s_vld_o = '1'` e sabe que os dados são válidos.
-    * Escravo processa a solicitação (leitura/escrita).
-    * Quando concluído, escravo afirma `s_rdy_i = '1'`.
-
-3. **Confirmação pela Master**:
-    * Árbitro roteia `s_rdy_i` de volta para a master correspondente como `mX_rdy_o = '1'`.
-    * Master vê `mX_rdy_o = '1'` e sabe que a transação foi concluída.
-    * Master então baixa seu sinal `mX_vld_i = '0'`.
-
-### Como o Barramento "Congela" a Transação
-!!! tip "Gerenciando Diferenças de Tempo"
-    A chave para lidar com diferenças de tempo de resposta está nos **estados WAIT** da FSM do árbitro:
-    
-    1. **GRANT_Mx** (Concessão ativa):
-        * Árbitro mantém concessão ao master.
-        * Roteia sinais do master para o escravo (`s_vld_o = mX_vld_i`).
-        * Permanece neste estado enquanto aguarda `s_rdy_i = '1'`.
-    
-    2. **Transição para WAIT_Mx**:
-        * Quando `s_rdy_i = '1'` (escravo confirma conclusão).
-        * Árbitro muda para estado `WAIT_Mx`.
-        * **Neste ponto, o escravo já considerou a transação completa**.
-    
-    3. **WAIT_Mx** (Estado de segurança):
-        * O barramento está efetivamente "congelado" para novas transações.
-        * Definições padrão do processo de saída definem `s_vld_r = '0'` (desativando o válido para o escravo).
-        * Isso garante que o escravo **não veja um novo pulso de válido** enquanto espera o master baixar seu sinal.
-        * Árbitro permanece neste estado até ver `mX_vld_i = '0'` (master baixando seu válido).
-        * Só então retorna a `IDLE`, liberando o barramento para nova arbitragem.
-
-### Garantia de Integridade em Diferenças de Tempo
-
-Este mecanismo resolve perfeitamente o problema de um processador rápido esperando um periférico lento:
-
-* **Para o Escravo**: Veja apenas um pulso limpo de `vld` (não há risco de "dupla escrita" porque durante `WAIT_Mx`, `s_vld_o` é forçado a '0').
-* **Para o Master**: Recebe confirmação clara (`rdy = '1'`) quando o escravo terminou.
-* **Para o Árbitro**: Controla precisamente quando o barramento pode ser liberado para nova arbitragem.
-* **Para o Sistema**: Elimina condições de corrida e garante que dados sejam estáveis durante toda a janela de processamento do escravo.
+!!! success "Sem dupla escrita"
+    Os periféricos respondem com um pulso de `rdy` de um ciclo e só aceitam uma nova transação quando `vld` está alto **e** ainda não responderam (`vld_i = '1' and r_rdy = '0'`). Como o mestre baixa `vld` logo depois de ver `rdy`, o escravo nunca interpreta o mesmo `vld` como duas transações.
 
 ---
 
-## Integração no SoC de Nível Superior
+## Integração no SoC
 
-No arquivo `soc_top.vhd`, podemos observar como o árbitro de barramento e o interconectador são integrados no contexto completo do SoC:
+No `soc_top.vhd`, o `U_BUS` liga:
 
-### Conexões do Árbitro de Barramento
-* **CPU (Master 0)**: Conectada diretamente ao árbitro através dos sinais de DMem (`s_cpu_dmem_*`).
-* **DMA (Master 1)**: Conectada ao árbitro através de seus sinais de acesso à memória (`s_dma_m_*`).
-* **Slave Output**: O árbitro roteia o acesso concedido para o interconectador (`s_arb_*` → `U_BUS.dmem_*`).
+* a busca de instruções da CPU (`s_cpu_imem_*`) e a sua porta de dados (`s_cpu_dmem_*`);
+* as duas portas de mestre do DMA (`s_dma_m_rd_*` e `s_dma_m_wr_*`);
+* os dez escravos: ROM e RAM (portas A e B), UART, GPIO, VGA, DMA (configuração), CLINT, PLIC, cartão SD e NPU.
 
-### Detalhes de Integração Relevantes
-
-#### 1. Mapeamento de Sinais do Árbitro (linhas 375-403)
-
-* **Interface Master 0 (CPU):**
-    * CPU's DMem address (`s_cpu_dmem_addr`) → árbitro `m0_addr_i`
-    * CPU's DMem write data (`s_cpu_dmem_wdata`) → árbitro `m0_wdata_i`
-    * CPU's DMem write enable (`s_cpu_dmem_we`) → árbitro `m0_we_i`
-    * CPU's DMem valid (`s_cpu_dmem_vld`) → árbitro `m0_vld_i`
-    * Árbitro's CPU read data (`m0_rdata_o`) → CPU's DMem read data (`s_cpu_dmem_rdata`)
-    * Árbitro's CPU ready (`m0_rdy_o`) → CPU's DMem ready (`s_cpu_dmem_rdy`)
-
-* **Interface Master 1 (DMA):**
-    * DMA's memory address (`s_dma_m_addr`) → árbitro `m1_addr_i`
-    * DMA's memory write data (`s_dma_m_wdata`) → árbitro `m1_wdata_i`
-    * DMA's memory write enable (`s_dma_m_we`) → expandido para 4 bits → árbitro `m1_we_i`
-    * DMA's memory valid (`s_dma_m_vld`) → árbitro `m1_vld_i`
-    * Árbitro's DMA read data (`m1_rdata_o`) → DMA's memory read data (`s_dma_m_rdata`)
-    * Árbitro's DMA ready (`m1_rdy_o`) → DMA's memory ready (`s_dma_m_rdy`)
-
----
-
-#### 2. Conexão do Árbitro ao Interconectador (linhas 396-403 e 417-423)
-
-* Árbitro's slave address (`s_addr_o`) → interconectador `dmem_addr_i`
-* Árbitro's slave write data (`s_wdata_o`) → interconectador `dmem_data_i`
-* Árbitro's slave write enable (`s_we_o`) → interconectador `dmem_we_i`
-* Árbitro's slave valid (`s_vld_o`) → interconectador `dmem_vld_i`
-* Interconectador's DMem read data (`dmem_data_o`) → árbitro's slave read data (`s_rdata_i`)
-* Interconectador's DMem ready (`dmem_rdy_o`) → árbitro's slave ready (`s_rdy_i`)
-
----
-
-#### 3. Tratamento de Sinais de Controle Específicos
-
-!!! note "Write Enable Expansion"
-    O DMA possui um sinal WE de 1 bit que é expandido para 4 bits antes de chegar ao árbitro (linhas 273-277 e 391-392):
-
-    ```vhdl
-    s_dma_we_expanded <= (others => s_dma_m_we);  -- Expande 1 bit para 4 bits
-    ...
-    m1_we_i     => s_dma_we_expanded,
-    ```
-
-    Isso é necessário porque o árbitro espera sinais WE de 4 bits (como da CPU), enquanto o DMA gera apenas 1 bit.
-
-!!! abstract "Configuração do DMA como Escravo"
-    Além de ser um mestre para acesso à memória, o DMA também possui uma interface de escravo para configuração (linhas 459-465):
-
-    ```vhdl
-    -- DMA Slave (Config)
-    dma_addr_o   => s_dma_s_addr,
-    dma_data_i   => s_dma_s_rdata, -- Interconnect lê do DMA
-    dma_data_o   => s_dma_s_wdata, -- Interconnect escreve no DMA
-    dma_we_o     => s_dma_s_we,
-    dma_vld_o    => s_dma_s_vld,
-    dma_rdy_i    => s_dma_s_rdy,
-    ```
-
-    Isso permite que a CPU programe os registradores do DMA através do barramento.
-
----
-
-### Fluxo de Dados Completo no SoC
-
-1. **Para Acesso à Memória (CPU ou DMA)**:
-
-    * **Requisição:** Master (CPU ou DMA) coloca endereço/dados e afirma seu sinal válido.
-    * **Arbitragem:** Árbitro concede acesso baseado na prioridade (DMA > CPU).
-    * **Roteamento:** Árbitro roteia os sinais do master para o interconectador.
-    * **Decodificação:** Interconectador decodifica o endereço e roteia para o escravo correto (RAM, ROM, etc.).
-    * **Processamento:** Escravo processa e retorna sinal pronto.
-    * **Retorno:** O sinal pronto retorna através do interconectador → árbitro → master correspondente.
-    * **Finalização:** Master baixa seu sinal válido após receber o sinal de pronto.
-    * **Reset:** Árbitro detecta o master baixando o sinal válido e retorna ao estado IDLE.
-
-2. **Para Acesso aos Periféricos**:
-
-    * **Roteamento:** O fluxo segue os mesmos passos da memória, mas o interconectador roteia para os periféricos (UART, GPIO, etc.) com base no endereço mapeado.
-    * **Latência:** Periféricos possuem latências variáveis, tornando o *handshake* `ready/valid` essencial para a segurança dos dados.
-
-!!! success "Separação de Responsabilidades"
-    Esta arquitetura demonstra uma separação clara de responsabilidades:
-
-    1. **CPU** tem acesso dedicado ao barramento de instruções (IMem) e acesso arbitrado ao barramento de dados (DMem).
-    2. **DMA** tem acesso arbitrado ao barramento de dados (para transferências de memória) e acesso configurável via barramento de escravo (para programação do próprio DMA).
-    3. **Árbitro** gerencia os conflitos de acesso ao barramento de dados compartilhado entre CPU e DMA.
-    4. **Interconectador** roteia as transações aprovadas para o escravo correto baseado no endereço.
-    5. **Handshake ready/valid** garante operação segura entre componentes com diferentes latências de resposta.
+Adicionar um periférico novo é localizado: um valor no tipo `slave_t`, uma linha na função de decodificação, as atribuições de ida e volta do escravo e as portas no `soc_top`. A arbitragem e a trava valem automaticamente para ele, como foi feito com o cartão SD em `0x7000_0000`.

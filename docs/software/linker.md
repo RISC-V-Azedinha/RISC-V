@@ -68,7 +68,8 @@ SECTIONS {
     .data : { *(.data*) } > ram
     .bss  : { *(.bss*)  } > ram
     
-    _stack_start = ORIGIN(ram) + LENGTH(ram);
+    /* Stack nos 2 KB abaixo do app (0x80000800) */
+    _stack_start = ORIGIN(ram) + 0x800;
 }
 ```
 
@@ -93,13 +94,15 @@ As seções `.data` e `.bss` vão para RAM porque variáveis precisam de memóri
 
 #### Símbolo _stack_start
 
-O linker define `_stack_start` como o endereço final da RAM:
+O linker define `_stack_start` no fim dos 2 KB reservados ao bootloader, logo abaixo do app:
 
 ```ld
-_stack_start = ORIGIN(ram) + LENGTH(ram);  // 0x80000000 + 256K = 0x80040000
+_stack_start = ORIGIN(ram) + 0x800;  // 0x80000000 + 2K = 0x80000800
 ```
 
-Este símbolo é consumido pelo código de startup (crt0.s/start.s) para inicializar o registrador `sp` (Stack Pointer). A pilha cresce para baixo, então começar no topo da RAM maximiza o espaço disponível.
+Este símbolo é consumido pelo código de startup (crt0.s/start.s) para inicializar o registrador `sp` (Stack Pointer). A pilha cresce para baixo, a partir de `0x80000800`, dividindo os 2 KB com o `.bss` do bootloader (o bloco de 512 bytes usado com o cartão microSD). Assim, carregar um app grande na RAM, pela UART ou pelo cartão, nunca sobrescreve a pilha do bootloader enquanto ele ainda está executando.
+
+Como esses 2 KB são pequenos, o bootloader é compilado com `-Os -ffunction-sections -fdata-sections -Wl,--gc-sections` (`BOOT_OPT` no makefile): o código cabe nos 4 KB da ROM, e as funções do BSP que ele não usa são descartadas. Ele também não usa variáveis globais inicializadas, porque o startup não copia `.data` da ROM para a RAM.
 
 ### 2.3 Análise do link.ld (Aplicação do Usuário)
 
@@ -143,7 +146,7 @@ A diferença crucial em relação ao bootloader é que a aplicação não tem ac
 
 #### O Offset de 2KB (0x800)
 
-O comentário no script explica: "Deixa os primeiros 2KB livres para dados do Bootloader". O bootloader, ao receber um novo binário pela UART, precisa de um buffer temporário para armazenar os bytes recebidos antes de gravá-los permanentemente no endereço final. Este buffer é tipicamente alocado no início da RAM do usuário (região `0x80000000` a `0x80000800`), permitindo que o bootloader use esta memória durante o processo de transferência.
+O comentário no script explica: "Deixa os primeiros 2KB livres para dados do Bootloader". A região `0x80000000` a `0x80000800` guarda a pilha e o `.bss` do bootloader (incluindo o bloco de trabalho do cartão microSD). Os bytes do app vão direto para o endereço final, sem buffer intermediário, então a região só precisa existir enquanto o bootloader executa.
 
 #### Mapeamento de Seções
 
@@ -155,7 +158,7 @@ Todas as seções (.text, .rodata, .data, .bss) são colocadas em RAM porque:
 
 #### Símbolo _stack_start
 
-Aqui o topo da pilha está em `0x80040800` (256KB após `0x80000800`), diferente do bootloader (`0x80040000`). Isso ocorre porque a aplicação começa 2KB acima na memória.
+Aqui o topo da pilha está em `0x80040800` (256KB após `0x80000800`), diferente do bootloader (`0x80000800`): a aplicação tem a RAM toda para si, enquanto o bootloader se limita aos 2 KB abaixo dela.
 
 ### 2.4 Símbolos Definidos e Consumidos pelo Startup
 
@@ -167,7 +170,7 @@ lui sp, %hi(_stack_start)
 addi sp, sp, %lo(_stack_start)
 ```
 
-O linker substitui `_stack_start` pelo endereço calculado (`0x80040000` para bootloader, `0x80040800` para aplicação), e o código de startup usa esse valor para inicializar o Stack Pointer.
+O linker substitui `_stack_start` pelo endereço calculado (`0x80000800` para bootloader, `0x80040800` para aplicação), e o código de startup usa esse valor para inicializar o Stack Pointer.
 
 ### 2.5 Justificativa das Escolhas de Endereçamento
 
@@ -188,7 +191,7 @@ A escolha de `0x80000000` para a RAM evita problemas com acessos misaligned e se
 
 O bootloader termina sua execução gravando a aplicação em `0x80000800` e saltando para este endereço. Este offset de 2KB serve para:
 
-1. Deixar espaço para buffer de recepção no bootloader (conforme explicitado no comentário)
+1. Deixar espaço para a pilha e as variáveis do bootloader (conforme explicitado no comentário)
 2. Garantir alinhamento razoável (2KB = 2048 bytes é uma fronteira de setor comum)
 3. Evitar sobreposição acidental com dados do bootloader
 
@@ -202,6 +205,6 @@ O bootloader termina sua execução gravando a aplicação em `0x80000800` e sal
 | Endereço de execução | ROM: 0x00000000 | RAM: 0x80000800 |
 | .text + .rodata | ROM | RAM |
 | .data + .bss | RAM | RAM |
-| Topo da pilha (_stack_start) | 0x80040000 | 0x80040800 |
+| Topo da pilha (_stack_start) | 0x80000800 | 0x80040800 |
 
 Esta arquitetura em dois estágios — bootloader em ROM com aplicação carregável em RAM — é uma prática comum em sistemas embarcados que precisam de atualização de software sem modificação de hardware.

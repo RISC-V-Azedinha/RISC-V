@@ -40,7 +40,7 @@ Em sistemas computacionais modernos, o núcleo de processamento (Core) raramente
 - **Microarquiteturas Flexíveis:** Módulos para implementações Monociclo, Multiciclo e futuro suporte a Pipeline, sem alterar as definições da ISA no core.
 - **Design Modular:** Componentes essenciais como ALU, Register File e Control Unit isolados, cada um com seus próprios testbenches auto-verificáveis.
 - **Integração de SoC:** Camada completa de integração contendo suporte a Bootloader, interconexões de barramento customizáveis e mapeamento de memória.
-- **Periféricos Inclusos:** Controladores de Propósito Geral (GPIO), Comunicação Serial (UART) e Controlador de Vídeo (VGA) nativos.
+- **Periféricos Inclusos:** Controladores de Propósito Geral (GPIO), Comunicação Serial (UART), Controlador de Vídeo (VGA) e cartão microSD (programa persistente, com boot sem o computador) nativos.
 - **Ecossistema de Verificação e Build:** Infraestrutura altamente automatizada (via Makefile) utilizando o simulador GHDL e testbenches em Python (COCOTB), junto com compilação dinâmica de software C/Assembly (RISC-V GCC).
 
 ## Estrutura do Repositório

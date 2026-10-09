@@ -58,3 +58,5 @@ Já existem atalhos configurados no Makefile para facilitar a listagem de arquiv
 - `make list-tests`: Lista todos os testbenches prontos para serem simulados (separados por integração, unidade e periféricos).
 - `make fpga`: Sintetiza o hardware, implementa e gera o bitstream utilizando os scripts Tcl do Vivado.
 - `make upload SW=<program_name>`: Envia o software compilado diretamente para a memória do processador na FPGA através da comunicação serial UART.
+- `make upload SW=<program_name> SAVE=1`: Envia e grava também o programa no cartão microSD; com o bitstream na flash, a placa passa a iniciar com ele sozinha, sem o computador ([Cartão microSD](../soc/sd_controller.md)).
+- `make sd-erase`: Apaga o programa do cartão microSD (a placa volta a esperar um programa pela UART).

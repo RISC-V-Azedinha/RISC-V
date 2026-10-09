@@ -242,29 +242,31 @@ Após a FPGA estar configurada, o firmware da aplicação usuário deve ser tran
 
 O protocolo implementado segue uma sequência de handshake:
 
-1. **Reset de Hardware**: O script ativa o pino RTS (Request To Send) da UART para gerar um reset no SoC:
+1. **Reset de Hardware**: O script usa o pino RTS da UART para falar com o controlador de depuração, que reseta o SoC com o boot na ROM:
    ```python
-   ser.rts = False    # Ativa linha de reset (ativo baixo)
-   ser.write(b'\xCA\xFE\xBA\xBE')  # Magic word
-   ser.write(b'\x04')  # Comando de soft-reset
-   ser.rts = True     # Libera reset
+   ser.rts = False                      # UART com o controlador de depuração
+   ser.write(b'\xCA\xFE\xBA\xBE')      # Magic word do depurador
+   ser.write(b'\x09\x00\x00\x00\x00')  # Endereço de boot = 0x00000000 (ROM)
+   ser.write(b'\x08')                   # Reset com a CPU parada
+   ser.rts = True                       # Devolve a UART ao SoC e solta a CPU
    ```
 
 2. **Aguarda Bootloader**: O SoC, ao inicializar, transmite a string "[BOOT]" via UART indicando que está pronto para receber firmware
 
 3. **Handshake**:
-    * Host envia Magic Word `0xCAFEBABE`
+    * Host envia Magic Word `0xCAFEBABE` em até ~1 s depois do `[BOOT]` (o host envia em ~0,1 s); sem ela, o bootloader tenta carregar o programa gravado no cartão microSD
     * Bootloader confirma com `!`
 
 4. **Transmissão do Tamanho**:
     * Host envia tamanho do binário (4 bytes, little-endian)
     * Formato: `struct.pack('<I', file_size)`
+    * O bit 31 ligado (`--save`) pede ao bootloader que grave o programa também no cartão microSD; tamanho 0 com o bit 31 (`--erase-sd`) apaga o programa do cartão
 
 5. **Transferência do Binário**:
     * Dados enviados em blocos de 64 bytes
     * ACK visual: bootloader envia `.` a cada 1KB recebido
 
-6. **Confirmação**: Bootloader envia `>` ao final da transmissão bem-sucedida
+6. **Confirmação**: Bootloader envia `>` ao final da transmissão bem-sucedida. Com `--save`, as mensagens do cartão (`SD: gravado`, `SD: sem cartao`...) vêm antes do `>`, e o `upload.py` as mostra
 
 7. **Salto para Aplicação**: O bootloader transfere execução para o endereço `0x80000800` onde a aplicação foi gravada
 

@@ -367,6 +367,21 @@ O timer de 64 bits é implementado como dois registradores de 32 bits, permitind
 
 ---
 
+#### Cartão SD (`0x7000_0000`)
+
+**Mestre SPI do slot de microSD** - Transfere bytes com o cartão; os comandos do cartão ficam no software (o bootloader usa o cartão para guardar um programa).
+
+| Offset | Nome | Acesso | Descrição |
+|--------|------|--------|-----------|
+| `0x00` | `DATA` | RW | Escrita: envia um byte; leitura: byte recebido |
+| `0x04` | `CTRL` | RW | Bit 0 `CS` (cartão selecionado), bit 1 `PWR` (cartão alimentado) |
+| `0x08` | `DIV` | RW | `f_SCK = 100 MHz / (2 (DIV + 1))` |
+| `0x0C` | `STATUS` | RO | Bit 0 `BUSY`, bit 1 `CD` (cartão no slot) |
+
+Detalhes em [Cartão microSD](sd_controller.md).
+
+---
+
 #### NPU (`0x9000_0000`)
 
 **Neural Processing Unit** - Acelerador de hardware para operações de redes neurais.
