@@ -231,6 +231,17 @@ Esta técnica funciona porque:
 
 Se a aplicação retornar (situação anormal), o bootloader entra em loop infinito.
 
+### 2.3 Persistência no Cartão microSD
+
+Desde a v1.4.0, o bootloader também guarda um programa no cartão microSD, como a flash de um microcontrolador (detalhes em [Cartão microSD](../soc/sd_controller.md)):
+
+- A magic word passa a ter um **prazo de ~1 s** (medido pelo `mtime` do CLINT). Sem upload nesse tempo, o bootloader tenta carregar o programa gravado no cartão; sem cartão ou sem programa válido, volta a esperar pela UART sem prazo, como antes.
+- O **bit 31 do tamanho** pede a gravação no cartão (`upload.py --save` ou `make upload SAVE=1`). Os carregadores que não o usam (GUI-TCC, Eureka) continuam só carregando na RAM.
+- Um upload de **tamanho 0 com o bit 31** apaga o programa do cartão (`make sd-erase`); o bootloader volta a esperar um programa.
+- As mensagens do cartão (`SD: gravado`, `SD: sem cartao`...) saem antes do `>`, e o `upload.py` as mostra.
+
+A pilha do bootloader fica nos 2 KB abaixo do app (`_stack_start = 0x80000800` em `boot.ld`), junto do bloco de trabalho do cartão: carregar um programa grande não sobrescreve a pilha. O bootloader é compilado com `-Os` e `--gc-sections` para caber nos 4 KB da ROM.
+
 ---
 
 ## 3. Resumo do Fluxo de Boot
@@ -245,9 +256,9 @@ O processo completo pode ser visualizado como uma cascata de estágios:
     - Chama `main()`
 
 3. **Bootloader C** (boot.c):
-    - Espera magic word via UART
-    - Recebe tamanho do programa
-    - Grava binário na RAM a partir de `0x80000800`
+    - Espera magic word via UART por ~1 s
+    - Recebeu: recebe o tamanho e grava o binário na RAM a partir de `0x80000800` (e no cartão SD, se pedido)
+    - Não recebeu: carrega o programa do cartão SD, se houver um válido; senão, espera pela UART
     - Salta para o endereço da aplicação
 
 4. **Aplicação do Usuário**:

@@ -58,7 +58,10 @@ ZICSR_EXT   := $(shell $(CC) -march=rv32i_zicsr -mabi=ilp32 -E - < /dev/null > /
 
 BASE_CFLAGS := -march=rv32i$(ZICSR_EXT) -mabi=ilp32 -nostdlib -nostartfiles -g --specs=picolibc.specs
 
-# Otimização dos apps da FPGA (o bootloader da ROM segue com BASE_CFLAGS puro)
+# Otimização do bootloader: tamanho (a ROM tem 4 KB) e sem as funções do BSP que ele não usa
+BOOT_OPT    := -Os -fno-tree-loop-distribute-patterns -ffunction-sections -fdata-sections -Wl,--gc-sections
+
+# Otimização dos apps da FPGA
 APP_OPT     ?= -O2 -fno-tree-loop-distribute-patterns  # sem libc: impede o GCC de gerar chamadas a memset/memcpy
 
 VIVADO_TCLARGS := -tclargs $(BOARD)
@@ -97,6 +100,8 @@ help:
 	@echo "   make fpga-flash            Grava o SoC na memória Flash (flash.tcl)"
 	@echo "                              Placa: BOARD=nexys4 (padrão) | BOARD=nexys_a7"
 	@echo "   make upload SW=<app>       Compila o C e envia via UART (ex: COM=/dev/ttyUSB1)"
+	@echo "   make upload SW=<app> SAVE=1  Envia e grava também no cartão microSD (boot sem PC)"
+	@echo "   make sd-erase              Apaga o programa do cartão microSD (volta a esperar a UART)"
 	@echo "   make list-apps             Lista todos os apps em C/Assembly disponíveis"
 	@echo " "
 	@echo " 🧹 UTILITÁRIOS"
@@ -104,7 +109,7 @@ help:
 	@echo "   make clean                 Apaga a pasta build/ e arquivos temporários"
 	@echo " "
 
-.PHONY: clean list-tests fpga upload boot-fpga sw-fpga check-board fpga-build fpga-prog fpga-flash
+.PHONY: clean list-tests fpga upload sd-erase boot-fpga sw-fpga check-board fpga-build fpga-prog fpga-flash
 
 # ---------------------------------------------------------
 # 📋 Regra 0: LISTAR TESTES ("make list-tests")
@@ -231,7 +236,7 @@ test-e2e-%:
 boot-fpga:
 	@mkdir -p $(BUILD_FPGA_BOOT)
 	@echo ">>> 🔨 [BOOT-FPGA] Compilando bootloader..."
-	@$(CC) $(BASE_CFLAGS) -I$(FPGA_SW_DIR)/platform/bsp -T $(FPGA_SW_DIR)/platform/linker/boot.ld \
+	@$(CC) $(BASE_CFLAGS) $(BOOT_OPT) -I$(FPGA_SW_DIR)/platform/bsp -T $(FPGA_SW_DIR)/platform/linker/boot.ld \
 		-o $(BUILD_FPGA_BOOT)/bootloader.elf $(FPGA_SW_DIR)/platform/startup/start.s \
 		$(FPGA_SW_DIR)/platform/bootloader/boot.c $$(find $(FPGA_SW_DIR)/platform/bsp -name "*.c")
 	@$(OBJCOPY) -O binary $(BUILD_FPGA_BOOT)/bootloader.elf $(BUILD_FPGA_BOOT)/bootloader.bin
@@ -278,7 +283,10 @@ fpga-flash: check-board
 
 upload: sw-fpga
 	@echo ">>> 🚀 Enviando $(SW) para a FPGA via porta $(COM)..."
-	@$(PYTHON_BIN) fpga/upload.py -p $(COM) -f $(BUILD_FPGA_BIN)/$(SW).bin
+	@$(PYTHON_BIN) fpga/upload.py -p $(COM) -f $(BUILD_FPGA_BIN)/$(SW).bin $(if $(filter 1,$(SAVE)),--save)
+
+sd-erase:
+	@$(PYTHON_BIN) fpga/upload.py -p $(COM) --erase-sd
 
 # ---------------------------------------------------------
 # 🏆 SUÍTE DE COMPLIANCE OFICIAL RISC-V

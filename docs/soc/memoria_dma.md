@@ -20,7 +20,7 @@ A tabela abaixo apresenta o mapa de endereçamento completo do SoC, detalhando c
 | **DMA** | `0x4000_0000` | `0x4000_FFFF` | 64 KB | Controlador DMA |
 | **CLINT** | `0x5000_0000` | `0x5000_FFFF` | 64 KB | Core Local Interrupt Controller |
 | **PLIC** | `0x6000_0000` | `0x6003_FFFF` | 256 KB | Platform-Level Interrupt Controller |
-| **Reservado** | `0x7000_0000` | `0x7FFF_FFFF` | 256 MB | Espaço não utilizado |
+| **Cartão SD** | `0x7000_0000` | `0x7000_000F` | 16 B | Mestre SPI do slot de microSD ([Cartão microSD](sd_controller.md)) |
 | **RAM** | `0x8000_0000` | `0x8003_FFFF` | 256 KB | Memória RAM principal |
 | **Reservado** | `0x8004_0000` | `0x8FFF_FFFF` | ~255 MB | Espaço não utilizado |
 | **NPU** | `0x9000_0000` | `0x9FFF_FFFF` | 256 MB | Neural Processing Unit |
@@ -39,12 +39,13 @@ dmem_slv <= SLV_ROM   when dmem_addr_i(31 downto 28) = x"0" else
             SLV_DMA   when dmem_addr_i(31 downto 28) = x"4" else
             SLV_CLINT when dmem_addr_i(31 downto 28) = x"5" else
             SLV_PLIC  when dmem_addr_i(31 downto 28) = x"6" else
+            SLV_SD    when dmem_addr_i(31 downto 28) = x"7" else
             SLV_RAM   when dmem_addr_i(31 downto 28) = x"8" else
             SLV_NPU   when dmem_addr_i(31 downto 28) = x"9" else
             SLV_NONE;
 ```
 
-É importante observar que as regiões `0x7` e `0xA` até `0xF` não são utilizadas nesta implementação, servindo como espaço reservado para futuras expansões.
+É importante observar que as regiões `0xA` até `0xF` não são utilizadas nesta implementação, servindo como espaço reservado para futuras expansões.
 
 ---
 
@@ -235,6 +236,7 @@ No SoC, periféricos são acessados como posições de memória através de **Me
 | `0x4000_0000` | DMA |
 | `0x5000_0000` | CLINT |
 | `0x6000_0000` | PLIC |
+| `0x7000_0000` | Cartão SD (SPI) |
 | `0x8000_0000` | RAM |
 | `0x9000_0000` | NPU |
 

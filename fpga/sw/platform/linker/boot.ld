@@ -16,6 +16,6 @@ SECTIONS {
     .data : { *(.data*) } > ram
     .bss  : { *(.bss*)  } > ram
     
-    /* Stack no final da RAM */
-    _stack_start = ORIGIN(ram) + LENGTH(ram);
+    /* Stack nos 2 KB abaixo do app (0x80000800): carregar um app grande não sobrescreve a pilha */
+    _stack_start = ORIGIN(ram) + 0x800;
 }

@@ -142,7 +142,9 @@ def wait_for_bootloader(ser):
             except Exception:
                 pass
 
-def perform_handshake(ser, file_size):
+SAVE_FLAG = 0x80000000   # Bit 31 do tamanho: o bootloader grava o programa no cartão microSD
+
+def perform_handshake(ser, file_size, save=False):
     time.sleep(0.1) 
     ser.reset_input_buffer()
 
@@ -160,8 +162,8 @@ def perform_handshake(ser, file_size):
     if ack != b'!':
         raise Exception(f"Sem resposta do Bootloader. Recebido: {ack}")
     
-    Log.info(f"Enviando tamanho do arquivo: {file_size} bytes")
-    ser.write(struct.pack('<I', file_size))
+    Log.info(f"Enviando tamanho do arquivo: {file_size} bytes" + (" (com gravação no cartão SD)" if save else ""))
+    ser.write(struct.pack('<I', file_size | (SAVE_FLAG if save else 0)))
     time.sleep(0.05)
 
 def upload_file(ser, filename):
@@ -200,14 +202,25 @@ def upload_file(ser, filename):
         print("\n")
     
     Log.success("Upload concluído. Aguardando verificação...")
-    
+    wait_confirmation(ser)
+
+def wait_confirmation(ser):
+    """Espera o '>' do bootloader, mostrando as mensagens dele no caminho (ex.: "SD: gravado")."""
+    line = ""
     while True:
         if ser.in_waiting:
             c = ser.read(1).decode('utf-8', errors='ignore')
             if c == '.': continue 
             if c == '>':
-                Log.success("FPGA confirmou: Executando App!")
+                Log.success("FPGA confirmou!")
                 break
+            # Mensagens do bootloader antes do '>' (ex.: "SD: gravado")
+            if c in '\r\n':
+                if line.strip():
+                    (Log.warn if ("erro" in line or "sem " in line) else Log.success)(line.strip())
+                line = ""
+            else:
+                line += c
 
 def serial_monitor(ser):
     print("\n" + "="*60)
@@ -256,9 +269,13 @@ def main():
     parser.add_argument('-p', '--port', default=DEFAULT_PORT, help=f'Porta Serial (Padrão: {DEFAULT_PORT})')
     parser.add_argument('-b', '--baud', type=int, default=DEFAULT_BAUD, help=f'Baud Rate (Padrão: {DEFAULT_BAUD})')
     parser.add_argument('-f', '--file', default=DEFAULT_FILENAME, help=f'Arquivo Binário (Padrão: {DEFAULT_FILENAME})')
+    parser.add_argument('-s', '--save', action='store_true',
+                        help='Grava também o programa no cartão microSD (a placa passa a iniciar com ele)')
+    parser.add_argument('--erase-sd', action='store_true',
+                        help='Apaga o programa gravado no cartão microSD (a placa volta a esperar pela UART)')
     args = parser.parse_args()
 
-    if not os.path.exists(args.file):
+    if not args.erase_sd and not os.path.exists(args.file):
         Log.error(f"Arquivo '{args.file}' não encontrado.")
         sys.exit(1)
 
@@ -275,8 +292,14 @@ def main():
             auto_reset(ser)
             wait_for_bootloader(ser)
             
+            if args.erase_sd:
+                perform_handshake(ser, 0, True)
+                wait_confirmation(ser)
+                Log.info("A placa continua no bootloader, esperando um programa pela UART.")
+                return
+
             file_size = os.path.getsize(args.file)
-            perform_handshake(ser, file_size)
+            perform_handshake(ser, file_size, args.save)
             upload_file(ser, args.file)
             serial_monitor(ser)
 

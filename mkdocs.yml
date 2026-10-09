@@ -72,6 +72,7 @@ nav:
       - Controlador GPIO: soc/gpio_controller.md
       - Controlador UART: soc/uart_controller.md
       - Controlador VGA: soc/vga_controller.md
+      - Cartão microSD: soc/sd_controller.md
       - Controlador de Depuração: soc/debug_controller.md
   - Software:
       - Toolchain e Build System: software/toolchain_build_system.md
