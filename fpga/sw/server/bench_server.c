@@ -117,6 +117,14 @@ static int32_t  v2_bias[32];
 __attribute__((aligned(4))) static uint32_t v2_out_words[V2_MAX_OUT];    // saída da NPU (palavras da FIFO)
 static int8_t   v2_ref[V2_MAX_OUT];                              // saída da referência na CPU
 
+// MAC da referência na CPU. Sem a extensão M, a multiplicação é a __mulsi3 do BSP, que soma e desloca
+// percorrendo os bits do SEGUNDO fator e para quando ele zera: o tempo depende dos dados (um fator
+// nulo sai na hora; um int8 negativo, estendido para 32 bits, leva as 32 voltas). A ativação vai
+// sempre como segundo fator, para o tempo da CPU refletir a esparsidade das ativações em todas as
+// camadas; com "x * w", a ordem ficava a critério do compilador (na densa, os zeros não contavam).
+int32_t __mulsi3(int32_t a, int32_t b);
+static inline int32_t cpu_mul(int32_t w, int32_t x) { return __mulsi3(w, x); }
+
 typedef struct {
     uint8_t  kind, sparsity, seed;
     uint16_t flags;
@@ -209,7 +217,42 @@ static uint32_t v2_load_inputs(const v2_req_t* q, int dense, int hwi2c, uint32_t
     return idx;
 }
 
-static void v2_run(const v2_req_t* q, v2_res_t* r) {
+// Referência na CPU de uma camada (fora da função medida e sem inlining: o código da referência não
+// pode mudar a alocação de registradores do trecho medido da NPU)
+static __attribute__((noinline)) void v2_ref_layer(const v2_req_t* q, int dense, int m, uint32_t K,
+                                                   uint32_t ow, uint32_t oh, int shift) {
+    const int8_t* W = (const int8_t*)buffer_weights;               // W[n][k] = W[((n/4)*K + k)*4 + n%4]
+    if (dense) {
+        for (int mm = 0; mm < m; mm++)
+            for (uint32_t n = 0; n < q->n; n++) {
+                int32_t acc = 0;
+                const int8_t* wp = &W[(n / 4) * K * 4 + (n % 4)];
+                const int8_t* xp = &v2_raw_in[mm * K];
+                for (uint32_t k = 0; k < K; k++) acc += cpu_mul(wp[4 * k], xp[k]);
+                v2_ref[mm * q->n + n] = v2_ppu(acc, v2_bias[n], shift);
+            }
+    } else {
+        // Convolução direta, com índices incrementais (só a MAC usa multiplicação)
+        uint32_t p = 0, row_base = 0;
+        for (uint32_t u = 0; u < oh; u++, row_base += (uint32_t)q->stride * q->in_w) {
+            for (uint32_t vv = 0, base = row_base; vv < ow; vv++, base += q->stride, p++) {
+                int32_t acc[4] = {0, 0, 0, 0};
+                const int8_t* wp = W;
+                const int8_t* ip = &v2_raw_in[base];
+                for (uint32_t i = 0; i < q->ksz; i++, ip += q->in_w) {
+                    for (uint32_t j = 0; j < q->ksz; j++, wp += 4) {
+                        int32_t px = ip[j];
+                        acc[0] += cpu_mul(wp[0], px); acc[1] += cpu_mul(wp[1], px);
+                        acc[2] += cpu_mul(wp[2], px); acc[3] += cpu_mul(wp[3], px);
+                    }
+                }
+                for (int c = 0; c < 4; c++) v2_ref[p * 4 + c] = v2_ppu(acc[c], v2_bias[c], shift);
+            }
+        }
+    }
+}
+
+static __attribute__((noinline)) void v2_run(const v2_req_t* q, v2_res_t* r) {
     const int dense = (q->kind == V2_KIND_DENSE);
     const int gemv  = dense && (q->flags & V2_F_GEMV);
     const int m     = dense ? ((q->flags & V2_F_BATCH4) ? 4 : 1) : 4;
@@ -344,35 +387,7 @@ static void v2_run(const v2_req_t* q, v2_res_t* r) {
 
     // ---------------------------------------------------------------- Referência na CPU
     uint32_t c0 = V2_NOW();
-    const int8_t* W = (const int8_t*)buffer_weights;               // W[n][k] = W[((n/4)*K + k)*4 + n%4]
-    if (dense) {
-        for (int mm = 0; mm < m; mm++)
-            for (uint32_t n = 0; n < q->n; n++) {
-                int32_t acc = 0;
-                const int8_t* wp = &W[(n / 4) * K * 4 + (n % 4)];
-                const int8_t* xp = &v2_raw_in[mm * K];
-                for (uint32_t k = 0; k < K; k++) acc += (int32_t)xp[k] * wp[4 * k];
-                v2_ref[mm * q->n + n] = v2_ppu(acc, v2_bias[n], shift);
-            }
-    } else {
-        // Convolução direta, com índices incrementais (só a MAC usa multiplicação)
-        uint32_t p = 0, row_base = 0;
-        for (uint32_t u = 0; u < oh; u++, row_base += (uint32_t)q->stride * q->in_w) {
-            for (uint32_t vv = 0, base = row_base; vv < ow; vv++, base += q->stride, p++) {
-                int32_t acc[4] = {0, 0, 0, 0};
-                const int8_t* wp = W;
-                const int8_t* ip = &v2_raw_in[base];
-                for (uint32_t i = 0; i < q->ksz; i++, ip += q->in_w) {
-                    for (uint32_t j = 0; j < q->ksz; j++, wp += 4) {
-                        int32_t px = ip[j];
-                        acc[0] += px * wp[0]; acc[1] += px * wp[1];
-                        acc[2] += px * wp[2]; acc[3] += px * wp[3];
-                    }
-                }
-                for (int c = 0; c < 4; c++) v2_ref[p * 4 + c] = v2_ppu(acc[c], v2_bias[c], shift);
-            }
-        }
-    }
+    v2_ref_layer(q, dense, m, K, ow, oh, shift);
     uint32_t c1 = V2_NOW();
 
     // ---------------------------------------------------------------- Validação
@@ -412,7 +427,39 @@ static void v2_run(const v2_req_t* q, v2_res_t* r) {
 // cnn_server. Fatores: STREAM, OVERLAP, FUSE (saída da Conv direto na RAM de Inputs da NPU) e
 // OUT_DMA (sem fusão, a saída da Conv vai para a RAM por DMA em vez da CPU). Na resposta,
 // cyc_in = fase da Conv e cyc_exec = fase da densa.
-static void v2_run_cnn(const v2_req_t* q, v2_res_t* r) {
+// Referência na CPU da CNN (convolução + ReLU + densa), isolada como a v2_ref_layer
+static __attribute__((noinline)) void v2_ref_cnn(const v2_req_t* q, uint32_t ow, uint32_t oh, uint32_t Kd,
+                                                 uint32_t wd_base, int sh_c, int sh_d) {
+    const int8_t* W = (const int8_t*)buffer_weights;
+    int8_t* feat = (int8_t*)v2_in_words;                          // features da densa (4p + c)
+    uint32_t p = 0, row_base = 0;
+    for (uint32_t u = 0; u < oh; u++, row_base += (uint32_t)q->stride * q->in_w) {
+        for (uint32_t vv = 0, base = row_base; vv < ow; vv++, base += q->stride, p++) {
+            int32_t acc[4] = {0, 0, 0, 0};
+            const int8_t* wp = W;
+            const int8_t* ip = &v2_raw_in[base];
+            for (uint32_t i = 0; i < q->ksz; i++, ip += q->in_w)
+                for (uint32_t j = 0; j < q->ksz; j++, wp += 4) {
+                    int32_t px = ip[j];
+                    acc[0] += cpu_mul(wp[0], px); acc[1] += cpu_mul(wp[1], px);
+                    acc[2] += cpu_mul(wp[2], px); acc[3] += cpu_mul(wp[3], px);
+                }
+            for (int c = 0; c < 4; c++) {
+                int8_t y = v2_ppu(acc[c], v2_bias[c], sh_c);
+                feat[p * 4 + c] = y < 0 ? 0 : y;                      // ReLU
+            }
+        }
+    }
+    const int8_t* Wd = &W[wd_base * 4];
+    for (uint32_t n = 0; n < q->n; n++) {
+        int32_t acc = 0;
+        const int8_t* wp = &Wd[(n / 4) * Kd * 4 + (n % 4)];
+        for (uint32_t k = 0; k < Kd; k++) acc += cpu_mul(wp[4 * k], feat[k]);
+        v2_ref[n] = v2_ppu(acc, v2_bias[4 + n], sh_d);
+    }
+}
+
+static __attribute__((noinline)) void v2_run_cnn(const v2_req_t* q, v2_res_t* r) {
     if (q->ksz == 0 || q->stride == 0 || q->in_w < q->ksz || q->in_h < q->ksz ||
         (uint32_t)q->in_w * q->in_h > V2_MAX_IMG || q->ksz > 15 || q->n == 0 || q->n > 32) { r->status = V2_ERR_PARAM; return; }
     const uint32_t Kc = (uint32_t)q->ksz * q->ksz;
@@ -523,32 +570,7 @@ static void v2_run_cnn(const v2_req_t* q, v2_res_t* r) {
 
     // ---------------------------------------------------------------- Referência na CPU
     uint32_t c0 = V2_NOW();
-    const int8_t* W = (const int8_t*)buffer_weights;
-    int8_t* feat = (int8_t*)v2_in_words;                          // features da densa (4p + c)
-    uint32_t p = 0, row_base = 0;
-    for (uint32_t u = 0; u < oh; u++, row_base += (uint32_t)q->stride * q->in_w) {
-        for (uint32_t vv = 0, base = row_base; vv < ow; vv++, base += q->stride, p++) {
-            int32_t acc[4] = {0, 0, 0, 0};
-            const int8_t* wp = W;
-            const int8_t* ip = &v2_raw_in[base];
-            for (uint32_t i = 0; i < q->ksz; i++, ip += q->in_w)
-                for (uint32_t j = 0; j < q->ksz; j++, wp += 4) {
-                    int32_t px = ip[j];
-                    acc[0] += px * wp[0]; acc[1] += px * wp[1]; acc[2] += px * wp[2]; acc[3] += px * wp[3];
-                }
-            for (int c = 0; c < 4; c++) {
-                int8_t y = v2_ppu(acc[c], v2_bias[c], sh_c);
-                feat[p * 4 + c] = y < 0 ? 0 : y;                      // ReLU
-            }
-        }
-    }
-    const int8_t* Wd = &W[wd_base * 4];
-    for (uint32_t n = 0; n < q->n; n++) {
-        int32_t acc = 0;
-        const int8_t* wp = &Wd[(n / 4) * Kd * 4 + (n % 4)];
-        for (uint32_t k = 0; k < Kd; k++) acc += (int32_t)feat[k] * wp[4 * k];
-        v2_ref[n] = v2_ppu(acc, v2_bias[4 + n], sh_d);
-    }
+    v2_ref_cnn(q, ow, oh, Kd, wd_base, sh_c, sh_d);
     uint32_t c1 = V2_NOW();
 
     uint32_t bad = 0;

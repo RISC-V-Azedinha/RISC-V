@@ -422,6 +422,12 @@ STEP_LABELS = {
 }
 
 
+def _save(fig, path):
+    """ Salva a figura em PNG (400 dpi) e em PDF vetorial, para o artigo. """
+    fig.savefig(path, dpi=400, bbox_inches="tight")
+    fig.savefig(os.path.splitext(path)[0] + ".pdf", bbox_inches="tight")
+
+
 def _style():
     import matplotlib.pyplot as plt
     plt.rcParams.update({
@@ -548,7 +554,7 @@ def plot_article(rows, out_dir, bw):
         ax3.legend(loc="upper center", bbox_to_anchor=(0.5, -0.1), ncol=2, fontsize=9, frameon=False)
 
     fig.tight_layout(); fig.subplots_adjust(wspace=0.25)
-    fig.savefig(os.path.join(out_dir, "figura_v2_desempenho.png"), dpi=400, bbox_inches="tight")
+    _save(fig, os.path.join(out_dir, "figura_v2_desempenho.png"))
 
     # ================================================================ Figura 2: ganho por camada
     fig, axes = plt.subplots(1, 2, figsize=(15, 5))
@@ -557,7 +563,7 @@ def plot_article(rows, out_dir, bw):
         steps = _cumulative(rows, "E3", layer)
         if steps: _ablation_bars(ax, steps, title, "#eceff1", c1)
     fig.tight_layout(); fig.subplots_adjust(wspace=0.2)
-    fig.savefig(os.path.join(out_dir, "figura_v2_camadas.png"), dpi=400, bbox_inches="tight")
+    _save(fig, os.path.join(out_dir, "figura_v2_camadas.png"))
 
     # ================================================================ Figura 3: dependência de dados
     e4 = [r for r in rows if r["experimento"] == "E4"]
@@ -572,7 +578,7 @@ def plot_article(rows, out_dir, bw):
         ax.set_xlabel("Fração de ativações nulas (%)"); ax.set_ylabel("Ciclos de clock")
         ax.set_title("Tempo da NPU independe dos dados", pad=12, fontweight="bold")
         ax.legend(fontsize=9, loc="center right")
-        fig.tight_layout(); fig.savefig(os.path.join(out_dir, "figura_v2_esparsidade.png"), dpi=400, bbox_inches="tight")
+        fig.tight_layout(); _save(fig, os.path.join(out_dir, "figura_v2_esparsidade.png"))
 
     plot_efficiency(rows, out_dir)
     print(f"Figuras do artigo: {out_dir}/figura_v2_*.png")
@@ -647,7 +653,7 @@ def _triplet(path, x_b, tp_b, sp_b, x_o, tp_o, sp_o, xlabel, xlog2, sparse, spar
     ax3.legend(loc="upper right", fontsize=9.5)
 
     fig.tight_layout(); fig.subplots_adjust(wspace=0.25)
-    fig.savefig(path, dpi=400, bbox_inches="tight")
+    _save(fig, path)
 
 
 def _sweep(rows, exp, layer, xkey, sparsity=0):
