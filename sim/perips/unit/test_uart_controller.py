@@ -42,6 +42,7 @@ BIT_PERIOD_NS  = CYCLES_PER_BIT * CLK_PERIOD_NS
 
 ADDR_DATA = 0x0
 ADDR_STAT = 0x4
+ADDR_EN   = 0x8
 
 # =====================================================================================================
 # HELPER FUNCTIONS (BFM & PHY)
@@ -279,3 +280,34 @@ async def test_uart_double_write_bug(dut):
         assert False, "Violação de Handshake: rdy_o estendido indevidamente (Level-sensitive)."
         
     log_success("Edge Guard validado na UART! Pulso atômico de 1 ciclo confirmado.")
+
+# =====================================================================================================
+# TESTE 4: REGISTRADOR EN
+# =====================================================================================================
+
+@cocotb.test()
+async def test_uart_ctrl_enable(dut):
+    """O bit EN (registrador EN, 0x8) começa em 0, é lido de volta e aparece em en_o (usado pela UART2 no Pmod)"""
+    await setup_dut(dut)
+
+    await ReadOnly()
+    assert int(dut.en_o.value) == 0, "EN deveria começar desabilitado após o reset"
+    await RisingEdge(dut.clk)
+
+    assert (await cpu_read(dut, ADDR_EN)) & 1 == 0, "EN deveria ler EN = 0 após o reset"
+
+    await cpu_write(dut, ADDR_EN, 0x1)
+    await ReadOnly()
+    assert int(dut.en_o.value) == 1, "en_o não subiu após escrever EN = 1"
+    await RisingEdge(dut.clk)
+    assert (await cpu_read(dut, ADDR_EN)) & 1 == 1, "EN deveria ler EN = 1"
+
+    # Escrever no STATUS (pop/flush) não pode mexer no EN
+    await cpu_write(dut, ADDR_STAT, 0x4)
+    assert (await cpu_read(dut, ADDR_EN)) & 1 == 1, "Flush não deveria alterar o EN"
+
+    await cpu_write(dut, ADDR_EN, 0x0)
+    await ReadOnly()
+    assert int(dut.en_o.value) == 0, "en_o não desceu após escrever EN = 0"
+
+    log_success("Registrador EN validado: EN escrito, lido de volta e exposto em en_o.")

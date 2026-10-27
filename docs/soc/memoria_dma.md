@@ -24,6 +24,7 @@ A tabela abaixo apresenta o mapa de endereçamento completo do SoC, detalhando c
 | **RAM** | `0x8000_0000` | `0x8003_FFFF` | 256 KB | Memória RAM principal |
 | **Reservado** | `0x8004_0000` | `0x8FFF_FFFF` | ~255 MB | Espaço não utilizado |
 | **NPU** | `0x9000_0000` | `0x9FFF_FFFF` | 256 MB | Neural Processing Unit |
+| **UART2** | `0xA000_0000` | `0xA000_000F` | 16 B | Segunda UART, no Pmod JA ([UART2](uart_controller.md#11-uart2-no-pmod-ja)) |
 
 ### 1.2 Decodificação de Endereços
 
@@ -239,6 +240,7 @@ No SoC, periféricos são acessados como posições de memória através de **Me
 | `0x7000_0000` | Cartão SD (SPI) |
 | `0x8000_0000` | RAM |
 | `0x9000_0000` | NPU |
+| `0xA000_0000` | UART2 (Pmod JA) |
 
 A CPU configura e lê periféricos usando instruções normais de memória:
 

@@ -72,6 +72,7 @@ def model_addr_decode(addr):
     if nibble == 0x7: return "SD"
     if nibble == 0x8: return "RAM"
     if nibble == 0x9: return "NPU"
+    if nibble == 0xA: return "UART2"
     return "NONE"
 
 async def protocol_monitor(clk, vld, rdy, port_name):
@@ -158,7 +159,8 @@ async def test_fuzzing_map(dut):
             "PLIC":  int(dut.plic_vld_o.value),  
             "SD":    int(dut.sd_vld_o.value),
             "RAM":  int(dut.ram_vld_b_o.value),
-            "NPU":  int(dut.npu_vld_o.value)
+            "NPU":  int(dut.npu_vld_o.value),
+            "UART2": int(dut.uart2_vld_o.value)
         }
         
         for dev, state in signals.items():
@@ -181,6 +183,7 @@ async def test_fuzzing_map(dut):
             elif target == "CLINT": dut.clint_data_i.value = mock_data; dut.clint_rdy_i.value = 1
             elif target == "PLIC": dut.plic_data_i.value = mock_data; dut.plic_rdy_i.value = 1
             elif target == "SD":   dut.sd_data_i.value = mock_data;   dut.sd_rdy_i.value = 1
+            elif target == "UART2": dut.uart2_data_i.value = mock_data; dut.uart2_rdy_i.value = 1
             
             await settle()
             assert int(dut.cpu_rdy_o.value) == 1, f"Ready não retornou para {target}"
@@ -208,6 +211,7 @@ async def test_fuzzing_map(dut):
         dut.clint_rdy_i.value = 0
         dut.plic_rdy_i.value = 0
         dut.sd_rdy_i.value = 0
+        dut.uart2_rdy_i.value = 0
 
     log_success(f"Fuzzing OK ({ITERATIONS} endereços)")
 

@@ -23,7 +23,8 @@ entity soc_top is
     generic (
         INIT_FILE : string  := "build/fpga/boot/bootloader.hex";
         CLK_FREQ  : integer := 100_000_000;  
-        BAUD_RATE : integer := 921_600       
+        BAUD_RATE : integer := 921_600;
+        BAUD_RATE_UART2 : integer := 115_200     -- UART2 no Pmod JA (ex.: ponte Bluetooth com um ESP32)
     );
     port (
         CLK_i       : in  std_logic;         
@@ -158,6 +159,12 @@ architecture rtl of soc_top is
     signal s_sd_we                    : std_logic;
     signal s_sd_vld, s_sd_rdy         : std_logic;
 
+    signal s_uart2_addr               : std_logic_vector(3 downto 0);
+    signal s_uart2_data_rx            : std_logic_vector(31 downto 0);
+    signal s_uart2_data_tx            : std_logic_vector(31 downto 0);
+    signal s_uart2_we                 : std_logic;
+    signal s_uart2_vld, s_uart2_rdy   : std_logic;
+
     -- === Auxiliares =============================================================================================
     signal s_irq_external             : std_logic;
     signal s_irq_timer                : std_logic;
@@ -168,10 +175,16 @@ architecture rtl of soc_top is
     signal s_npu_irq                  : std_logic;
     signal s_plic_sources             : std_logic_vector(31 downto 0);
     signal s_gpio_irq                 : std_logic;
+    signal s_uart2_irq                : std_logic;
 
     -- Pmods: valor, habilitação de saída (tri-state) e leitura de cada pino
     signal s_ja_o, s_jb_o, s_jc_o, s_jd_o     : std_logic_vector(7 downto 0);
     signal s_ja_oe, s_jb_oe, s_jc_oe, s_jd_oe : std_logic_vector(7 downto 0);
+
+    -- UART2 no Pmod JA: quando habilitada (bit EN), toma os pinos 2 (TX) e 3 (RX); senão, são GPIO
+    signal s_uart2_en                 : std_logic;
+    signal s_uart2_tx, s_uart2_rx     : std_logic;
+    signal s_ja_pin_o, s_ja_pin_oe    : std_logic_vector(7 downto 0);
 
     -- === Controle de DEBUG ======================================================================================
     signal s_soc_en                   : std_logic;
@@ -212,6 +225,7 @@ begin
         2 => s_dma_irq,
         3 => s_npu_irq,
         4 => s_gpio_irq,
+        5 => s_uart2_irq,
         others => '0'
     );
 
@@ -409,7 +423,15 @@ begin
             sd_data_o     => s_sd_data_tx,
             sd_we_o       => s_sd_we,
             sd_vld_o      => s_sd_vld,
-            sd_rdy_i      => s_sd_rdy
+            sd_rdy_i      => s_sd_rdy,
+
+            -- Interface da UART2 (Pmod JA)
+            uart2_addr_o  => s_uart2_addr,
+            uart2_data_i  => s_uart2_data_rx,
+            uart2_data_o  => s_uart2_data_tx,
+            uart2_we_o    => s_uart2_we,
+            uart2_vld_o   => s_uart2_vld,
+            uart2_rdy_i   => s_uart2_rdy
         );
 
     -- ============================================================================================================
@@ -438,6 +460,12 @@ begin
             clk => CLK_i, rst => s_sys_rst, addr_i => s_uart_addr, data_i => s_uart_data_tx, data_o => s_uart_data_rx, rdy_o => s_uart_rdy, we_i => s_uart_we, vld_i => s_uart_vld, uart_tx_pin => s_uart_tx_soc, uart_rx_pin => s_uart_rx_soc, irq_o => s_uart_irq
         );
 
+    U_UART2 : entity work.uart_controller
+        generic map ( CLK_FREQ => CLK_FREQ, BAUD_RATE => BAUD_RATE_UART2 )
+        port map (
+            clk => CLK_i, rst => s_sys_rst, addr_i => s_uart2_addr, data_i => s_uart2_data_tx, data_o => s_uart2_data_rx, rdy_o => s_uart2_rdy, we_i => s_uart2_we, vld_i => s_uart2_vld, uart_tx_pin => s_uart2_tx, uart_rx_pin => s_uart2_rx, irq_o => s_uart2_irq, en_o => s_uart2_en
+        );
+
     U_GPIO: entity work.gpio_controller
         port map (
             clk => CLK_i, rst => s_sys_rst, vld_i => s_gpio_vld, we_i => s_gpio_we, addr_i => s_gpio_addr, data_i => s_gpio_data_tx, data_o => s_gpio_data_rx, rdy_o => s_gpio_rdy, irq_o => s_gpio_irq,
@@ -449,9 +477,25 @@ begin
             rgb0_o => RGB0_o, rgb1_o => RGB1_o
         );
 
+    -- Multiplexação do Pmod JA: com a UART2 habilitada, o pino 2 (bit 1) é o TX e o pino 3 (bit 2) é o RX,
+    -- como na interface UART do padrão Pmod (Tipo 3). Os demais pinos, e todos com a UART2 desabilitada,
+    -- continuam com o GPIO. A leitura do GPIO (registrador IN) enxerga os pinos nos dois casos.
+    process(all)
+    begin
+        s_ja_pin_o  <= s_ja_o;
+        s_ja_pin_oe <= s_ja_oe;
+        if s_uart2_en = '1' then
+            s_ja_pin_o(1)  <= s_uart2_tx;
+            s_ja_pin_oe(1) <= '1';
+            s_ja_pin_oe(2) <= '0';
+        end if;
+    end process;
+
+    s_uart2_rx <= PMOD_JA_io(2) when s_uart2_en = '1' else '1';     -- Desabilitada: linha em repouso
+
     -- Tri-state dos Pmods: cada pino só é dirigido quando a sua direção é saída
     GEN_PMOD: for i in 0 to 7 generate
-        PMOD_JA_io(i) <= s_ja_o(i) when s_ja_oe(i) = '1' else 'Z';
+        PMOD_JA_io(i) <= s_ja_pin_o(i) when s_ja_pin_oe(i) = '1' else 'Z';
         PMOD_JB_io(i) <= s_jb_o(i) when s_jb_oe(i) = '1' else 'Z';
         PMOD_JC_io(i) <= s_jc_o(i) when s_jc_oe(i) = '1' else 'Z';
         PMOD_JD_io(i) <= s_jd_o(i) when s_jd_oe(i) = '1' else 'Z';

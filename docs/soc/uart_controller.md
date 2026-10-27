@@ -70,7 +70,15 @@ Tempo por bit = 1 / 921.600 = 8,68 µs/bit
 | 1 | RX_VALID | Leitura | `1` = FIFO contém dados, `0` = FIFO vazia |
 | 2 | FLUSH | Escrita | `1` = Limpa toda a FIFO |
 
-### 4.3 Sequências de Uso
+### 4.3 Registrador EN (Offset 0x8)
+
+| Bit | Nome | Direção | Descrição |
+|-----|------|---------|-----------|
+| 0 | EN | Leitura/Escrita | Sai do controlador pela porta `en_o`; começa em `0` no reset |
+
+O controlador não usa o `EN` internamente: quem o instancia decide o que ele liga. Na UART do USB ele não tem efeito; na UART2, ele entrega os pinos do Pmod JA à UART (Seção 11).
+
+### 4.4 Sequências de Uso
 
 **Transmissão (TX):**
 ```c
@@ -312,3 +320,37 @@ Esta analogia ajuda a entender por que não precisamos "limpar" a interrupção 
 
 ---
 
+
+## 11. UART2 no Pmod JA
+
+O SoC tem uma segunda instância do mesmo controlador, a **UART2**, em `0xA000_0000`, a 115200 bps (genérico `BAUD_RATE_UART2` do `soc_top`). Ela serve para ligar um módulo externo ao Pmod JA, por exemplo um ESP32 que faz a ponte com o Bluetooth, enquanto a UART do USB continua com o bootloader, o depurador e as mensagens para o PC.
+
+Os pinos seguem a interface UART do padrão Pmod (Tipo 3):
+
+| Pino do JA | Bit da porta | Função com `EN = 1` | Ligar no módulo |
+| --- | --- | --- | --- |
+| 2 | 1 | TX (saída da FPGA) | RX |
+| 3 | 2 | RX (entrada da FPGA) | TX |
+| 5 ou 11 | – | GND | GND |
+
+O pino só é tomado enquanto o registrador `EN` (Seção 4.3) estiver em `1`. A multiplexação fica no `soc_top`:
+
+* com `EN = 0` (valor de reset), os oito pinos do JA são GPIO, como antes, e o RX da UART2 fica em `1` (linha em repouso), para que a atividade do GPIO não chegue à FIFO como lixo;
+* com `EN = 1`, o pino 2 é dirigido pelo TX da UART2 e o pino 3 fica como entrada, ligado ao RX; a direção e o valor que o GPIO tiver programado para esses dois pinos são ignorados, mas o registrador `IN` do GPIO continua mostrando o nível deles. Os outros seis pinos do JA continuam com o GPIO.
+
+A interrupção da UART2 é a **fonte 5 do PLIC** (`PLIC_SOURCE_UART2`).
+
+```c
+#include "hal/hal_uart2.h"
+
+hal_uart2_init();                 // limpa a FIFO e toma os pinos 2 e 3 do JA
+hal_uart2_puts("ola\r\n");
+if (hal_uart2_kbhit()) c = hal_uart2_getc();
+hal_uart2_disable();              // espera o TX terminar e devolve os pinos ao GPIO
+```
+
+O servidor `fpga/sw/server/cnn_server_bluetooth.c` é o `cnn_server.c` atendendo pela UART2, com o mesmo protocolo; a UART do USB fica com uma mensagem de depuração por inferência (`Digito: N`).
+
+Na montagem testada (Nexys A7 e ESP32 DevKit em ponte Bluetooth), a ligação que funcionou foi **GPIO17 no pino 2 do JA e GPIO16 no pino 3**, com o GND no pino 5, ao contrário do que a tabela acima indica para RX2/TX2 do ESP32. A forma rápida de conferir: sem tráfego, o TX da UART2 fica parado em `1` (~3,3 V). Se o RX do módulo recebe bytes aleatórios com a linha parada, ele está no pino errado e os dois fios devem ser trocados.
+
+O teste `fpga/sw/tests/uart2_test.c` confere a troca de dono do pino (com e sem a UART2), faz um laço de retorno opcional (jumper entre os pinos 2 e 3) e depois fica como ponte entre o USB e a UART2.

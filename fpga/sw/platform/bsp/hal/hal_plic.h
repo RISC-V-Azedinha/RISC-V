@@ -13,6 +13,7 @@
 #define PLIC_SOURCE_DMA     2  
 #define PLIC_SOURCE_NPU     3  
 #define PLIC_SOURCE_GPIO    4  
+#define PLIC_SOURCE_UART2   5
 
 #define PLIC_MAX_SOURCES    32
 

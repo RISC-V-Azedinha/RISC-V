@@ -11,6 +11,7 @@
 -- 
 -- Descrição : Módulo Controlador UART (TX + RX)
 --             [ATUALIZADO: Edge Guard adicionado para evitar Double Write nas FIFOs]
+--             [ATUALIZADO: registrador EN (0x8), usado pela UART2 para tomar os pinos do Pmod]
 -- 
 -- Autor     : [André Maiolini]
 -- Data      : [01/01/2026]     
@@ -54,7 +55,11 @@ entity uart_controller is
 
         -- Sinal de Interrupção
 
-        irq_o       : out std_logic                          -- Ativo Alto quando há dados na FIFO
+        irq_o       : out std_logic;                         -- Ativo Alto quando há dados na FIFO
+
+        -- Habilitação (registrador EN, 0x8): quem instancia decide o que ela liga
+
+        en_o        : out std_logic
     
     );
 end entity;
@@ -105,6 +110,9 @@ architecture rtl of uart_controller is
     -- NOVO SINAL: EDGE GUARD PARA HANDSHAKE DO BARRAMENTO
     -- ====================================================================
     signal r_rdy          : std_logic := '0';
+
+    -- Registrador EN (0x8): bit 0 = EN
+    signal r_en           : std_logic := '0';
 
 begin
 
@@ -276,6 +284,7 @@ begin
 
     -- Atribuição contínua garantindo o roteamento para a porta externa
     rdy_o <= r_rdy;
+    en_o  <= r_en;
 
     process(clk)
     begin
@@ -287,6 +296,7 @@ begin
                 w_rd_en         <= '0';
                 r_tx_data_latch <= (others => '0');
                 w_flush_cmd     <= '0';
+                r_en            <= '0';
             else
                 
                 -- Defaults (Pulsos de 1 ciclo e limpeza)
@@ -321,6 +331,10 @@ begin
                             if data_i(2) = '1' then
                                 w_flush_cmd <= '1';
                             end if;
+
+                        elsif unsigned(addr_i) = 8 then
+                            -- Registrador EN: habilitação
+                            r_en <= data_i(0);
                         end if;
 
                     -- LOGICA DE LEITURA (Periférico -> CPU)
@@ -331,6 +345,8 @@ begin
                             when 4 => 
                                 data_o(0) <= tx_busy_flag;
                                 data_o(1) <= not w_fifo_empty; 
+                            when 8 =>
+                                data_o(0) <= r_en;
                             when others => null;
                         end case;
                     end if;

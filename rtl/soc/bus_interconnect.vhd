@@ -146,7 +146,15 @@ entity bus_interconnect is
         sd_data_o           : out std_logic_vector(31 downto 0);
         sd_we_o             : out std_logic;
         sd_vld_o            : out std_logic;
-        sd_rdy_i            : in  std_logic
+        sd_rdy_i            : in  std_logic;
+
+        -- UART2 (Pmod JA)
+        uart2_addr_o        : out std_logic_vector(3 downto 0);
+        uart2_data_i        : in  std_logic_vector(31 downto 0);
+        uart2_data_o        : out std_logic_vector(31 downto 0);
+        uart2_we_o          : out std_logic;
+        uart2_vld_o         : out std_logic;
+        uart2_rdy_i         : in  std_logic
     );
 end entity;
 
@@ -155,11 +163,11 @@ architecture rtl of bus_interconnect is
     -- ========================================================================================
     -- DEFINIÇÕES DE TIPOS E ABSTRAÇÕES
     -- ========================================================================================
-    type slave_t is (SLV_NONE, SLV_ROM, SLV_RAM, SLV_UART, SLV_GPIO, SLV_VGA, SLV_NPU, SLV_DMA, SLV_CLINT, SLV_PLIC, SLV_SD);
+    type slave_t is (SLV_NONE, SLV_ROM, SLV_RAM, SLV_UART, SLV_GPIO, SLV_VGA, SLV_NPU, SLV_DMA, SLV_CLINT, SLV_PLIC, SLV_SD, SLV_UART2);
     type master_id_t is (MST_NONE, MST_DMA_RD, MST_DMA_WR, MST_CPU);
 
     -- Subtipos válidos para usar como índices de Array
-    subtype valid_slave_t is slave_t range SLV_ROM to SLV_SD;
+    subtype valid_slave_t is slave_t range SLV_ROM to SLV_UART2;
     subtype valid_master_t is master_id_t range MST_DMA_RD to MST_CPU;
 
     -- Records para encapsular os sinais do barramento
@@ -217,6 +225,7 @@ architecture rtl of bus_interconnect is
             when x"7" => return SLV_SD;
             when x"8" => return SLV_RAM;
             when x"9" => return SLV_NPU;
+            when x"A" => return SLV_UART2;
             when others => return SLV_NONE;
         end case;
     end function;
@@ -279,6 +288,7 @@ begin
     s_rsp(SLV_CLINT).data <= clint_data_i; s_rsp(SLV_CLINT).rdy <= clint_rdy_i;
     s_rsp(SLV_PLIC).data  <= plic_data_i;  s_rsp(SLV_PLIC).rdy  <= plic_rdy_i;
     s_rsp(SLV_SD).data    <= sd_data_i;    s_rsp(SLV_SD).rdy    <= sd_rdy_i;
+    s_rsp(SLV_UART2).data <= uart2_data_i; s_rsp(SLV_UART2).rdy <= uart2_rdy_i;
 
     -- Pedidos para os Escravos (Do Crossbar, fatiando os endereços corretamente)
     rom_addr_b_o  <= s_req(SLV_ROM).addr;
@@ -328,6 +338,11 @@ begin
     sd_data_o     <= s_req(SLV_SD).data;
     sd_we_o       <= '1' when s_req(SLV_SD).we /= "0000" else '0';
     sd_vld_o      <= s_req(SLV_SD).vld;
+
+    uart2_addr_o  <= s_req(SLV_UART2).addr(3 downto 0);
+    uart2_data_o  <= s_req(SLV_UART2).data;
+    uart2_we_o    <= '1' when s_req(SLV_UART2).we /= "0000" else '0';
+    uart2_vld_o   <= s_req(SLV_UART2).vld;
 
 
     -- ========================================================================================

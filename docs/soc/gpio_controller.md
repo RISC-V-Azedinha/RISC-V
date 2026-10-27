@@ -28,6 +28,9 @@ A interrupção do GPIO é a **fonte 4 do PLIC** (`PLIC_SOURCE_GPIO`): o OU das 
 
 No `soc_top`, cada pino de Pmod é um `inout`: ele só é dirigido quando a sua direção é saída; caso contrário fica em alta impedância e pode ser lido. Os pinos de cada placa estão em `fpga/constraints/nexys_a7.xdc` e `nexys4.xdc`.
 
+!!! note "Pinos 2 e 3 do JA e a UART2"
+    Enquanto a UART2 estiver habilitada (registrador `EN` em `0xA000_0008`), os pinos 2 (bit 1) e 3 (bit 2) do JA pertencem a ela, e o que o GPIO programar para eles é ignorado; o registrador `IN` continua lendo os dois. Com a UART2 desabilitada, que é o estado após o reset, a porta JA inteira é GPIO. Ver [UART2 no Pmod JA](uart_controller.md#11-uart2-no-pmod-ja).
+
 ## 3. Mapa de Memória
 
 O GPIO ocupa `0x2000_0000` a `0x2000_03FF`. Cada bloco ocupa 64 bytes (`addr[9:6]` escolhe o bloco e `addr[5:2]` o registrador).

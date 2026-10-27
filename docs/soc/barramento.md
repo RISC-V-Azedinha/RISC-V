@@ -56,9 +56,10 @@ O escravo é escolhido pelos 4 bits mais altos do endereço (`addr[31:28]`), e c
 | `0x7` | Cartão SD (SPI) | 4 |
 | `0x8` | RAM | 32 (porta B; a porta A é da busca de instruções) |
 | `0x9` | NPU | 32 |
+| `0xA` | UART2 (Pmod JA) | 4 |
 
 !!! warning "Endereço não mapeado (*bus fault*)"
-    Um acesso a uma região sem escravo (`0xA` a `0xF`) é respondido na hora pelo próprio crossbar, com `rdy = '1'` e dado zero. Assim, um ponteiro errado não trava o mestre esperando um `rdy` que nunca viria.
+    Um acesso a uma região sem escravo (`0xB` a `0xF`) é respondido na hora pelo próprio crossbar, com `rdy = '1'` e dado zero. Assim, um ponteiro errado não trava o mestre esperando um `rdy` que nunca viria.
 
 ### 3. Política de Arbitragem
 
@@ -103,6 +104,6 @@ No `soc_top.vhd`, o `U_BUS` liga:
 
 * a busca de instruções da CPU (`s_cpu_imem_*`) e a sua porta de dados (`s_cpu_dmem_*`);
 * as duas portas de mestre do DMA (`s_dma_m_rd_*` e `s_dma_m_wr_*`);
-* os dez escravos: ROM e RAM (portas A e B), UART, GPIO, VGA, DMA (configuração), CLINT, PLIC, cartão SD e NPU.
+* os onze escravos: ROM e RAM (portas A e B), UART, GPIO, VGA, DMA (configuração), CLINT, PLIC, cartão SD, NPU e UART2.
 
 Adicionar um periférico novo é localizado: um valor no tipo `slave_t`, uma linha na função de decodificação, as atribuições de ida e volta do escravo e as portas no `soc_top`. A arbitragem e a trava valem automaticamente para ele, como foi feito com o cartão SD em `0x7000_0000`.

@@ -21,6 +21,7 @@
 #define PLIC_BASE_ADDR      0x60000000
 #define SD_BASE_ADDR        0x70000000
 #define NPU_BASE_ADDR       0x90000000
+#define UART2_BASE_ADDR     0xA0000000
 
 /* ============================================================================================================== */
 /* UART DEFINITIONS                                                                                               */
@@ -35,6 +36,20 @@
 #define UART_STATUS_RX_VALID    (1 << 1)
 #define UART_CMD_RX_POP         (1 << 0)
 #define UART_CMD_RX_FLUSH       (1 << 2)
+
+/* ============================================================================================================== */
+/* UART2 NO PMOD JA (MESMO CONTROLADOR DA UART; 115200 bps)                                                       */
+/* ============================================================================================================== */
+
+// Com EN = 1, a UART2 toma o pino 2 (TX, bit 1 da porta JA) e o pino 3 (RX, bit 2); com EN = 0, eles são GPIO
+#define UART_REG_EN_OFFSET      0x08
+#define UART2_DATA_REG_ADDR     (UART2_BASE_ADDR + UART_REG_DATA_OFFSET)
+#define UART2_CTRL_REG_ADDR     (UART2_BASE_ADDR + UART_REG_CTRL_OFFSET)
+#define UART2_EN_REG_ADDR       (UART2_BASE_ADDR + UART_REG_EN_OFFSET)
+
+#define UART_EN                 (1 << 0)
+#define UART2_PIN_TX            1       // Bit da porta JA (pino 2 do conector)
+#define UART2_PIN_RX            2       // Bit da porta JA (pino 3 do conector)
 
 /* ============================================================================================================== */
 /* GPIO: PORTAS (DIREÇÃO + PINO), DISPLAYS DE 7 SEGMENTOS E LEDs RGB                                              */
