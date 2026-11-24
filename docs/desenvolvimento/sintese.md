@@ -283,3 +283,5 @@ O fluxo de implementação pode ser sintetizado na seguinte sequência:
 </figure>
 
 Este pipeline automatizado permite iterações rápidas durante o desenvolvimento, onde cada modificação no código VHDL pode ser sintetizada, programada e testada sem intervenção manual na ferramenta de desenvolvimento.
+
+Os números da última síntese (recursos, temporização e potência) estão em [Resultados da síntese](resultados-sintese.md).

@@ -137,3 +137,4 @@ nav:
   - Desenvolvimento:
       - Verificação: desenvolvimento/verificacao.md
       - Síntese em FPGA: desenvolvimento/sintese.md
+      - Resultados da síntese: desenvolvimento/resultados-sintese.md

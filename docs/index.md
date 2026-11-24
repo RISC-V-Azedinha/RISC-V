@@ -67,7 +67,7 @@ A decodificação e os registradores de cada região estão em [Memória e DMA](
 5. **Software:** a [compilação e o build](software/build.md), o [boot](software/boot.md) e os [linker scripts](software/linker.md).
 6. **[HAL](hal/index.md):** as bibliotecas de acesso aos periféricos, cada uma com a referência das funções e um programa de exemplo.
 7. **Aplicações:** [programas e testes](aplicacoes/programas.md), os [servidores da NPU](aplicacoes/servidores-npu.md) e as [ferramentas do hospedeiro](aplicacoes/ferramentas.md).
-8. **Desenvolvimento:** a [verificação](desenvolvimento/verificacao.md) e a [síntese em FPGA](desenvolvimento/sintese.md).
+8. **Desenvolvimento:** a [verificação](desenvolvimento/verificacao.md), a [síntese em FPGA](desenvolvimento/sintese.md) e os [resultados da síntese](desenvolvimento/resultados-sintese.md).
 
 ## Estrutura do repositório
 
