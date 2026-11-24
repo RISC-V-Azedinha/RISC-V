@@ -30,21 +30,7 @@ A tabela abaixo apresenta o mapa de endereçamento completo do SoC, detalhando c
 
 A decodificação de endereços é realizada no módulo `bus_interconnect.vhd`, que utiliza os **bits mais significativos (31-28)** do endereço de 32 bits para identificar qual periférico ou memória deve responder à requisição. Esta abordagem permite uma decodificação rápida e simples, utilizando apenas 4 bits para selecionar entre até 16 regiões distintas.
 
-O código VHDL a seguir demonstra a lógica de decodificação implementada:
-
-```vhdl
-dmem_slv <= SLV_ROM   when dmem_addr_i(31 downto 28) = x"0" else
-            SLV_UART  when dmem_addr_i(31 downto 28) = x"1" else
-            SLV_GPIO  when dmem_addr_i(31 downto 28) = x"2" else
-            SLV_VGA   when dmem_addr_i(31 downto 28) = x"3" else
-            SLV_DMA   when dmem_addr_i(31 downto 28) = x"4" else
-            SLV_CLINT when dmem_addr_i(31 downto 28) = x"5" else
-            SLV_PLIC  when dmem_addr_i(31 downto 28) = x"6" else
-            SLV_SD    when dmem_addr_i(31 downto 28) = x"7" else
-            SLV_RAM   when dmem_addr_i(31 downto 28) = x"8" else
-            SLV_NPU   when dmem_addr_i(31 downto 28) = x"9" else
-            SLV_NONE;
-```
+Cada valor dos 4 bits mais altos escolhe um escravo: `0x0` a Boot ROM, `0x1` a UART, `0x2` o GPIO, `0x3` a VGA, `0x4` o DMA, `0x5` o CLINT, `0x6` o PLIC, `0x7` o cartão SD, `0x8` a RAM, `0x9` a NPU e `0xA` a UART2. Um acesso a uma região sem escravo é respondido na hora, para que o mestre não fique esperando para sempre.
 
 É importante observar que as regiões `0xB` até `0xF` não são utilizadas nesta implementação, servindo como espaço reservado para futuras expansões.
 
@@ -70,57 +56,13 @@ A Boot ROM é uma memória apenas de leitura que armazena o bootloader do sistem
 
 #### Interface de Sinais
 
-A Boot ROM oferece duas portas de leitura independentes, permitindo acessos simultâneos:
+A Boot ROM tem **duas portas de leitura independentes**, cada uma com o seu par `vld`/`rdy`: a porta A atende a busca de instruções (IMem), e a porta B, as leituras de dados (DMem). Assim, o bootloader pode buscar uma instrução e ler uma constante da própria ROM no mesmo ciclo.
 
-```vhdl
-port (
-    clk       : in  std_logic;
-    
-    -- Porta A: Dedicada ao Fetch (Instruções)
-    vld_a_i   : in  std_logic;
-    addr_a_i  : in  std_logic_vector(31 downto 0);
-    data_a_o  : out std_logic_vector(31 downto 0);
-    rdy_a_o   : out std_logic;
+#### Inicialização via arquivo
 
-    -- Porta B: Dedicada ao LOAD/STORE (Dados)
-    vld_b_i   : in  std_logic;
-    addr_b_i  : in  std_logic_vector(31 downto 0);
-    data_b_o  : out std_logic_vector(31 downto 0);
-    rdy_b_o   : out std_logic
-);
-```
+O conteúdo da ROM vem de um arquivo `.hex`, com uma palavra de 32 bits por linha, passado pelo *generic* `INIT_FILE`. Uma função VHDL lê o arquivo durante a elaboração e preenche o vetor da memória, de modo que o bootloader fica gravado no próprio *bitstream*: na síntese, o `build.tcl` passa o `bootloader.hex` compilado pelo `make boot-fpga`, e nos testes o Cocotb passa a versão de simulação.
 
-#### Inicialização via Arquivo
-
-A ROM é inicializada através da função `init_rom_from_file`, que lê um arquivo no formato HEX:
-
-```vhdl
-impure function init_rom_from_file(file_name : string) return t_rom is
-    file     f       : text open read_mode is file_name;
-    variable l       : line;
-    variable v_data  : std_logic_vector(31 downto 0);
-    variable v_rom   : t_rom := (others => (others => '0'));
-begin
-    for i in 0 to (2**ADDR_WIDTH)-1 loop
-        exit when endfile(f);
-        readline(f, l);
-        hread(l, v_data);
-        v_rom(i) := v_data;
-    end loop;
-    return v_rom;
-end function;
-```
-
-A síntese em FPGA utiliza atributos específicos do Vivado (Xilinx) para forçar a inferência de Block RAM:
-
-```vhdl
-attribute ram_style : string;
-attribute ram_style of rom_content : signal is "block";
-```
-
-- O atributo `ram_style` é uma sintaxe específica para síntese via Vivado da Xilinx
-- O valor `"block"` força a utilização de BRAM (Block RAM) ao invés de distribuição (LUT RAM)
-- A utilização de BRAM adiciona **latência de 1 ciclo de clock** à leitura de dados (referência: [UG473 - 7 Series Memory Resources](https://docs.amd.com/v/u/en-US/ug473_7Series_Memory_Resources))
+A memória é descrita para que o Vivado a mapeie em **BRAM** (*Block RAM*), os blocos de memória dedicados da FPGA, e não em LUTs. Uma BRAM é síncrona: o dado sai um ciclo depois do endereço, e essa latência é o motivo de as memórias usarem o *handshake* `vld`/`rdy` (referência: [UG473 - 7 Series Memory Resources](https://docs.amd.com/v/u/en-US/ug473_7Series_Memory_Resources)).
 
 ### RAM Principal 
 
@@ -136,47 +78,9 @@ A RAM principal é uma memória de leitura e escrita utilizada para armazenament
 | **Escrita** | Byte-a-byte (WE de 4 bits) |
 | **Índices de acesso** | `addr(17 downto 2)` (palavras) |
 
-#### Interface de Sinais
+#### Portas e escrita por byte
 
-```vhdl
-generic (
-    ADDR_WIDTH : integer := 16;  -- 256 KB
-    DATA_WIDTH : integer := 32
-);
-port (
-    clk        : in  std_logic;
-    
-    -- Porta A
-    vld_a_i    : in  std_logic; 
-    we_a       : in  std_logic_vector((DATA_WIDTH/8)-1 downto 0);
-    addr_a     : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
-    data_a_i   : in  std_logic_vector(DATA_WIDTH-1 downto 0);
-    data_a_o   : out std_logic_vector(DATA_WIDTH-1 downto 0);
-    rdy_a_o    : out std_logic;
-    
-    -- Porta B
-    vld_b_i    : in  std_logic;
-    we_b       : in  std_logic_vector((DATA_WIDTH/8)-1 downto 0);
-    addr_b     : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
-    data_b_i   : in  std_logic_vector(DATA_WIDTH-1 downto 0);
-    data_b_o   : out std_logic_vector(DATA_WIDTH-1 downto 0);
-    rdy_b_o    : out std_logic
-);
-```
-
-#### Escrita Byte-a-Byte
-
-A RAM suporta escrita em granularidade de byte através de um vetor de Write Enable:
-
-```vhdl
-for i in 0 to (DATA_WIDTH/8)-1 loop
-    if we_b(i) = '1' then
-        ram(to_integer(unsigned(addr_b)))(8*i+7 downto 8*i) := data_b_i(8*i+7 downto 8*i);
-    end if;
-end loop;
-```
-
-Cada bit do vetor `WE` (4 bits para dados de 32 bits) controla um byte específico, permitindo escrita em 1, 2, 3 ou 4 bytes individualmente.
+Como a ROM, a RAM tem duas portas independentes: a porta A atende a busca de instruções, e a porta B, o barramento de dados, por onde passam a CPU e o DMA. Cada porta tem um sinal de escrita de **4 bits**, um por byte da palavra (`we(i)` habilita o byte *i*), de modo que uma escrita pode alterar 1, 2 ou 4 bytes sem tocar nos demais. O índice da palavra é `addr(17 downto 2)`; os dois bits mais baixos do endereço escolhem o byte e são tratados pela LSU.
 
 ##### Relação com a LSU e Endianness
 
@@ -188,17 +92,7 @@ O **Load Store Unit (LSU)** é a unidade responsável por formatar os acessos à
 | `SH` | 2 bytes | `"0011"` (bytes 0-1) ou `"1100"` (bytes 2-3) |
 | `SW` | 4 bytes | `"1111"` |
 
-A LSU utiliza os bits menos significativos do endereço (`addr(1:0)`) para determinar qual byte escrever:
-
-```vhdl
--- Store Byte: Seleção por endereço (little-endian)
-case s_addr_lsb is
-    when "00" => DMem_we_o <= "0001";  -- Byte 0 (bits 7:0)
-    when "01" => DMem_we_o <= "0010";  -- Byte 1 (bits 15:8)
-    when "10" => DMem_we_o <= "0100";  -- Byte 2 (bits 23:16)
-    when "11" => DMem_we_o <= "1000";  -- Byte 3 (bits 31:24)
-end case;
-```
+A LSU usa os dois bits mais baixos do endereço para escolher o byte e desloca o dado para a posição correspondente: num `sb`, o endereço terminado em `00` habilita o byte 0 (bits 7:0), em `01` o byte 1, e assim por diante; num `sh`, o bit 1 escolhe a metade baixa ou alta. Nas leituras, faz o caminho inverso: extrai o byte ou a meia palavra e estende o sinal (`lb`, `lh`) ou completa com zeros (`lbu`, `lhu`).
 
 Este SoC utiliza **endianness little-endian**:
 
@@ -526,17 +420,9 @@ O DMA tem duas interfaces de mestre independentes, uma de leitura (`m_rd_*`) e u
 
 Como origem e destino costumam ser escravos diferentes (a RAM e a NPU, por exemplo), a [interconexão](interconexao.md) atende a leitura e a escrita no mesmo ciclo, e o DMA sustenta perto de uma palavra por ciclo: medido na placa, 0,916 palavras por ciclo da RAM para a NPU. Os estágios registrados na entrada e na saída da FIFO quebram os caminhos combinacionais entre o DMA, a interconexão e os escravos, ao custo de um ciclo a mais na primeira palavra de cada transferência.
 
-### Modo Destino Fixo (FIFO Mode)
+### Origem e destino fixos
 
-Quando o bit `FIXED_DST` está setado, o endereço de destino permanece constante durante toda a transferência. Este modo é essencial para periféricos com interface FIFO, como a NPU:
-
-```vhdl
-if r_ctrl_fixed_dst = '0' then
-    r_dst_addr <= r_dst_addr + 4;  -- Incrementa para próximo endereço
-else
-    -- Mantém destino fixo (FIFO mode)
-end if;
-```
+A cada palavra escrita, o motor de escrita soma 4 ao endereço de destino, a menos que `FIXED_DST` esteja ligado; o motor de leitura faz o mesmo com a origem e `FIXED_SRC`. O modo fixo é o que permite ao DMA conversar com as **portas FIFO** dos periféricos: as portas de pesos, ativações e imagem da NPU recebem uma sequência inteira de palavras sempre no mesmo endereço, e a porta de saída da NPU é lida da mesma forma.
 
 ### Exemplo de Uso em Software
 

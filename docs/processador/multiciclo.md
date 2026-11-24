@@ -42,71 +42,30 @@ A principal diferença visual entre o datapath monociclo e multiciclo é a prese
   <figcaption>Caminho de dados do núcleo multiciclo (<code>datapath.vhd</code>). Os registradores de estágio, em azul, guardam os resultados entre os ciclos de uma instrução: OPC (PC da instrução), IR, RS1, RS2, ALU<sub>r</sub> e MDR, cada um com a sua habilitação de escrita. As <em>tags</em> indicam sinais ligados entre pontos distantes do diagrama; a mesma ULA é reaproveitada nos vários estágios.</figcaption>
 </figure>
 
-### Registradores de Estágio
+### Registradores de estágio
 
-No modelo multiciclo, registradores intermediários são introduzidos para reter os resultados entre ciclos de clock para uma mesma instrução:
+No multiciclo, cada instrução ocupa vários ciclos, e o que um ciclo calcula precisa sobreviver até o ciclo seguinte. Para isso, o caminho de dados ganha **registradores de estágio**, cada um com a sua própria habilitação de escrita, comandada pela unidade de controle:
 
-| Registrador | Sigla | Função |
-|-------------|-------|--------|
-| **Instruction Register** | `IR` | Armazena a instrução atual durante sua execução |
-| **Memory Data Register** | `MDR` | Armazena o dado lido da memória antes do write-back |
-| **A / B** | `RS1`, `RS2` | Armazenam os operandos lidos do banco de registradores |
-| **ALUOut** | `ALUResult` | Armazena o resultado da ALU entre estágios |
-| **OldPC** | `OPC` | Armazena o PC da instrução atual para cálculos relativos |
+| Registrador | Guarda | Escrito em | Habilitação |
+|---|---|---|---|
+| `OPC` (*old PC*) | O endereço da instrução corrente, para os cálculos relativos ao PC (desvios, `jal`, `auipc`) | IF | `OPCWrite` |
+| `IR` | A instrução lida da memória | IF | `IRWrite` |
+| `RS1`, `RS2` | Os dois operandos lidos do banco de registradores | ID | `RS1Write`, `RS2Write` |
+| `ALUr` | O resultado da ULA: valor aritmético, endereço de memória ou alvo do `jalr` | EX | `ALUrWrite` |
+| `MDR` | O dado lido da memória de dados | MEM | `MDRWrite` |
 
-A implementação no `datapath.vhd` (linhas 157-163) demonstra esses registradores:
+A habilitação é o que dá ao controle o domínio do tempo: um registrador só muda no ciclo em que o seu sinal está ativo, e mantém o valor nos demais. É por isso que, por exemplo, o `IR` continua mostrando a instrução corrente enquanto o PC já aponta para a próxima.
 
-```vhdl
-signal r_PC             : std_logic_vector(31 downto 0);
-signal r_OldPC          : std_logic_vector(31 downto 0);
-signal r_IR             : std_logic_vector(31 downto 0);
-signal r_MDR            : std_logic_vector(31 downto 0);
-signal r_RS1            : std_logic_vector(31 downto 0);
-signal r_RS2            : std_logic_vector(31 downto 0);
-signal r_ALUResult      : std_logic_vector(31 downto 0);
-```
+### Reuso de hardware
 
-Cada registrador é habilitado por um sinal de controle específico (definidos em `riscv_uarch_pkg.vhd`):
+A outra vantagem do multiciclo é a **reutilização temporal**: como as etapas de uma instrução acontecem em ciclos diferentes, um mesmo bloco pode servir a etapas diferentes. A ULA é o exemplo central; ela calcula:
 
-```vhdl
-rs1_write   : std_logic;  -- Captura rs1 do banco para o reg interno 'A'
-rs2_write   : std_logic;  -- Captura rs2 do banco para o reg interno 'B'
-alur_write  : std_logic;  -- Captura resultado da ALU no reg 'ALUOut'
-mdr_write   : std_logic;  -- Captura dado da memória no 'MDR'
-ir_write    : std_logic;  -- Atualiza o Instruction Register (IR)
-```
+- a operação aritmética ou lógica das instruções dos tipos R e I (em EX_ALU);
+- o endereço de memória dos *loads* e *stores*, `rs1 + imediato` (em EX_ADDR);
+- o alvo do `jalr`, também `rs1 + imediato` (em EX_JALR);
+- o valor do `lui` (`0 + imediato`) e do `auipc` (`OPC + imediato`).
 
-### Reuso de Hardware
-
-Uma das vantagens mais significativas da arquitetura multiciclo é a **reutilização temporal** de recursos. No monociclo, é necessário hardware duplicado para aumentar paralelismo; no multiciclo, o mesmo hardware pode ser usado em diferentes ciclos para diferentes finalidades.
-
-**Exemplo: A ALU compartilhada**
-
-No monociclo, são necessários somadores dedicados para:
-
-- Calcular `PC + 4` (próxima instrução)
-- Calcular `PC + imediato` (endereço de branch/jump)
-- Executar operações aritméticas da instrução
-
-No multiciclo, todas essas operações passam pela **mesma ALU** em diferentes ciclos:
-
-- No **IF**: ALU calcula `PC + 4` para atualizar o PC
-- No **EX**: ALU executa a operação aritmética da instrução
-- No **EX_ADDR**: ALU calcula o endereço de memória para loads/stores
-
-O multiplexer `ALUSrcA` seleciona a entrada correta para cada ciclo:
-```vhdl
-with Control_i.alu_src_a select
-    s_alu_in_a <= r_RS1       when "00",    -- Operando normal (rs1)
-                  r_OldPC     when "01",    -- PC para AUIPC
-                  x"00000000" when "10",    -- Zero para LUI
-                  r_RS1       when others;
-```
-
-Da mesma forma, o `ALUSrcB` seleciona entre o registrador `rs2` ou o imediato:
-```vhdl
-s_alu_in_b <= r_RS2 when Control_i.alu_src_b = '0' else s_immediate;
-```
+Os multiplexadores da entrada da ULA escolhem os operandos de cada caso: `ALUSrcA` escolhe entre `RS1` (`00`), `OPC` (`01`) e zero (`10`), e `ALUSrcB`, entre `RS2` (`0`) e o imediato (`1`). Dois cálculos continuam com somadores próprios, porque acontecem em paralelo com outros: `PC + 4`, feito durante a busca, e `OPC + imediato`, o alvo dos desvios e do `jal`, que precisa estar pronto enquanto a ULA compara os operandos do desvio.
 
 ---
 
@@ -172,6 +131,9 @@ Em uma **FSM do tipo Moore**, os sinais de saída dependem exclusivamente do **e
 | ID           | JALR       | EX_JALR        | Decodifica salto incondicional via registrador         | 
 | ID           | LUI        | EX_LUI         | Decodifica carregamento imediato superior              | 
 | ID           | AUIPC      | EX_AUIPC       | Decodifica adição de imediato ao PC                    | 
+| ID           | FENCE      | EX_FENCE       | Sem efeito neste núcleo (memória sem *cache*)          | 
+| ID           | SYSTEM     | EX_SYSTEM      | CSR, `ecall` ou `mret`                                 | 
+| ID           | Interrupção pendente | IF   | Descarta a instrução; a busca seguinte vai para `mtvec` | 
 | EX_ALU       | -          | WB_REG         | Operação da ALU concluída. Vai escrever no RegFile     | 
 | EX_ADDR      | Load       | MEM_RD         | Endereço calculado. Vai ler da memória                 | 
 | EX_ADDR      | Store      | MEM_WR         | Endereço calculado. Vai escrever na memória            | 
@@ -180,6 +142,9 @@ Em uma **FSM do tipo Moore**, os sinais de saída dependem exclusivamente do **e
 | EX_JALR      | -          | WB_JALR        | Calcula alvo (`rs1+IMM`) e salva em ALUResult          | 
 | EX_LUI       | -          | WB_REG         | Soma `0+IMM`. Vai para write-back                      | 
 | EX_AUIPC     | -          | WB_REG         | Soma `PC+IMM`. Vai para write-back                     | 
+| EX_FENCE     | -          | IF             | Segue para a próxima instrução                         | 
+| EX_SYSTEM    | CSR válido | WB_REG         | Escreve o valor antigo do CSR em `rd`                  | 
+| EX_SYSTEM    | `ecall`, `mret` ou CSR inválido | IF | Desvia para `mtvec` ou retorna para `mepc`   | 
 | MEM_RD       | -          | WB_REG         | Lê `DMem[ALUResult]` e atualiza MDR                    | 
 | MEM_WR       | -          | IF             | Escreve RS2 em `DMem[ALUResult]`                       | 
 | WB_REG       | -          | IF             | Escrita do resultado em `rd`                           | 
@@ -199,7 +164,7 @@ Em uma **FSM do tipo Moore**, os sinais de saída dependem exclusivamente do **e
 | `ALUSrcB` | Seletor do Operando B da ALU. Opções: `0` (rs2); `1` (imediato) |
 | `ALUControl` | Seletor para a operação da ALU. Define qual operação a ALU deve executar (ADD, SUB, AND etc.) |
 | `RegWrite` | Habilita a escrita no banco de registradores. Permite gravar no registrador `rd` durante o estágio de write-back (WB) |
-| `WBSel` | Seletor do dado de write-back. Opções: `00` (resultado da ALU); `01` (MDR); `10` (próximo PC) |
+| `WBSel` | Seletor do dado de write-back. Opções: `00` (resultado da ALU); `01` (MDR); `10` (próximo PC); `11` (CSR) |
 | `RS1Write` | Habilita a atualização do regisitrador de RS1. Controla a capatura do valor lido de `rs1` do banco de registradores |
 | `RS2Write` | Habilita a atualização do regisitrador de RS2. Controla a capatura do valor lido de `rs2` do banco de registradores |
 | `ALUrWrite` | Habilita a atualização do ALUResult. Controla a captura do resultado da ALU |
@@ -212,7 +177,7 @@ Em uma **FSM do tipo Moore**, os sinais de saída dependem exclusivamente do **e
 * **ALUSrcA:** `00`=rs1; `01`=OldPC; `10`=Zero
 * **ALUSrcB:** `0`=rs2; `1`=Imediato
 * **PCSrc:** `00`=PC+4; `01`=Branch/JAL (Somador Dedicado); `10`=JALR (ALUResult)
-* **WBSel:** `00`=ALUResult; `01`=MDR; `10`=PC+4 (Retorno)
+* **WBSel:** `00`=ALUResult; `01`=MDR; `10`=PC+4 (Retorno); `11`=CSR
 * **Cond:** Habilitado apenas se a condição de Branch for satisfeita (Zero flag)
 * **ALUControl:** `ADD` (Força Soma); `Funct` (Tipo-R/I); `Branch` (Resolve SUB/SLT/SLTU via funct3)
 
@@ -240,100 +205,27 @@ Para tolerar memórias com latência variável, o processador implementa um prot
 !!! note "Hierarquia de Memória"
     O contraste entre BRAM e Memória Distribuída é definido pela latência: a BRAM economiza lógica mas "atrasa" o dado em 1-2 ciclos, enquanto a distribuída (registradores) é instantânea, mas cara em área. O protocolo Ready/Valid amarra essa hierarquia, servindo como o controle de tráfego que impede que a latência de acesso da memória cause perda de dados ou quebre o fluxo do pipeline (throughput) em altas frequências.
 
-#### Interface de Handshake
+#### Interface de handshake
 
-Em `processor_top.vhd:71-76`:
-```vhdl
-IMem_rdy_i  : in  std_logic;
-IMem_vld_o  : out std_logic;
-DMem_rdy_i  : in  std_logic;
-DMem_vld_o  : out std_logic;
-```
+O núcleo tem duas interfaces de memória, uma para instruções (`IMem_*`) e outra para dados (`DMem_*`), e cada uma segue o mesmo protocolo: o núcleo ergue `vld` quando quer um acesso e espera o `rdy` da memória ou do periférico.
 
 <figure class="ax-figura" markdown>
   ![Handshake vld/rdy](../assets/figuras/handshake.svg){ width="620" }
   <figcaption><em>Handshake</em> <code>vld</code>/<code>rdy</code> do barramento. O mestre ergue <code>vld</code> e mantém endereço e dados estáveis até o escravo responder com <code>rdy</code>; a transferência acontece no ciclo em que os dois estão em 1, e o mestre fica parado (<em>stall</em>) enquanto espera.</figcaption>
 </figure>
 
-#### FSM e Handshake
+#### Espera na máquina de estados
 
-A FSM permanece em estados de espera até que a memória sinalize que a transação foi completada:
+Os três estados que acessam a memória (IF, MEM_RD e MEM_WR) mantêm `vld` ativo e **não avançam** enquanto `rdy` não chega; os registradores que recebem o dado (`IR` e `MDR`) e o PC só são escritos no ciclo em que `rdy` vale 1. Com isso, o mesmo núcleo funciona com qualquer latência: uma BRAM que responde no ciclo seguinte, um periférico lento ou uma disputa no *crossbar* apenas acrescentam ciclos de espera. Em VHDL, a regra é uma transição condicional; por exemplo, na leitura de dados:
 
-**Estado S_IF (main_fsm.vhd:215-221):**
-```vhdl
-when S_IF =>
-    -- STALL DE INSTRUÇÃO: Só avança se a memória entregar a instrução
-    if imem_rdy_i = '1' then
-        next_state <= S_ID;
-    else
-        next_state <= S_IF;  -- Permanece esperando
-    end if;
-```
-
-**Estado S_MEM_RD (main_fsm.vhd:297-302):**
-```vhdl
-when S_MEM_RD => 
-    if dmem_rdy_i = '1' then
-        next_state <= S_WB_REG;
-    else
-        next_state <= S_MEM_RD;  -- Stall: fica esperando
-    end if;
-```
-
-**Estado S_MEM_WR (main_fsm.vhd:305-310):**
-```vhdl
-when S_MEM_WR => 
-    if dmem_rdy_i = '1' then
-        next_state <= S_IF;
-    else
-        next_state <= S_MEM_WR;  -- Stall: fica esperando
-    end if;
-```
-
-#### Geração de Sinais de Handshake
-
-A FSM também gera os sinais `valid` para indicar ao sistema de memória que o processador está pronto para uma transação:
-
-**Sinais de saída em S_IF (main_fsm.vhd:359-366):**
-```vhdl
-when S_IF =>
-    imem_vld_o     <= '1';
-    -- Só atualiza quando o dado chega
-    if imem_rdy_i = '1' then
-        IRWrite_o  <= '1';
-        PCWrite_o  <= '1';
-        OPCWrite_o <= '1';
-    end if;
-```
-
-**Sinais de saída em S_MEM_RD (main_fsm.vhd:533-540):**
 ```vhdl
 when S_MEM_RD =>
-    dmem_vld_o <= '1';
-    -- Só grava no MDR quando o dado estiver PRONTO
     if dmem_rdy_i = '1' then
-        MDRWrite_o <= '1';
+        next_state <= S_WB_REG;   -- dado chegou: segue para o write-back
+    else
+        next_state <= S_MEM_RD;   -- espera (stall)
     end if;
 ```
-
-### Sinais de Controle
-
-A FSM gera todos os sinais necessários para controlar o datapath:
-
-| Sinal | Descrição |
-|-------|------------|
-| `PCWrite` | Habilita escrita no PC |
-| `OPCWrite` | Atualiza o OldPC |
-| `IRWrite` | Habilita escrita no IR |
-| `MemWrite` | Habilita escrita na memória de dados |
-| `RegWrite` | Habilita escrita no banco de registradores |
-| `RS1Write` / `RS2Write` | Captura operandos do banco de registradores |
-| `ALUrWrite` | Captura resultado da ALU |
-| `MDRWrite` | Captura dado da memória |
-| `ALUSrcA` | Seleciona operando A da ALU (rs1, PC, Zero) |
-| `ALUSrcB` | Seleciona operando B da ALU (rs2, Imediato) |
-| `PCSrc` | Seleciona fonte do próximo PC |
-| `WBSel` | Seleciona dado para write-back (ALUOut, MDR, PC+4, CSR) |
 
 ---
 
@@ -347,11 +239,11 @@ A arquitetura de Harvard Modificada é mantida, com barramentos separados para I
 
 | Aspecto | Single-Cycle | Multi-Cycle |
 |---------|--------------|-------------|
-| ** clock por instrução | 1 | 2-5 (variável) |
+| **Ciclos por instrução** | 1 | 3 a 5, mais as esperas de memória |
 | **Frequência máxima** | Limitada pelo caminho crítico completo | Maior (caminho crítico por estágio) |
 | **Unidade de Controle** | Lógica combinacional | FSM sequencial |
 | **Recursos de hardware** | Duplicados para paralelismo | Compartilhados no tempo |
-| **Registradores intermediários** | Não existem | IR, MDR, A, B, ALUOut, OldPC |
+| **Registradores intermediários** | Não existem | OPC, IR, RS1, RS2, ALUr, MDR |
 | **Handshake de memória** | Não suportado nativamente | Suportado via Ready/Valid |
 | **Complexidade de controle** | Baixa | Média-Alta |
 

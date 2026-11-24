@@ -33,14 +33,4 @@ O detalhamento de cada campo está na [API de programação](https://risc-v-azed
 
 ## HAL
 
-A HAL (`fpga/sw/platform/bsp/hal/hal_npu.h`) cobre o uso básico, com a CPU ou o DMA movendo os operandos:
-
-| Função | Uso |
-|---|---|
-| `hal_npu_init`, `hal_npu_configure` | Inicializa e configura $K$ e a quantização |
-| `hal_npu_load_weights`, `hal_npu_load_inputs`, `hal_npu_load_bias` | Carrega os operandos (por DMA, se habilitado com `hal_npu_set_dma_enabled`) |
-| `hal_npu_start`, `hal_npu_start_accumulate` | Dispara um cálculo, zerando ou mantendo os acumuladores |
-| `hal_npu_is_busy`, `hal_npu_wait_done` | Consulta ou espera o fim |
-| `hal_npu_read_output` | Lê os resultados |
-
-Os mecanismos avançados (pesos residentes, *im2col*, GEMV, *streaming* e descritores) são programados diretamente pelos registradores; o [servidor da CNN](../aplicacoes/servidores-npu.md#servidor-da-cnn-cnn_serverc) é o exemplo completo.
+A HAL (`fpga/sw/platform/bsp/hal/hal_npu.h`) cobre o uso básico, com a CPU ou o DMA movendo os operandos; a referência e um exemplo completo estão em [HAL → NPU](../hal/npu.md). Os mecanismos avançados (pesos residentes, *im2col*, GEMV, *streaming* e descritores) são programados diretamente pelos registradores; o [servidor da CNN](../aplicacoes/servidores-npu.md#servidor-da-cnn-cnn_serverc) é o exemplo completo.

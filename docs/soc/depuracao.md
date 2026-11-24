@@ -30,17 +30,7 @@ O Debug Controller utiliza uma técnica de multiplexação física baseada no si
 - **RTS = 0 (ativo)**: O canal UART é roteado para o SoC. O Debug Controller ignora comandos recebidos.
 - **RTS = 1 (repouso)**: O canal UART é roteado para o Debug Controller. O SoC fica "surdo" (recebe 1 lógico constante).
 
-Implementação em VHDL (`soc_top.vhd:285-290`):
-
-```vhdl
--- Roteamento do RX (Entrada vinda do PC)
--- Se RTS=0, SoC escuta. Se RTS=1, SoC fica surdo ('1' é o estado de repouso da UART).
-s_uart_rx_soc   <= UART_RX_i when UART_RTS_i = '0' else '1'; 
-s_uart_rx_debug <= UART_RX_i when UART_RTS_i = '1' else '1';
-
--- Roteamento do TX (Saída para o PC)
-UART_TX_o <= s_uart_tx_debug when (UART_RTS_i = '1' or s_soc_en = '0') else s_uart_tx_soc;
-```
+O TX segue a mesma regra, com uma exceção: enquanto a CPU está parada pelo depurador, a saída serial também vem do controlador de depuração, mesmo com RTS = 0, para que as respostas cheguem ao computador. Essa multiplexação fica no `soc_top.vhd`, fora do controlador, e custa apenas alguns multiplexadores nos pinos.
 
 ### Sequência de Handshake
 
@@ -53,27 +43,7 @@ Antes de qualquer operação de depuração, o host deve iniciar uma sequência 
 | 3 | `0xBA` | Confirmação versão |
 | 4 | `0xBE` | Ativação do modo debug |
 
-Quando a FSM principal recebe `0xCA`, ela transita para o estado `WAIT_FE`, awaiting subsequent bytes. Se qualquer byte for incorreto, retorna para `IDLE`.
-
-Implementação (`debug_controller.vhd:329-344`):
-
-```vhdl
-when IDLE =>
-    r_soc_en <= '1';
-    if s_rx_valid = '1' and s_rx_data = x"CA" then dbg_state <= WAIT_FE; end if;
-when WAIT_FE =>
-    if s_rx_valid = '1' then
-        if s_rx_data = x"FE" then dbg_state <= WAIT_BA; else dbg_state <= IDLE; end if;
-    end if;
-when WAIT_BA =>
-    if s_rx_valid = '1' then
-        if s_rx_data = x"BA" then dbg_state <= WAIT_BE; else dbg_state <= IDLE; end if;
-    end if;
-when WAIT_BE =>
-    if s_rx_valid = '1' then
-        if s_rx_data = x"BE" then dbg_state <= ARMED_WAIT_FETCH; else dbg_state <= IDLE; end if;
-    end if;
-```
+A máquina de estados do controlador reconhece a sequência byte a byte: a cada byte esperado, avança um estado (`WAIT_FE`, `WAIT_BA`, `WAIT_BE`); qualquer byte diferente a devolve a `IDLE`. Assim, os dados comuns que o programa troca com o computador pela UART dificilmente ativam o depurador por acaso. Completada a sequência, o controlador pausa a CPU na próxima busca de instrução (ver [Pausa limpa](#estrategia-armed_wait_fetch)).
 
 ### Formato do Protocolo de Comandos
 
@@ -94,16 +64,7 @@ Após a ativação do modo debug, os seguintes comandos estão disponíveis:
 
 ### Máquina de Estados RX (Recepção Serial)
 
-O módulo RX implementa uma UART em uma máquina de estados (FSM), com amostragem no meio do período de cada bit:
-
-```
-Estados RX: RX_IDLE → RX_START → RX_DATA(8 bits) → RX_STOP
-```
-
-- **RX_IDLE**: Aguarda bit de inicio (nível 0)
-- **RX_START**: Espera metade do período de bit para sincronização
-- **RX_DATA**: Coleta 8 bits de dados (LSB primeiro)
-- **RX_STOP**: Confirma bit de parada (nível 1), Valida dados
+O controlador tem a sua própria UART, com a mesma estrutura da [UART do SoC](../perifericos/uart.md): o receptor espera o bit de início, aguarda meio período de bit para se alinhar ao centro dele, coleta os 8 bits de dado (do menos ao mais significativo) e confere o bit de parada.
 
 ---
 
@@ -111,72 +72,21 @@ Estados RX: RX_IDLE → RX_START → RX_DATA(8 bits) → RX_STOP
 
 ### Mecanismo de Pausa Não-Invasiva
 
-O Debug Controller interrompe a execução do processador através do sinal `soc_en_o` (Signal de Enable do SoC), que é conectado à entrada `soc_en_i` do processador:
-
-```
-soc_en_o = '1' → CPU executa normalmente
-soc_en_o = '0' → CPU pausada (estados congelados)
-```
-
-**Comportamento na FSM do Processador** (`main_fsm.vhd:186-197`):
-
-```vhdl
-if Reset_i = '1' then
-    current_state <= S_IF;
-elsif soc_en_i = '1' then
-    current_state <= next_state;
-    -- Lógica do "Wait State" do Branch
-    if current_state = S_EX_BR and s_br_wait_q = '0' then
-        s_br_wait_q <= '1';
-    elsif current_state /= S_EX_BR then
-        s_br_wait_q <= '0';
-    end if;
-end if;
-```
-
-Quando `soc_en_i = '0'`, a FSM simplesmente **não atualiza seu estado**, mantendo o processador congelado no estado atual sem corrupção de estado.
+O controlador pausa o processador pelo sinal `soc_en_o`, ligado à entrada `soc_en_i` do núcleo. Com `soc_en_i = 1`, a máquina de estados do núcleo avança normalmente; com `soc_en_i = 0`, ela simplesmente **não troca de estado**, e todos os registradores mantêm o valor. A pausa não altera nada no processador: ao liberar o sinal, a execução continua exatamente de onde parou.
 
 ### Estratégia ARMED_WAIT_FETCH
 
-Para garantir uma pausa limpa (sem estados intermediários), o Debug Controller utiliza a estratégia de esperar até que o processador atinja a fase de busca de instrução:
-
-```
-ARMED_WAIT_FETCH:
-    se is_fetch_stage_i = '1' então
-        soc_en_o <= '0';
-        dbg_state <= DEBUG_ACTIVE;
-    senão
-        soc_en_o <= '1';
-    fim se;
-```
-
-- **is_fetch_stage_i**: Sinal indicando que o processador está no estágio de busca de instrução (Fetch)
-- Garante que a instrução em andamento seja completada antes da pausa
+Parar o núcleo no meio de uma instrução deixaria o estado difícil de interpretar (um *store* pela metade, um `IR` já trocado). Por isso, depois de um comando de pausa, o controlador entra no estado `ARMED_WAIT_FETCH` e só baixa `soc_en_o` quando o núcleo sinaliza, por `is_fetch_stage_i`, que está na busca de uma nova instrução. A instrução em andamento termina, e a CPU para entre duas instruções, com o PC apontando para a próxima.
 
 ### Execução Passo a Passo (Step)
 
-O comando STEP executa exatamente uma instrução e retorna ao estado pausado:
-
-```
-STEP_EXEC:
-    soc_en_o <= '1';  -- Libera CPU temporariamente
-    se is_fetch_stage_i = '0' então
-        dbg_state <= STEP_FETCH;
-    fim se;
-
-STEP_FETCH:
-    soc_en_o <= '1';
-    se is_fetch_stage_i = '1' então
-        soc_en_o <= '0';       -- Pausa imediatamente após 1 instrução
-        dbg_state <= DEBUG_ACTIVE;
-    fim se;
-```
+O passo a passo usa o mesmo sinal: o controlador libera a CPU (`soc_en_o = 1`), espera o núcleo **sair** da busca (estado `STEP_EXEC`) e, em seguida, espera que ele **volte** a uma busca (`STEP_FETCH`), quando pausa de novo. Entre as duas buscas, o núcleo executou exatamente uma instrução, qualquer que seja o número de ciclos que ela leve.
 
 ### Hardware Breakpoint com Latência Zero
 
 O Debug Controller implementa um hardware breakpoint que detecta o endereço do PC de forma combinacional (mesmo ciclo de clock):
 
-**Detecção Comporcional** (`debug_controller.vhd:144-148`):
+**Detecção combinacional.** O comparador olha o PC na busca de instrução e, no mesmo ciclo em que ele coincide com o endereço programado, derruba o `soc_en_o`, sem esperar a máquina de estados:
 
 ```vhdl
 -- Detecta o endereço combinacionalmente no mesmo ciclo de clock
@@ -187,22 +97,7 @@ s_bkp_match <= '1' when (r_bkp_en = '1' and pc_i = r_bkp_addr
 soc_en_o <= '0' when (r_bkp_hit = '1' or s_bkp_match = '1') else r_soc_en;
 ```
 
-**Mecanismo de Bypass**: Após um hit de breakpoint, o sistema seta um sinal de bypass para permitir que o PCleave do endereço do breakpoint sem re-trigger:
-
-```vhdl
--- 1. Se recebermos comando para andar, limpa o hit e levanta o escudo (Bypass)
-if (dbg_state = DEBUG_ACTIVE and s_rx_valid = '1' and 
-   (s_rx_data = CMD_RESUME or s_rx_data = CMD_STEP or 
-    s_rx_data = CMD_RESET or s_rx_data = CMD_CLR_BKP)) then
-    r_bkp_hit    <= '0';
-    r_bkp_bypass <= '1';
-end if;
-
--- 2. Assim que o PC sair do endereço da armadilha, desliga o escudo
-if pc_i /= r_bkp_addr then
-    r_bkp_bypass <= '0';
-end if;
-```
+**Saída do *breakpoint*.** Se nada mais fosse feito, ao retomar a execução o PC ainda estaria no endereço do *breakpoint*, e a CPU pararia de novo no mesmo lugar. Por isso, ao receber `RESUME`, `STEP`, reinício ou `CLR_BKP`, o controlador limpa a parada e ergue um *bypass*, que mantém o comparador desligado até o PC sair daquele endereço.
 
 ---
 
@@ -210,75 +105,11 @@ end if;
 
 ### Acesso ao Banco de Registradores
 
-O Debug Controller possui uma **porta dedicada de leitura** conectada diretamente ao banco de registradores, funcionando independentemente do datapath normal:
+O banco de registradores tem uma **porta de leitura extra**, usada só pelo depurador: o controlador apresenta um endereço em `reg_addr_o` e recebe o valor em `reg_data_i`, sem interferir nas duas portas de leitura do caminho de dados. O PC é tratado como um 33º registrador (índice 32), escolhido por um multiplexador dentro do controlador.
 
-**Interface no Processor Top** (`processor_top.vhd:86-89`):
+### Fluxo de dump de registradores
 
-```vhdl
--- Interface de Debug (Hardware Interlock)
-soc_en_i            : in  std_logic;                          -- 1 = Roda normal, 0 = Congela CPU
-is_fetch_stage_o    : out std_logic;                          -- Avisa o Debugger que está no Fetch
-debug_reg_addr_i    : in  std_logic_vector( 4 downto 0);      -- Endereço do reg para leitura out-of-band
-debug_reg_data_o    : out std_logic_vector(31 downto 0)       -- Dado lido do reg
-```
-
-**Leitura no Reg File** (`reg_file.vhd:86-87`):
-
-```vhdl
-debug_data_o <= x"00000000" when debug_addr_i = "00000" else
-                s_registers(to_integer(unsigned(debug_addr_i)));
-```
-
-**Multiplexador PC/Registrador**: O Debug Controller trata o PC como registrador virtual indice 32:
-
-```vhdl
--- reg_idx = 32 representa o PC
-s_mux_reg_data <= pc_i when reg_idx = 32 else reg_data_i;
-```
-
-### Fluxo de Dump de Registradores
-
-Para ler todos os registradores, o Debug Controller itera sobre os 32 registradores mais o PC, transmitindo 4 bytes por registrador (little-endian):
-
-```
-DUMP_REGS:
-    Para cada reg_idx de 0 a 32:
-        Transmite byte 0 (bits 7:0)
-        Transmite byte 1 (bits 15:8)
-        Transmite byte 2 (bits 23:16)
-        Transmite byte 3 (bits 31:24)
-        Incrementa reg_idx
-```
-
-**Tamanho total**: 33 registradores × 4 bytes = **132 bytes**
-
-Implementação (`debug_controller.vhd:377-399`):
-
-```vhdl
-when DUMP_REGS =>
-    r_soc_en <= '0';
-    if s_tx_busy = '0' and r_tx_start = '0' then
-        case byte_idx is
-            when 0 => r_tx_data <= s_mux_reg_data(7 downto 0);
-            when 1 => r_tx_data <= s_mux_reg_data(15 downto 8);
-            when 2 => r_tx_data <= s_mux_reg_data(23 downto 16);
-            when 3 => r_tx_data <= s_mux_reg_data(31 downto 24);
-        end case;
-        
-        r_tx_start <= '1'; 
-        
-        if byte_idx = 3 then
-            byte_idx <= 0;
-            if reg_idx = 32 then
-                dbg_state <= DEBUG_ACTIVE;
-            else
-                reg_idx <= reg_idx + 1; 
-            end if;
-        else
-            byte_idx <= byte_idx + 1; 
-        end if;
-    end if;
-```
+O comando `READ_REG` (`0x10`) percorre os índices de 0 a 32 e transmite cada valor em 4 bytes, do menos para o mais significativo (*little-endian*): são 33 × 4 = **132 bytes**, que o `debugger.py` remonta para mostrar os 32 registradores e o PC. Durante o envio, a CPU permanece parada.
 
 ### Acesso à Memória
 

@@ -102,6 +102,16 @@ void hal_npu_configure(uint32_t k_dim, npu_quant_params_t *quant) {
     }
 }
 
+/**
+ * @brief Carrega o vetor de bias das 4 colunas (banco 0, em 0x80..0x8C).
+ */
+void hal_npu_load_bias(const uint32_t *bias_buffer) {
+    volatile uint32_t *bias = &NPU_REG_BIAS_BASE;
+    for (int c = 0; c < 4; c++) {
+        bias[c] = bias_buffer[c];
+    }
+}
+
 // ============================================================================
 // TRANSFERÊNCIA DE DADOS (DATA PATH)
 // ============================================================================

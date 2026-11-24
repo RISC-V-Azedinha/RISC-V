@@ -131,16 +131,15 @@ A ponte entre os sinais físicos de silício e o código em C é feita pelos reg
 
 ### Construção Dinâmica do Vetor MIP
 
-Fisicamente, no módulo `csr_file.vhd`, o registrador **MIP** não é uma memória estática, mas sim um reflexo em tempo real das linhas físicas que chegam da topologia do SoC:
+No `csr_file.vhd`, o registrador **MIP** não armazena nada: cada bit é a cópia, em tempo real, de uma linha de interrupção que chega ao núcleo.
 
-```vhdl
-s_mip_comb <= (
-    11 => Irq_Ext_i,   -- MEIP: Vem do PLIC
-    7  => Irq_Timer_i, -- MTIP: Vem do CLINT
-    3  => Irq_Soft_i,  -- MSIP: Vem do CLINT
-    others => '0'
-);
-```
+| Bit do `mip` | Nome | Origem |
+|---|---|---|
+| 11 | MEIP (externa) | Saída do PLIC |
+| 7 | MTIP (temporizador) | CLINT, quando `mtime >= mtimecmp` |
+| 3 | MSIP (software) | CLINT, registrador `MSIP` |
+
+Como o `mip` é só um espelho das linhas, o software não "limpa" uma interrupção escrevendo nele: ela desaparece quando a causa desaparece na fonte, ao reprogramar o `mtimecmp`, ao zerar o `MSIP` ou ao completar o atendimento no PLIC.
 
 ### O Central Trap Handler (Software)
 

@@ -111,26 +111,7 @@ hal_rgb_set(RGB_LD16, 0, 255, 0);               // LD16 verde
 hal_gpio_irq_enable(GPIO_BTN, GPIO_BTN_LEFT, GPIO_EDGE_RISING);   // interrupção (PLIC fonte 4)
 ```
 
-### Referência da HAL
-
-| Função | Uso |
-| --- | --- |
-| `hal_gpio_set_dir(porta, pino, dir)` | Direção de um pino: `GPIO_INPUT` ou `GPIO_OUTPUT` (só tem efeito nos Pmods) |
-| `hal_gpio_write(porta, pino, valor)` | Liga ou desliga um pino (por `OUTSET`/`OUTCLR`, sem ler e reescrever a porta) |
-| `hal_gpio_toggle(porta, pino)` | Inverte um pino (`OUTTGL`) |
-| `hal_gpio_read(porta, pino)` | Lê um pino (`IN`) |
-| `hal_gpio_port_set_dir(porta, máscara)` | Direção da porta inteira: bit 1 = saída |
-| `hal_gpio_port_write(porta, valor)`, `hal_gpio_port_read(porta)` | Escreve `OUT` ou lê `IN` da porta inteira |
-| `hal_leds_write`, `hal_leds_read`, `hal_switches_read`, `hal_buttons_read` | Atalhos para as portas LED, SW e BTN |
-| `hal_gpio_irq_enable(porta, pino, borda)` | Habilita a interrupção do pino na borda `GPIO_EDGE_RISING` ou `GPIO_EDGE_FALLING` |
-| `hal_gpio_irq_disable(porta, pino)` | Desabilita a interrupção do pino |
-| `hal_gpio_irq_flags(porta)`, `hal_gpio_irq_clear(porta, máscara)` | Lê e limpa as flags de borda (`IFG`) |
-| `hal_seg7_write_hex(valor)`, `hal_seg7_write_dec(valor)` | Mostra um número nos 8 dígitos, em hexadecimal ou decimal |
-| `hal_seg7_set_raw(dígito, segmentos)` | Segmentos crus de um dígito (`SEG7_A`...`SEG7_G`, `SEG7_DP`) |
-| `hal_seg7_enable(máscara)`, `hal_seg7_off()`, `hal_seg7_set_dp(máscara)` | Dígitos ligados e pontos decimais |
-| `hal_rgb_set(led, r, g, b)` | Cor de `RGB_LD16` ou `RGB_LD17`, de 0 a 255 por canal |
-
-As portas são `GPIO_JA`, `GPIO_JB`, `GPIO_JC`, `GPIO_JD`, `GPIO_LED`, `GPIO_SW` e `GPIO_BTN`. Nos Pmods, o pino *i* da porta é o pino *i* do conector na ordem 1, 2, 3, 4, 7, 8, 9, 10 (os pinos 5 e 11 são GND, e 6 e 12, 3,3 V). Na porta de botões, os pinos são `GPIO_BTN_UP`, `GPIO_BTN_DOWN`, `GPIO_BTN_LEFT` e `GPIO_BTN_RIGHT`.
+A referência completa das funções e dois programas de exemplo estão em [HAL → GPIO](../hal/gpio.md).
 
 O programa `fpga/sw/tests/gpio_test.c` testa todos os blocos na placa (com autoverificação pela UART) e depois serve de demonstração: os LEDs seguem as chaves, os botões geram interrupções contadas no display e mudam a cor dos LEDs RGB.
 

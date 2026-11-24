@@ -120,6 +120,16 @@ nav:
       - Compilação e build: software/build.md
       - Boot: software/boot.md
       - Linker scripts: software/linker.md
+  - HAL:
+      - Visão geral: hal/index.md
+      - UART e UART2: hal/uart.md
+      - GPIO: hal/gpio.md
+      - Temporizador: hal/temporizador.md
+      - Interrupções: hal/interrupcoes.md
+      - DMA: hal/dma.md
+      - VGA: hal/vga.md
+      - NPU: hal/npu.md
+      - Aritmética em software: hal/aritmetica.md
   - Aplicações:
       - Programas e testes: aplicacoes/programas.md
       - Servidores da NPU: aplicacoes/servidores-npu.md

@@ -108,7 +108,7 @@ O hardware utiliza um **divisor de frequência** para gerar o Baud Rate:
 constant c_bit_period : integer := CLK_FREQ / BAUD_RATE;
 ```
 
-**Cálculo para 115200 baud @ 100 MHz:**
+No SoC, a UART do USB usa **921.600 bit/s** e a UART2 do Pmod JA, **115.200 bit/s**, ambas com relógio de 100 MHz. Por exemplo, para 115.200 bit/s:
 
 ```
 CLK_FREQ   = 100.000.000 Hz (100 MHz)
@@ -127,6 +127,7 @@ Período de 1 bit (ns)     = c_bit_period × (1 / CLK_FREQ)
 
 | Baud Rate | CLK_FREQ | c_bit_period | Tempo/bit |
 |-----------|----------|--------------|-----------|
+| 921.600 (UART do USB) | 100 MHz | 108 | 1,08 µs |
 | 115.200 | 100 MHz | 868 | 8,68 µs |
 | 57.600 | 100 MHz | 1736 | 17,36 µs |
 | 9.600 | 100 MHz | 10417 | 104,17 µs |
@@ -202,20 +203,7 @@ Para o start bit especial, a lógica é ajustada: em vez de esperar o final do p
 
 ### Cálculo do Ponto de Amostragem
 
-**Para 115200 baud @ 100 MHz (c_bit_period = 868):**
-
-```
-Ponto de amostragem do Start Bit = c_bit_period / 2 = 868 / 2 = 434 ciclos
-
-Código VHDL:
-    if rx_timer < (c_bit_period / 2) - 1 then
-        rx_timer <= rx_timer + 1;
-    else
-        if rx_bit_val = '0' then rx_state <= RX_DATA;
-        else rx_state <= RX_IDLE;  -- Ruído
-        end if;
-    end if;
-```
+Com 115.200 bit/s (`c_bit_period` = 868), o receptor amostra o bit de início 434 ciclos depois da borda de descida. Se a linha ainda estiver em 0, o início é válido e a recepção segue para os bits de dado, sempre amostrados no centro de cada bit; se já tiver voltado a 1, foi ruído, e o receptor volta ao repouso.
 
 ---
 
@@ -229,22 +217,9 @@ O **write pointer (r_head)** aponta para a próxima posição vazia onde um novo
 
 A **contagem de itens (r_count)** mantém o número atual de bytes válidos na FIFO. Este contador é incrementado em uma escrita (se a FIFO não estiver cheia) e decrementado em um pop (se a FIFO não estiver vazia). As flags de status w_fifo_full e w_fifo_empty são derivadas diretamente deste contador para indicar as condições de buffer cheio e buffer vazio, respectivamente.
 
-### Flags de Status
+### Flags de status
 
-```vhdl
-w_fifo_full  <= '1' when r_count = FIFO_DEPTH else '0';
-w_fifo_empty <= '1' when r_count = 0 else '0';
-```
-
-### Contador de Itens
-
-```vhdl
-if w_wr_en = '1' and w_rd_en = '0' and w_fifo_full = '0' then
-    r_count <= r_count + 1;
-elsif w_wr_en = '0' and w_rd_en = '1' and w_fifo_empty = '0' then
-    r_count <= r_count - 1;
-end if;
-```
+O contador `r_count` sobe a cada byte recebido (se a fila não estiver cheia) e desce a cada *pop* (se não estiver vazia); quando os dois acontecem no mesmo ciclo, ele não muda. As *flags* derivam dele: a fila está **cheia** com 64 bytes e **vazia** com 0. Com a fila cheia, um byte que chega é descartado, por isso a CPU (ou o tratador de interrupção) precisa consumir os dados antes que 64 bytes se acumulem.
 
 ---
 
@@ -295,10 +270,7 @@ irq_o = 1  →  FIFO não vazia (há dados para ler)
 irq_o = 0  →  FIFO vazia (todos os dados foram consumidos)
 ```
 
-Esta lógica é implementada como:
-```vhdl
-irq_o <= not w_fifo_empty;  -- ativo quando há dados
-```
+Em hardware, a interrupção é simplesmente o inverso da *flag* de fila vazia (`irq_o <= not w_fifo_empty`), sem estado próprio: ela some sozinha quando o último byte é retirado.
 
 #### Fluxo de Atendimento
 
