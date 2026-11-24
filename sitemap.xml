@@ -2,78 +2,86 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://RISC-V-Azedinha.github.io/RISC-V/</loc>
-         <lastmod>2026-09-12</lastmod>
+         <lastmod>2026-11-24</lastmod>
     </url>
     <url>
-         <loc>https://RISC-V-Azedinha.github.io/RISC-V/dev/fpga_build/</loc>
-         <lastmod>2026-09-12</lastmod>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/primeiros-passos/</loc>
+         <lastmod>2026-11-24</lastmod>
     </url>
     <url>
-         <loc>https://RISC-V-Azedinha.github.io/RISC-V/hardware/interrupts/</loc>
-         <lastmod>2026-09-12</lastmod>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/aplicacoes/ferramentas/</loc>
+         <lastmod>2026-11-24</lastmod>
     </url>
     <url>
-         <loc>https://RISC-V-Azedinha.github.io/RISC-V/hardware/multi-cycle/</loc>
-         <lastmod>2026-09-12</lastmod>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/aplicacoes/programas/</loc>
+         <lastmod>2026-11-24</lastmod>
     </url>
     <url>
-         <loc>https://RISC-V-Azedinha.github.io/RISC-V/hardware/single-cycle/</loc>
-         <lastmod>2026-09-12</lastmod>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/aplicacoes/servidores-npu/</loc>
+         <lastmod>2026-11-24</lastmod>
     </url>
     <url>
-         <loc>https://RISC-V-Azedinha.github.io/RISC-V/intro/setup/</loc>
-         <lastmod>2026-09-12</lastmod>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/desenvolvimento/sintese/</loc>
+         <lastmod>2026-11-24</lastmod>
     </url>
     <url>
-         <loc>https://RISC-V-Azedinha.github.io/RISC-V/soc/barramento/</loc>
-         <lastmod>2026-09-12</lastmod>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/desenvolvimento/verificacao/</loc>
+         <lastmod>2026-11-24</lastmod>
     </url>
     <url>
-         <loc>https://RISC-V-Azedinha.github.io/RISC-V/soc/debug_controller/</loc>
-         <lastmod>2026-09-12</lastmod>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/perifericos/gpio/</loc>
+         <lastmod>2026-11-24</lastmod>
     </url>
     <url>
-         <loc>https://RISC-V-Azedinha.github.io/RISC-V/soc/gpio_controller/</loc>
-         <lastmod>2026-09-12</lastmod>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/perifericos/npu/</loc>
+         <lastmod>2026-11-24</lastmod>
     </url>
     <url>
-         <loc>https://RISC-V-Azedinha.github.io/RISC-V/soc/memoria_dma/</loc>
-         <lastmod>2026-09-12</lastmod>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/perifericos/sd/</loc>
+         <lastmod>2026-11-24</lastmod>
     </url>
     <url>
-         <loc>https://RISC-V-Azedinha.github.io/RISC-V/soc/uart_controller/</loc>
-         <lastmod>2026-09-12</lastmod>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/perifericos/uart/</loc>
+         <lastmod>2026-11-24</lastmod>
     </url>
     <url>
-         <loc>https://RISC-V-Azedinha.github.io/RISC-V/soc/vga_controller/</loc>
-         <lastmod>2026-09-12</lastmod>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/perifericos/vga/</loc>
+         <lastmod>2026-11-24</lastmod>
     </url>
     <url>
-         <loc>https://RISC-V-Azedinha.github.io/RISC-V/software/apps_servidores_ia/</loc>
-         <lastmod>2026-09-12</lastmod>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/processador/interrupcoes/</loc>
+         <lastmod>2026-11-24</lastmod>
+    </url>
+    <url>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/processador/monociclo/</loc>
+         <lastmod>2026-11-24</lastmod>
+    </url>
+    <url>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/processador/multiciclo/</loc>
+         <lastmod>2026-11-24</lastmod>
+    </url>
+    <url>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/soc/depuracao/</loc>
+         <lastmod>2026-11-24</lastmod>
+    </url>
+    <url>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/soc/interconexao/</loc>
+         <lastmod>2026-11-24</lastmod>
+    </url>
+    <url>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/soc/memoria-dma/</loc>
+         <lastmod>2026-11-24</lastmod>
     </url>
     <url>
          <loc>https://RISC-V-Azedinha.github.io/RISC-V/software/boot/</loc>
-         <lastmod>2026-09-12</lastmod>
+         <lastmod>2026-11-24</lastmod>
     </url>
     <url>
-         <loc>https://RISC-V-Azedinha.github.io/RISC-V/software/clientes_inteligencia_artificial/</loc>
-         <lastmod>2026-09-12</lastmod>
-    </url>
-    <url>
-         <loc>https://RISC-V-Azedinha.github.io/RISC-V/software/interface_grafica_educacional_depuracao/</loc>
-         <lastmod>2026-09-12</lastmod>
+         <loc>https://RISC-V-Azedinha.github.io/RISC-V/software/build/</loc>
+         <lastmod>2026-11-24</lastmod>
     </url>
     <url>
          <loc>https://RISC-V-Azedinha.github.io/RISC-V/software/linker/</loc>
-         <lastmod>2026-09-12</lastmod>
-    </url>
-    <url>
-         <loc>https://RISC-V-Azedinha.github.io/RISC-V/software/protocolo_comunicacao_host_fpga/</loc>
-         <lastmod>2026-09-12</lastmod>
-    </url>
-    <url>
-         <loc>https://RISC-V-Azedinha.github.io/RISC-V/software/toolchain_build_system/</loc>
-         <lastmod>2026-09-12</lastmod>
+         <lastmod>2026-11-24</lastmod>
     </url>
 </urlset>

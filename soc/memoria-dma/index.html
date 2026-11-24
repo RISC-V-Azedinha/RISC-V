@@ -1,0 +1,4066 @@
+
+<!doctype html>
+<html lang="pt" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="SoC RISC-V didático em VHDL — núcleo RV32I_Zicsr multiciclo, interconexão crossbar, DMA, periféricos e NPU, validado em FPGA.">
+      
+      
+      
+        <link rel="canonical" href="https://RISC-V-Azedinha.github.io/RISC-V/soc/memoria-dma/">
+      
+      
+        <link rel="prev" href="../interconexao/">
+      
+      
+        <link rel="next" href="../depuracao/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/favicon.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Memória e DMA - SoC RISC-V</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans:300,300i,400,400i,700,700i%7CIBM+Plex+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"IBM Plex Sans";--md-code-font:"IBM Plex Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#memoria-e-dma" class="md-skip">
+          Pular para conteúdo
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Cabeçalho">
+    <a href="../.." title="SoC RISC-V" class="md-header__button md-logo" aria-label="SoC RISC-V" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            SoC RISC-V
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Memória e DMA
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Mudar para modo escuro"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Mudar para modo escuro" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Mudar para modo claro"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Mudar para modo claro" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Buscar" placeholder="Buscar" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Pesquisar">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Limpar" aria-label="Limpar" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Inicializando busca
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/RISC-V-Azedinha/RISC-V" title="Ir para repositório" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    RISC-V
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Abas" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../.." class="md-tabs__link">
+          
+  
+  
+  Início
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../processador/monociclo/" class="md-tabs__link">
+          
+  
+  
+  Processador
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../interconexao/" class="md-tabs__link">
+          
+  
+  
+  SoC
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../perifericos/gpio/" class="md-tabs__link">
+          
+  
+  
+  Periféricos
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../software/build/" class="md-tabs__link">
+          
+  
+  
+  Software
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../aplicacoes/programas/" class="md-tabs__link">
+          
+  
+  
+  Aplicações
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../desenvolvimento/verificacao/" class="md-tabs__link">
+          
+  
+  
+  Desenvolvimento
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navegação" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="SoC RISC-V" class="md-nav__button md-logo" aria-label="SoC RISC-V" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    SoC RISC-V
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/RISC-V-Azedinha/RISC-V" title="Ir para repositório" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    RISC-V
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Início
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Início
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introdução
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../primeiros-passos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Primeiros passos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Processador
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Processador
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../processador/monociclo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Microarquitetura monociclo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../processador/multiciclo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Microarquitetura multiciclo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../processador/interrupcoes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exceções e interrupções
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SoC
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    SoC
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../interconexao/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interconexão
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memória e DMA
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memória e DMA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="Nesta página">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Nesta página
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#espaco-de-enderecamento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Espaço de Endereçamento
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Espaço de Endereçamento">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mapa-de-enderecos-do-soc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mapa de Endereços do SoC
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#decodificacao-de-enderecos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decodificação de Endereços
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#memorias" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Memórias
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Memórias">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#boot-rom" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Boot ROM
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Boot ROM">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#caracteristicas-tecnicas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Características Técnicas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interface-de-sinais" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interface de Sinais
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inicializacao-via-arquivo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inicialização via Arquivo
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ram-principal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RAM Principal
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="RAM Principal">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#caracteristicas-tecnicas_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Características Técnicas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interface-de-sinais_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interface de Sinais
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#escrita-byte-a-byte" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Escrita Byte-a-Byte
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Escrita Byte-a-Byte">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#relacao-com-a-lsu-e-endianness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relação com a LSU e Endianness
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#registradores-de-perifericos-via-mmio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Registradores de Periféricos via MMIO
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Registradores de Periféricos via MMIO">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#conceito-mmio-vs-csrs-internos-do-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conceito: MMIO vs CSRs Internos do Core
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Conceito: MMIO vs CSRs Internos do Core">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#csrs-internos-do-core-risc-v-privileged" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CSRs Internos do Core (RISC-V Privileged)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#registradores-de-perifericos-via-mmio_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Registradores de Periféricos via MMIO
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#arquitetura-de-acesso-a-perifericos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Arquitetura de Acesso a Periféricos
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bsp-macros-de-acesso" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BSP: Macros de Acesso
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tabela-consolidada-de-registradores-mmio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tabela Consolidada de Registradores MMIO
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tabela Consolidada de Registradores MMIO">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#uart-0x1000_0000" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        UART (0x1000_0000)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gpio-0x2000_0000" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GPIO (0x2000_0000)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vga-0x3000_0000" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        VGA (0x3000_0000)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#clint-0x5000_0000" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLINT (0x5000_0000)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#plic-0x6000_0000" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PLIC (0x6000_0000)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dma-0x4000_0000" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DMA (0x4000_0000)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cartao-sd-0x7000_0000" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cartão SD (0x7000_0000)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#npu-0x9000_0000" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        NPU (0x9000_0000)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#controlador-dma" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Controlador DMA
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Controlador DMA">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gargalo-de-desempenho-transferencia-por-pollingbusy-wait" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gargalo de Desempenho: Transferência por Polling/Busy-Wait
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Gargalo de Desempenho: Transferência por Polling/Busy-Wait">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#o-problema-da-copia-por-software" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        O Problema da Cópia por Software
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#impacto-no-throughput-do-sistema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Impacto no Throughput do Sistema
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#visao-geral-do-dma" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Visão Geral do DMA
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#microarquitetura-do-controlador-dma" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Microarquitetura do Controlador DMA
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#registradores-de-configuracao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Registradores de Configuração
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Registradores de Configuração">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#detalhamento-do-registrador-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detalhamento do Registrador CONTROL
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#funcionamento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Funcionamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#modo-destino-fixo-fifo-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Modo Destino Fixo (FIFO Mode)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exemplo-de-uso-em-software" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exemplo de Uso em Software
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Exemplo de Uso em Software">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#transferencia-memoria-para-memoria" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transferência Memória-para-Memória
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#transferencia-para-npu-fifo-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transferência para NPU (FIFO Mode)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interacao-com-a-interconexao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interação com a interconexão
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#eficiencia-do-sistema-liberacao-do-nucleo-risc-v" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Eficiência do Sistema: Liberação do Núcleo RISC-V
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Eficiência do Sistema: Liberação do Núcleo RISC-V">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#analise-comparativa-de-ciclos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Análise Comparativa de Ciclos
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#otimizacao-do-dma-vs-cpu-multi-cycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Otimização do DMA vs CPU Multi-cycle
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ganho-de-eficiencia" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ganho de Eficiência
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oportunidades-de-paralelismo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Oportunidades de Paralelismo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#resumo-beneficios-arquiteturais-do-dma" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resumo: Benefícios Arquiteturais do DMA
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#acesso-ao-barramento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acesso ao barramento
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../depuracao/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Controlador de depuração
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Periféricos
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Periféricos
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../perifericos/gpio/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GPIO
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../perifericos/uart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UART
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../perifericos/vga/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    VGA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../perifericos/sd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cartão microSD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../perifericos/npu/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    NPU
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Software
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Software
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../software/build/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compilação e build
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../software/boot/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Boot
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../software/linker/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Linker scripts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Aplicações
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Aplicações
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../aplicacoes/programas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Programas e testes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../aplicacoes/servidores-npu/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Servidores da NPU
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../aplicacoes/ferramentas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ferramentas do hospedeiro
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Desenvolvimento
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Desenvolvimento
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../desenvolvimento/verificacao/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Verificação
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../desenvolvimento/sintese/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Síntese em FPGA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="Nesta página">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Nesta página
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#espaco-de-enderecamento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Espaço de Endereçamento
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Espaço de Endereçamento">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mapa-de-enderecos-do-soc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mapa de Endereços do SoC
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#decodificacao-de-enderecos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decodificação de Endereços
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#memorias" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Memórias
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Memórias">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#boot-rom" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Boot ROM
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Boot ROM">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#caracteristicas-tecnicas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Características Técnicas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interface-de-sinais" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interface de Sinais
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inicializacao-via-arquivo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inicialização via Arquivo
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ram-principal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RAM Principal
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="RAM Principal">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#caracteristicas-tecnicas_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Características Técnicas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interface-de-sinais_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interface de Sinais
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#escrita-byte-a-byte" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Escrita Byte-a-Byte
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Escrita Byte-a-Byte">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#relacao-com-a-lsu-e-endianness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relação com a LSU e Endianness
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#registradores-de-perifericos-via-mmio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Registradores de Periféricos via MMIO
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Registradores de Periféricos via MMIO">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#conceito-mmio-vs-csrs-internos-do-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conceito: MMIO vs CSRs Internos do Core
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Conceito: MMIO vs CSRs Internos do Core">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#csrs-internos-do-core-risc-v-privileged" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CSRs Internos do Core (RISC-V Privileged)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#registradores-de-perifericos-via-mmio_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Registradores de Periféricos via MMIO
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#arquitetura-de-acesso-a-perifericos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Arquitetura de Acesso a Periféricos
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bsp-macros-de-acesso" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BSP: Macros de Acesso
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tabela-consolidada-de-registradores-mmio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tabela Consolidada de Registradores MMIO
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tabela Consolidada de Registradores MMIO">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#uart-0x1000_0000" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        UART (0x1000_0000)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gpio-0x2000_0000" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GPIO (0x2000_0000)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vga-0x3000_0000" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        VGA (0x3000_0000)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#clint-0x5000_0000" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLINT (0x5000_0000)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#plic-0x6000_0000" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PLIC (0x6000_0000)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dma-0x4000_0000" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DMA (0x4000_0000)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cartao-sd-0x7000_0000" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cartão SD (0x7000_0000)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#npu-0x9000_0000" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        NPU (0x9000_0000)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#controlador-dma" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Controlador DMA
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Controlador DMA">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gargalo-de-desempenho-transferencia-por-pollingbusy-wait" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gargalo de Desempenho: Transferência por Polling/Busy-Wait
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Gargalo de Desempenho: Transferência por Polling/Busy-Wait">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#o-problema-da-copia-por-software" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        O Problema da Cópia por Software
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#impacto-no-throughput-do-sistema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Impacto no Throughput do Sistema
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#visao-geral-do-dma" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Visão Geral do DMA
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#microarquitetura-do-controlador-dma" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Microarquitetura do Controlador DMA
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#registradores-de-configuracao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Registradores de Configuração
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Registradores de Configuração">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#detalhamento-do-registrador-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detalhamento do Registrador CONTROL
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#funcionamento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Funcionamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#modo-destino-fixo-fifo-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Modo Destino Fixo (FIFO Mode)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exemplo-de-uso-em-software" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exemplo de Uso em Software
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Exemplo de Uso em Software">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#transferencia-memoria-para-memoria" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transferência Memória-para-Memória
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#transferencia-para-npu-fifo-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transferência para NPU (FIFO Mode)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interacao-com-a-interconexao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interação com a interconexão
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#eficiencia-do-sistema-liberacao-do-nucleo-risc-v" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Eficiência do Sistema: Liberação do Núcleo RISC-V
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Eficiência do Sistema: Liberação do Núcleo RISC-V">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#analise-comparativa-de-ciclos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Análise Comparativa de Ciclos
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#otimizacao-do-dma-vs-cpu-multi-cycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Otimização do DMA vs CPU Multi-cycle
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ganho-de-eficiencia" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ganho de Eficiência
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oportunidades-de-paralelismo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Oportunidades de Paralelismo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#resumo-beneficios-arquiteturais-do-dma" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resumo: Benefícios Arquiteturais do DMA
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#acesso-ao-barramento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acesso ao barramento
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="memoria-e-dma">Memória e DMA<a class="headerlink" href="#memoria-e-dma" title="Permanent link">&para;</a></h1>
+<h2 id="espaco-de-enderecamento">Espaço de Endereçamento<a class="headerlink" href="#espaco-de-enderecamento" title="Permanent link">&para;</a></h2>
+<p>A arquitetura RV32I define um espaço de endereçamento linear de <strong>32 bits</strong>, resultando em <strong>4 GB (2³² bytes)</strong> de memória virtualmente endereçável. Este espaço é dividido em regiões distintas para memórias e periféricos, seguindo o modelo de <strong>Memory-Mapped I/O (MMIO)</strong> onde cada dispositivo é acessado através de endereços de memória específicos.</p>
+<p>A organização deste espaço segue as convenções da especificação RISC-V, onde as regiões de memória principal (ROM e RAM) ocupam os extremos inferiores e superiores do mapa, enquanto os periféricos de I/O são mapeados em uma região intermediária.</p>
+<h3 id="mapa-de-enderecos-do-soc">Mapa de Endereços do SoC<a class="headerlink" href="#mapa-de-enderecos-do-soc" title="Permanent link">&para;</a></h3>
+<p>A tabela abaixo apresenta o mapa de endereçamento completo do SoC, detalhando cada região de memória e periférico:</p>
+<table>
+<thead>
+<tr>
+<th>Nome</th>
+<th>Endereço Base</th>
+<th>Endereço Final</th>
+<th>Tamanho</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Boot ROM</strong></td>
+<td><code>0x0000_0000</code></td>
+<td><code>0x0000_0FFF</code></td>
+<td>4 KB</td>
+<td>Memória apenas de leitura de inicialização (bootloader)</td>
+</tr>
+<tr>
+<td><strong>Reservado</strong></td>
+<td><code>0x0000_1000</code></td>
+<td><code>0x07FF_FFFF</code></td>
+<td>~128 MB</td>
+<td>Espaço não utilizado</td>
+</tr>
+<tr>
+<td><strong>UART</strong></td>
+<td><code>0x1000_0000</code></td>
+<td><code>0x1000_FFFF</code></td>
+<td>64 KB</td>
+<td>Controlador UART (comunicação serial)</td>
+</tr>
+<tr>
+<td><strong>GPIO</strong></td>
+<td><code>0x2000_0000</code></td>
+<td><code>0x2000_FFFF</code></td>
+<td>64 KB</td>
+<td>Pinos de entrada/saída geral</td>
+</tr>
+<tr>
+<td><strong>VGA</strong></td>
+<td><code>0x3000_0000</code></td>
+<td><code>0x3001_FFFF</code></td>
+<td>128 KB</td>
+<td>Controlador de vídeo (VRAM)</td>
+</tr>
+<tr>
+<td><strong>DMA</strong></td>
+<td><code>0x4000_0000</code></td>
+<td><code>0x4000_FFFF</code></td>
+<td>64 KB</td>
+<td>Controlador DMA</td>
+</tr>
+<tr>
+<td><strong>CLINT</strong></td>
+<td><code>0x5000_0000</code></td>
+<td><code>0x5000_FFFF</code></td>
+<td>64 KB</td>
+<td>Core Local Interrupt Controller</td>
+</tr>
+<tr>
+<td><strong>PLIC</strong></td>
+<td><code>0x6000_0000</code></td>
+<td><code>0x6003_FFFF</code></td>
+<td>256 KB</td>
+<td>Platform-Level Interrupt Controller</td>
+</tr>
+<tr>
+<td><strong>Cartão SD</strong></td>
+<td><code>0x7000_0000</code></td>
+<td><code>0x7000_000F</code></td>
+<td>16 B</td>
+<td>Mestre SPI do slot de microSD (<a href="../../perifericos/sd/">Cartão microSD</a>)</td>
+</tr>
+<tr>
+<td><strong>RAM</strong></td>
+<td><code>0x8000_0000</code></td>
+<td><code>0x8003_FFFF</code></td>
+<td>256 KB</td>
+<td>Memória RAM principal</td>
+</tr>
+<tr>
+<td><strong>Reservado</strong></td>
+<td><code>0x8004_0000</code></td>
+<td><code>0x8FFF_FFFF</code></td>
+<td>~255 MB</td>
+<td>Espaço não utilizado</td>
+</tr>
+<tr>
+<td><strong>NPU</strong></td>
+<td><code>0x9000_0000</code></td>
+<td><code>0x9FFF_FFFF</code></td>
+<td>256 MB</td>
+<td>Neural Processing Unit</td>
+</tr>
+<tr>
+<td><strong>UART2</strong></td>
+<td><code>0xA000_0000</code></td>
+<td><code>0xA000_000F</code></td>
+<td>16 B</td>
+<td>Segunda UART, no Pmod JA (<a href="../../perifericos/uart/#uart2-no-pmod-ja">UART2</a>)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="decodificacao-de-enderecos">Decodificação de Endereços<a class="headerlink" href="#decodificacao-de-enderecos" title="Permanent link">&para;</a></h3>
+<p>A decodificação de endereços é realizada no módulo <code>bus_interconnect.vhd</code>, que utiliza os <strong>bits mais significativos (31-28)</strong> do endereço de 32 bits para identificar qual periférico ou memória deve responder à requisição. Esta abordagem permite uma decodificação rápida e simples, utilizando apenas 4 bits para selecionar entre até 16 regiões distintas.</p>
+<p>O código VHDL a seguir demonstra a lógica de decodificação implementada:</p>
+<div class="language-vhdl highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">dmem_slv</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">SLV_ROM</span><span class="w">   </span><span class="k">when</span><span class="w"> </span><span class="n">dmem_addr_i</span><span class="p">(</span><span class="mi">31</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">28</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">x&quot;0&quot;</span><span class="w"> </span><span class="k">else</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">            </span><span class="n">SLV_UART</span><span class="w">  </span><span class="k">when</span><span class="w"> </span><span class="n">dmem_addr_i</span><span class="p">(</span><span class="mi">31</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">28</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">x&quot;1&quot;</span><span class="w"> </span><span class="k">else</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">            </span><span class="n">SLV_GPIO</span><span class="w">  </span><span class="k">when</span><span class="w"> </span><span class="n">dmem_addr_i</span><span class="p">(</span><span class="mi">31</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">28</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">x&quot;2&quot;</span><span class="w"> </span><span class="k">else</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">            </span><span class="n">SLV_VGA</span><span class="w">   </span><span class="k">when</span><span class="w"> </span><span class="n">dmem_addr_i</span><span class="p">(</span><span class="mi">31</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">28</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">x&quot;3&quot;</span><span class="w"> </span><span class="k">else</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">            </span><span class="n">SLV_DMA</span><span class="w">   </span><span class="k">when</span><span class="w"> </span><span class="n">dmem_addr_i</span><span class="p">(</span><span class="mi">31</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">28</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">x&quot;4&quot;</span><span class="w"> </span><span class="k">else</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">            </span><span class="n">SLV_CLINT</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="n">dmem_addr_i</span><span class="p">(</span><span class="mi">31</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">28</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">x&quot;5&quot;</span><span class="w"> </span><span class="k">else</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">            </span><span class="n">SLV_PLIC</span><span class="w">  </span><span class="k">when</span><span class="w"> </span><span class="n">dmem_addr_i</span><span class="p">(</span><span class="mi">31</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">28</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">x&quot;6&quot;</span><span class="w"> </span><span class="k">else</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">            </span><span class="n">SLV_SD</span><span class="w">    </span><span class="k">when</span><span class="w"> </span><span class="n">dmem_addr_i</span><span class="p">(</span><span class="mi">31</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">28</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">x&quot;7&quot;</span><span class="w"> </span><span class="k">else</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">            </span><span class="n">SLV_RAM</span><span class="w">   </span><span class="k">when</span><span class="w"> </span><span class="n">dmem_addr_i</span><span class="p">(</span><span class="mi">31</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">28</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">x&quot;8&quot;</span><span class="w"> </span><span class="k">else</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">            </span><span class="n">SLV_NPU</span><span class="w">   </span><span class="k">when</span><span class="w"> </span><span class="n">dmem_addr_i</span><span class="p">(</span><span class="mi">31</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">28</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">x&quot;9&quot;</span><span class="w"> </span><span class="k">else</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">            </span><span class="n">SLV_NONE</span><span class="p">;</span>
+</span></code></pre></div>
+<p>É importante observar que as regiões <code>0xB</code> até <code>0xF</code> não são utilizadas nesta implementação, servindo como espaço reservado para futuras expansões.</p>
+<hr />
+<h2 id="memorias">Memórias<a class="headerlink" href="#memorias" title="Permanent link">&para;</a></h2>
+<p>O SoC dispõe de duas memórias principais: a <strong>Boot ROM</strong>, que armazena o código de inicialização, e a <strong>RAM principal</strong>, utilizada para execução de programas e armazenamento de dados.</p>
+<h3 id="boot-rom">Boot ROM<a class="headerlink" href="#boot-rom" title="Permanent link">&para;</a></h3>
+<p>A Boot ROM é uma memória apenas de leitura que armazena o bootloader do sistema. Ela é inicializada durante a síntese com o conteúdo de um arquivo HEX externo.</p>
+<h4 id="caracteristicas-tecnicas">Características Técnicas<a class="headerlink" href="#caracteristicas-tecnicas" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Parâmetro</th>
+<th>Valor</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Tamanho</strong></td>
+<td>4 KB (2¹⁰ palavras de 32 bits)</td>
+</tr>
+<tr>
+<td><strong>Tipo</strong></td>
+<td>Dual-port sincronizada</td>
+</tr>
+<tr>
+<td><strong>Porta A</strong></td>
+<td>Fetch de instruções (IMem)</td>
+</tr>
+<tr>
+<td><strong>Porta B</strong></td>
+<td>Leituras de dados (DMem)</td>
+</tr>
+<tr>
+<td><strong>Inicialização</strong></td>
+<td>Carrega conteúdo de arquivo <code>.hex</code></td>
+</tr>
+</tbody>
+</table>
+<h4 id="interface-de-sinais">Interface de Sinais<a class="headerlink" href="#interface-de-sinais" title="Permanent link">&para;</a></h4>
+<p>A Boot ROM oferece duas portas de leitura independentes, permitindo acessos simultâneos:</p>
+<div class="language-vhdl highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">port</span><span class="w"> </span><span class="p">(</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span><span class="n">clk</span><span class="w">       </span><span class="o">:</span><span class="w"> </span><span class="k">in</span><span class="w">  </span><span class="kt">std_logic</span><span class="p">;</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="c1">-- Porta A: Dedicada ao Fetch (Instruções)</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">    </span><span class="n">vld_a_i</span><span class="w">   </span><span class="o">:</span><span class="w"> </span><span class="k">in</span><span class="w">  </span><span class="kt">std_logic</span><span class="p">;</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">    </span><span class="n">addr_a_i</span><span class="w">  </span><span class="o">:</span><span class="w"> </span><span class="k">in</span><span class="w">  </span><span class="kt">std_logic_vector</span><span class="p">(</span><span class="mi">31</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">    </span><span class="n">data_a_o</span><span class="w">  </span><span class="o">:</span><span class="w"> </span><span class="k">out</span><span class="w"> </span><span class="kt">std_logic_vector</span><span class="p">(</span><span class="mi">31</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">    </span><span class="n">rdy_a_o</span><span class="w">   </span><span class="o">:</span><span class="w"> </span><span class="k">out</span><span class="w"> </span><span class="kt">std_logic</span><span class="p">;</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span><span class="c1">-- Porta B: Dedicada ao LOAD/STORE (Dados)</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">    </span><span class="n">vld_b_i</span><span class="w">   </span><span class="o">:</span><span class="w"> </span><span class="k">in</span><span class="w">  </span><span class="kt">std_logic</span><span class="p">;</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">    </span><span class="n">addr_b_i</span><span class="w">  </span><span class="o">:</span><span class="w"> </span><span class="k">in</span><span class="w">  </span><span class="kt">std_logic_vector</span><span class="p">(</span><span class="mi">31</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">    </span><span class="n">data_b_o</span><span class="w">  </span><span class="o">:</span><span class="w"> </span><span class="k">out</span><span class="w"> </span><span class="kt">std_logic_vector</span><span class="p">(</span><span class="mi">31</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">    </span><span class="n">rdy_b_o</span><span class="w">   </span><span class="o">:</span><span class="w"> </span><span class="k">out</span><span class="w"> </span><span class="kt">std_logic</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="p">);</span>
+</span></code></pre></div>
+<h4 id="inicializacao-via-arquivo">Inicialização via Arquivo<a class="headerlink" href="#inicializacao-via-arquivo" title="Permanent link">&para;</a></h4>
+<p>A ROM é inicializada através da função <code>init_rom_from_file</code>, que lê um arquivo no formato HEX:</p>
+<div class="language-vhdl highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">impure</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">init_rom_from_file</span><span class="p">(</span><span class="n">file_name</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">t_rom</span><span class="w"> </span><span class="k">is</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span><span class="k">file</span><span class="w">     </span><span class="n">f</span><span class="w">       </span><span class="o">:</span><span class="w"> </span><span class="n">text</span><span class="w"> </span><span class="k">open</span><span class="w"> </span><span class="n">read_mode</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="n">file_name</span><span class="p">;</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="k">variable</span><span class="w"> </span><span class="n">l</span><span class="w">       </span><span class="o">:</span><span class="w"> </span><span class="n">line</span><span class="p">;</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="k">variable</span><span class="w"> </span><span class="n">v_data</span><span class="w">  </span><span class="o">:</span><span class="w"> </span><span class="kt">std_logic_vector</span><span class="p">(</span><span class="mi">31</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="k">variable</span><span class="w"> </span><span class="n">v_rom</span><span class="w">   </span><span class="o">:</span><span class="w"> </span><span class="n">t_rom</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="p">(</span><span class="k">others</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">(</span><span class="k">others</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="sc">&#39;0&#39;</span><span class="p">));</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="k">begin</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="n">ADDR_WIDTH</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="w"> </span><span class="k">loop</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">        </span><span class="k">exit</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="n">endfile</span><span class="p">(</span><span class="n">f</span><span class="p">);</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">        </span><span class="n">readline</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="n">l</span><span class="p">);</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">        </span><span class="n">hread</span><span class="p">(</span><span class="n">l</span><span class="p">,</span><span class="w"> </span><span class="n">v_data</span><span class="p">);</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">        </span><span class="n">v_rom</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="n">v_data</span><span class="p">;</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">    </span><span class="k">end</span><span class="w"> </span><span class="k">loop</span><span class="p">;</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">v_rom</span><span class="p">;</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="k">end</span><span class="w"> </span><span class="k">function</span><span class="p">;</span>
+</span></code></pre></div>
+<p>A síntese em FPGA utiliza atributos específicos do Vivado (Xilinx) para forçar a inferência de Block RAM:</p>
+<div class="language-vhdl highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">attribute</span><span class="w"> </span><span class="n">ram_style</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">attribute</span><span class="w"> </span><span class="n">ram_style</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="n">rom_content</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">signal</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="s">&quot;block&quot;</span><span class="p">;</span>
+</span></code></pre></div>
+<ul>
+<li>O atributo <code>ram_style</code> é uma sintaxe específica para síntese via Vivado da Xilinx</li>
+<li>O valor <code>"block"</code> força a utilização de BRAM (Block RAM) ao invés de distribuição (LUT RAM)</li>
+<li>A utilização de BRAM adiciona <strong>latência de 1 ciclo de clock</strong> à leitura de dados (referência: <a href="https://docs.amd.com/v/u/en-US/ug473_7Series_Memory_Resources">UG473 - 7 Series Memory Resources</a>)</li>
+</ul>
+<h3 id="ram-principal">RAM Principal<a class="headerlink" href="#ram-principal" title="Permanent link">&para;</a></h3>
+<p>A RAM principal é uma memória de leitura e escrita utilizada para armazenamento temporário de dados e código durante a execução do programa.</p>
+<h4 id="caracteristicas-tecnicas_1">Características Técnicas<a class="headerlink" href="#caracteristicas-tecnicas_1" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Parâmetro</th>
+<th>Valor</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Tamanho</strong></td>
+<td>256 KB (2¹⁶ palavras de 32 bits)</td>
+</tr>
+<tr>
+<td><strong>Tipo</strong></td>
+<td>Dual-port com BRAM inferida</td>
+</tr>
+<tr>
+<td><strong>Largura de dados</strong></td>
+<td>32 bits</td>
+</tr>
+<tr>
+<td><strong>Escrita</strong></td>
+<td>Byte-a-byte (WE de 4 bits)</td>
+</tr>
+<tr>
+<td><strong>Índices de acesso</strong></td>
+<td><code>addr(17 downto 2)</code> (palavras)</td>
+</tr>
+</tbody>
+</table>
+<h4 id="interface-de-sinais_1">Interface de Sinais<a class="headerlink" href="#interface-de-sinais_1" title="Permanent link">&para;</a></h4>
+<div class="language-vhdl highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">generic</span><span class="w"> </span><span class="p">(</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span><span class="n">ADDR_WIDTH</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="kt">integer</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="mi">16</span><span class="p">;</span><span class="w">  </span><span class="c1">-- 256 KB</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="n">DATA_WIDTH</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="kt">integer</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="mi">32</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="p">);</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="k">port</span><span class="w"> </span><span class="p">(</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="n">clk</span><span class="w">        </span><span class="o">:</span><span class="w"> </span><span class="k">in</span><span class="w">  </span><span class="kt">std_logic</span><span class="p">;</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">    </span><span class="c1">-- Porta A</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">    </span><span class="n">vld_a_i</span><span class="w">    </span><span class="o">:</span><span class="w"> </span><span class="k">in</span><span class="w">  </span><span class="kt">std_logic</span><span class="p">;</span><span class="w"> </span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">    </span><span class="n">we_a</span><span class="w">       </span><span class="o">:</span><span class="w"> </span><span class="k">in</span><span class="w">  </span><span class="kt">std_logic_vector</span><span class="p">((</span><span class="n">DATA_WIDTH</span><span class="o">/</span><span class="mi">8</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">    </span><span class="n">addr_a</span><span class="w">     </span><span class="o">:</span><span class="w"> </span><span class="k">in</span><span class="w">  </span><span class="kt">std_logic_vector</span><span class="p">(</span><span class="n">ADDR_WIDTH</span><span class="o">-</span><span class="mi">1</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">    </span><span class="n">data_a_i</span><span class="w">   </span><span class="o">:</span><span class="w"> </span><span class="k">in</span><span class="w">  </span><span class="kt">std_logic_vector</span><span class="p">(</span><span class="n">DATA_WIDTH</span><span class="o">-</span><span class="mi">1</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">    </span><span class="n">data_a_o</span><span class="w">   </span><span class="o">:</span><span class="w"> </span><span class="k">out</span><span class="w"> </span><span class="kt">std_logic_vector</span><span class="p">(</span><span class="n">DATA_WIDTH</span><span class="o">-</span><span class="mi">1</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">    </span><span class="n">rdy_a_o</span><span class="w">    </span><span class="o">:</span><span class="w"> </span><span class="k">out</span><span class="w"> </span><span class="kt">std_logic</span><span class="p">;</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">    </span><span class="c1">-- Porta B</span>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="w">    </span><span class="n">vld_b_i</span><span class="w">    </span><span class="o">:</span><span class="w"> </span><span class="k">in</span><span class="w">  </span><span class="kt">std_logic</span><span class="p">;</span>
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="w">    </span><span class="n">we_b</span><span class="w">       </span><span class="o">:</span><span class="w"> </span><span class="k">in</span><span class="w">  </span><span class="kt">std_logic_vector</span><span class="p">((</span><span class="n">DATA_WIDTH</span><span class="o">/</span><span class="mi">8</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="w">    </span><span class="n">addr_b</span><span class="w">     </span><span class="o">:</span><span class="w"> </span><span class="k">in</span><span class="w">  </span><span class="kt">std_logic_vector</span><span class="p">(</span><span class="n">ADDR_WIDTH</span><span class="o">-</span><span class="mi">1</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="w">    </span><span class="n">data_b_i</span><span class="w">   </span><span class="o">:</span><span class="w"> </span><span class="k">in</span><span class="w">  </span><span class="kt">std_logic_vector</span><span class="p">(</span><span class="n">DATA_WIDTH</span><span class="o">-</span><span class="mi">1</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+</span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="w">    </span><span class="n">data_b_o</span><span class="w">   </span><span class="o">:</span><span class="w"> </span><span class="k">out</span><span class="w"> </span><span class="kt">std_logic_vector</span><span class="p">(</span><span class="n">DATA_WIDTH</span><span class="o">-</span><span class="mi">1</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+</span><span id="__span-4-22"><a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="w">    </span><span class="n">rdy_b_o</span><span class="w">    </span><span class="o">:</span><span class="w"> </span><span class="k">out</span><span class="w"> </span><span class="kt">std_logic</span>
+</span><span id="__span-4-23"><a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="p">);</span>
+</span></code></pre></div>
+<h4 id="escrita-byte-a-byte">Escrita Byte-a-Byte<a class="headerlink" href="#escrita-byte-a-byte" title="Permanent link">&para;</a></h4>
+<p>A RAM suporta escrita em granularidade de byte através de um vetor de Write Enable:</p>
+<div class="language-vhdl highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">for</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="p">(</span><span class="n">DATA_WIDTH</span><span class="o">/</span><span class="mi">8</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="w"> </span><span class="k">loop</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">we_b</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">&#39;1&#39;</span><span class="w"> </span><span class="k">then</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">        </span><span class="n">ram</span><span class="p">(</span><span class="n">to_integer</span><span class="p">(</span><span class="kt">unsigned</span><span class="p">(</span><span class="n">addr_b</span><span class="p">)))(</span><span class="mi">8</span><span class="o">*</span><span class="n">i</span><span class="o">+</span><span class="mi">7</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">8</span><span class="o">*</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="n">data_b_i</span><span class="p">(</span><span class="mi">8</span><span class="o">*</span><span class="n">i</span><span class="o">+</span><span class="mi">7</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">8</span><span class="o">*</span><span class="n">i</span><span class="p">);</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span><span class="k">end</span><span class="w"> </span><span class="k">if</span><span class="p">;</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="k">end</span><span class="w"> </span><span class="k">loop</span><span class="p">;</span>
+</span></code></pre></div>
+<p>Cada bit do vetor <code>WE</code> (4 bits para dados de 32 bits) controla um byte específico, permitindo escrita em 1, 2, 3 ou 4 bytes individualmente.</p>
+<h5 id="relacao-com-a-lsu-e-endianness">Relação com a LSU e Endianness<a class="headerlink" href="#relacao-com-a-lsu-e-endianness" title="Permanent link">&para;</a></h5>
+<p>O <strong>Load Store Unit (LSU)</strong> é a unidade responsável por formatar os acessos à memória de dados. Ela decodifica o campo <code>Funct3</code> das instruções para gerar os Byte Enables corretos:</p>
+<table>
+<thead>
+<tr>
+<th>Instrução</th>
+<th>Tamanho</th>
+<th>Byte Enables</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SB</code></td>
+<td>1 byte</td>
+<td><code>"0001"</code>, <code>"0010"</code>, <code>"0100"</code> ou <code>"1000"</code></td>
+</tr>
+<tr>
+<td><code>SH</code></td>
+<td>2 bytes</td>
+<td><code>"0011"</code> (bytes 0-1) ou <code>"1100"</code> (bytes 2-3)</td>
+</tr>
+<tr>
+<td><code>SW</code></td>
+<td>4 bytes</td>
+<td><code>"1111"</code></td>
+</tr>
+</tbody>
+</table>
+<p>A LSU utiliza os bits menos significativos do endereço (<code>addr(1:0)</code>) para determinar qual byte escrever:</p>
+<div class="language-vhdl highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1">-- Store Byte: Seleção por endereço (little-endian)</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">case</span><span class="w"> </span><span class="n">s_addr_lsb</span><span class="w"> </span><span class="k">is</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="k">when</span><span class="w"> </span><span class="s">&quot;00&quot;</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">DMem_we_o</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="s">&quot;0001&quot;</span><span class="p">;</span><span class="w">  </span><span class="c1">-- Byte 0 (bits 7:0)</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span><span class="k">when</span><span class="w"> </span><span class="s">&quot;01&quot;</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">DMem_we_o</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="s">&quot;0010&quot;</span><span class="p">;</span><span class="w">  </span><span class="c1">-- Byte 1 (bits 15:8)</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">    </span><span class="k">when</span><span class="w"> </span><span class="s">&quot;10&quot;</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">DMem_we_o</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="s">&quot;0100&quot;</span><span class="p">;</span><span class="w">  </span><span class="c1">-- Byte 2 (bits 23:16)</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">    </span><span class="k">when</span><span class="w"> </span><span class="s">&quot;11&quot;</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">DMem_we_o</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="s">&quot;1000&quot;</span><span class="p">;</span><span class="w">  </span><span class="c1">-- Byte 3 (bits 31:24)</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="k">end</span><span class="w"> </span><span class="k">case</span><span class="p">;</span>
+</span></code></pre></div>
+<p>Este SoC utiliza <strong>endianness little-endian</strong>:</p>
+<ul>
+<li>Endereço com LSB=<code>00</code> → byte menos significativo (bits <code>[7:0]</code>)</li>
+<li>Endereço com LSB=<code>11</code> → byte mais significativo (bits <code>[31:24]</code>)</li>
+</ul>
+<p>Essa arquitetura permite que o software escreva bytes individuais sem afetar os demais bytes da palavra, essencial para operações de strings e comunicação com periféricos.</p>
+<hr />
+<h2 id="registradores-de-perifericos-via-mmio">Registradores de Periféricos via MMIO<a class="headerlink" href="#registradores-de-perifericos-via-mmio" title="Permanent link">&para;</a></h2>
+<h3 id="conceito-mmio-vs-csrs-internos-do-core">Conceito: MMIO vs CSRs Internos do Core<a class="headerlink" href="#conceito-mmio-vs-csrs-internos-do-core" title="Permanent link">&para;</a></h3>
+<p>Existem <strong>duas formas distintas</strong> de comunicação entre software e hardware neste SoC:</p>
+<h4 id="csrs-internos-do-core-risc-v-privileged">CSRs Internos do Core (RISC-V Privileged)<a class="headerlink" href="#csrs-internos-do-core-risc-v-privileged" title="Permanent link">&para;</a></h4>
+<p>São registradores <strong>dentro do núcleo processador</strong> que controlam interrupções, traps e modo de execução. São acessados via instruções CSR dedicadas (<code>csrrw</code>, <code>csrrs</code>, <code>csrrc</code>) e ocupam um espaço de endereçamento separado de 12 bits (endereços <code>0x300</code>-<code>0x344</code>). Esses registradores fazem parte da arquitetura RISC-V Privileged e são implementados no módulo <code>csr_file.vhd</code>.</p>
+<h4 id="registradores-de-perifericos-via-mmio_1">Registradores de Periféricos via MMIO<a class="headerlink" href="#registradores-de-perifericos-via-mmio_1" title="Permanent link">&para;</a></h4>
+<p>São registradores <strong>fora do núcleo</strong>, mapeados no espaço de memória endereçável. Cada periférico expõe seus registradores de controle e dados em endereços específicos dentro do mapa de memória. O software acessa esses registradores usando instruções normais de <code>load</code> e <code>store</code>. Isso vai de encontro à filosofia básica de arquiteturas RISC.</p>
+<p><strong>Esta seção documenta os registradores MMIO dos periféricos.</strong> Para o tratamento de <em>traps</em> e interrupções em Machine Mode, consulte o <a href="../../processador/interrupcoes/">Subsistema de Interrupções</a>.</p>
+<h3 id="arquitetura-de-acesso-a-perifericos">Arquitetura de Acesso a Periféricos<a class="headerlink" href="#arquitetura-de-acesso-a-perifericos" title="Permanent link">&para;</a></h3>
+<p>No SoC, periféricos são acessados como posições de memória através de <strong>Memory-Mapped I/O (MMIO)</strong>:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Intervalo de Endereço</th>
+<th style="text-align: left;">Descrição / Periférico</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>0x0000_0000</code> - <code>0x0FFF_FFFF</code></td>
+<td style="text-align: left;">Memórias (ROM) e Reservado</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>0x1000_0000</code></td>
+<td style="text-align: left;">UART</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>0x2000_0000</code></td>
+<td style="text-align: left;">GPIO</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>0x3000_0000</code></td>
+<td style="text-align: left;">VGA</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>0x4000_0000</code></td>
+<td style="text-align: left;">DMA</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>0x5000_0000</code></td>
+<td style="text-align: left;">CLINT</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>0x6000_0000</code></td>
+<td style="text-align: left;">PLIC</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>0x7000_0000</code></td>
+<td style="text-align: left;">Cartão SD (SPI)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>0x8000_0000</code></td>
+<td style="text-align: left;">RAM</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>0x9000_0000</code></td>
+<td style="text-align: left;">NPU</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>0xA000_0000</code></td>
+<td style="text-align: left;">UART2 (Pmod JA)</td>
+</tr>
+</tbody>
+</table>
+<p>A CPU configura e lê periféricos usando instruções normais de memória:</p>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1">// Escrita: configurar source address do DMA</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">DMA_SRC_ADDR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">uint32_t</span><span class="p">)</span><span class="n">buffer_src</span><span class="p">;</span><span class="w">  </span><span class="c1">// sw do compilador: store</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1">// Leitura: verificar status da UART</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">UART_CTRL</span><span class="p">;</span><span class="w">                    </span><span class="c1">// sw do compilador: load</span>
+</span></code></pre></div>
+<h3 id="bsp-macros-de-acesso">BSP: Macros de Acesso<a class="headerlink" href="#bsp-macros-de-acesso" title="Permanent link">&para;</a></h3>
+<p>O Board Support Package (BSP) fornece macros para acesso volátil:</p>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="cp">#define MMIO32(addr) (*(volatile uint32_t *)(addr))</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="cp">#define MMIO8(addr)  (*(volatile uint8_t  *)(addr))</span>
+</span></code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A palavra-chave <code>volatile</code> garante que o compilador não otimize away acessos consecutivos ao mesmo endereço, essencial para registradores de status que mudam de valor.</p>
+</div>
+<h3 id="tabela-consolidada-de-registradores-mmio">Tabela Consolidada de Registradores MMIO<a class="headerlink" href="#tabela-consolidada-de-registradores-mmio" title="Permanent link">&para;</a></h3>
+<p>A seguir, todos os registradores mapeados em memória de cada periférico do SoC.</p>
+<hr />
+<h4 id="uart-0x1000_0000">UART (<code>0x1000_0000</code>)<a class="headerlink" href="#uart-0x1000_0000" title="Permanent link">&para;</a></h4>
+<p>Controlador de comunicação serial UART.</p>
+<table>
+<thead>
+<tr>
+<th>Offset</th>
+<th>Nome</th>
+<th>Acesso</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0x00</code></td>
+<td><code>DATA</code></td>
+<td>RW</td>
+<td>Registrador de dados TX/RX</td>
+</tr>
+<tr>
+<td><code>0x04</code></td>
+<td><code>CTRL</code></td>
+<td>RW</td>
+<td>Registrador de controle e status</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Definições de bits do registrador CTRL:</strong></p>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="cp">#define UART_STATUS_TX_BUSY  (1 &lt;&lt; 0)   </span><span class="c1">// Transmissor ocupado</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="cp">#define UART_STATUS_RX_VALID (1 &lt;&lt; 1)   </span><span class="c1">// Dado RX disponível</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="cp">#define UART_CMD_RX_POP      (1 &lt;&lt; 0)   </span><span class="c1">// Comando: remover dado</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="cp">#define UART_CMD_RX_FLUSH    (1 &lt;&lt; 2)   </span><span class="c1">// Comando: limpar buffer</span>
+</span></code></pre></div>
+<hr />
+<h4 id="gpio-0x2000_0000">GPIO (<code>0x2000_0000</code>)<a class="headerlink" href="#gpio-0x2000_0000" title="Permanent link">&para;</a></h4>
+<p>Portas de entrada/saída no estilo de microcontrolador (Pmods, LEDs, chaves e botões), displays de 7 segmentos e LEDs RGB. Detalhes em <a href="../../perifericos/gpio/">GPIO Controller</a>.</p>
+<table>
+<thead>
+<tr>
+<th>Offset</th>
+<th>Bloco</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0x000</code> - <code>0x0FF</code></td>
+<td>Portas JA, JB, JC e JD (Pmods), 64 bytes cada</td>
+</tr>
+<tr>
+<td><code>0x100</code></td>
+<td>Porta LED (LD0..LD15)</td>
+</tr>
+<tr>
+<td><code>0x140</code></td>
+<td>Porta SW (SW0..SW15)</td>
+</tr>
+<tr>
+<td><code>0x180</code></td>
+<td>Porta BTN (BTNU, BTND, BTNL, BTNR)</td>
+</tr>
+<tr>
+<td><code>0x200</code></td>
+<td>Displays de 7 segmentos</td>
+</tr>
+<tr>
+<td><code>0x280</code></td>
+<td>LEDs RGB (PWM)</td>
+</tr>
+</tbody>
+</table>
+<p>Registradores de cada porta: <code>IN</code> (<code>0x00</code>), <code>OUT</code> (<code>0x04</code>), <code>DIR</code> (<code>0x08</code>), <code>OUTSET</code>/<code>OUTCLR</code>/<code>OUTTGL</code> (<code>0x0C</code>/<code>0x10</code>/<code>0x14</code>), <code>IE</code> (<code>0x18</code>), <code>IES</code> (<code>0x1C</code>) e <code>IFG</code> (<code>0x20</code>).</p>
+<hr />
+<h4 id="vga-0x3000_0000">VGA (<code>0x3000_0000</code>)<a class="headerlink" href="#vga-0x3000_0000" title="Permanent link">&para;</a></h4>
+<p>Controlador de vídeo VGA com frame buffer de 320x240 pixels.</p>
+<table>
+<thead>
+<tr>
+<th>Offset</th>
+<th>Nome</th>
+<th>Acesso</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0x00000</code> - <code>0x1FFFC</code></td>
+<td><code>FRAME_BUFFER</code></td>
+<td>RW</td>
+<td>Pixels do frame buffer (24 bits/pixel)</td>
+</tr>
+<tr>
+<td><code>0x1FFFE</code></td>
+<td><code>VSYNC</code></td>
+<td>RW</td>
+<td>Registrador de sincronização vertical</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h4 id="clint-0x5000_0000">CLINT (<code>0x5000_0000</code>)<a class="headerlink" href="#clint-0x5000_0000" title="Permanent link">&para;</a></h4>
+<p><strong>Core Local Interrupt Controller</strong> - Gerencia interrupções de timer e software localmente.</p>
+<table>
+<thead>
+<tr>
+<th>Offset</th>
+<th>Nome</th>
+<th>Acesso</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0x00</code></td>
+<td><code>MSIP</code></td>
+<td>RW</td>
+<td>Machine Software Interrupt Pending</td>
+</tr>
+<tr>
+<td><code>0x08</code></td>
+<td><code>MTIMECMP_LO</code></td>
+<td>RW</td>
+<td>Timer Compare Low (32 bits inferiores)</td>
+</tr>
+<tr>
+<td><code>0x0C</code></td>
+<td><code>MTIMECMP_HI</code></td>
+<td>RW</td>
+<td>Timer Compare High (32 bits superiores)</td>
+</tr>
+<tr>
+<td><code>0x10</code></td>
+<td><code>MTIME_LO</code></td>
+<td>RW</td>
+<td>Timer Value Low</td>
+</tr>
+<tr>
+<td><code>0x14</code></td>
+<td><code>MTIME_HI</code></td>
+<td>RW</td>
+<td>Timer Value High</td>
+</tr>
+</tbody>
+</table>
+<p>O timer de 64 bits é implementado como dois registradores de 32 bits, permitindo contagens superiores a 4 segundos a 100 MHz.</p>
+<hr />
+<h4 id="plic-0x6000_0000">PLIC (<code>0x6000_0000</code>)<a class="headerlink" href="#plic-0x6000_0000" title="Permanent link">&para;</a></h4>
+<p><strong>Platform-Level Interrupt Controller</strong> - Gerencia prioridades e roteamento de interrupções externas.</p>
+<table>
+<thead>
+<tr>
+<th>Offset</th>
+<th>Nome</th>
+<th>Acesso</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0x000000</code></td>
+<td><code>PRIORITY</code></td>
+<td>RW</td>
+<td>Prioridade das fontes de interrupção (escalável por ID)</td>
+</tr>
+<tr>
+<td><code>0x001000</code></td>
+<td><code>PENDING</code></td>
+<td>RO</td>
+<td>Bitmap de interrupções pendentes (bits 0-31)</td>
+</tr>
+<tr>
+<td><code>0x002000</code></td>
+<td><code>ENABLE</code></td>
+<td>RW</td>
+<td>Habilita interrupções por fonte</td>
+</tr>
+<tr>
+<td><code>0x200000</code></td>
+<td><code>THRESHOLD</code></td>
+<td>RW</td>
+<td>Limiar de prioridade (interrupções abaixo são ignoradas)</td>
+</tr>
+<tr>
+<td><code>0x200004</code></td>
+<td><code>CLAIM</code></td>
+<td>RW</td>
+<td>Claim: lê fonte; Complete: marca como tratada</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h4 id="dma-0x4000_0000">DMA (<code>0x4000_0000</code>)<a class="headerlink" href="#dma-0x4000_0000" title="Permanent link">&para;</a></h4>
+<p><strong>Direct Memory Access Controller</strong> - Transferência de dados autônoma entre memória e periféricos.</p>
+<table>
+<thead>
+<tr>
+<th>Offset</th>
+<th>Nome</th>
+<th>Acesso</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0x00</code></td>
+<td><code>SRC_ADDR</code></td>
+<td>RW</td>
+<td>Endereço de origem (RAM)</td>
+</tr>
+<tr>
+<td><code>0x04</code></td>
+<td><code>DST_ADDR</code></td>
+<td>RW</td>
+<td>Endereço de destino (RAM ou periférico)</td>
+</tr>
+<tr>
+<td><code>0x08</code></td>
+<td><code>COUNT</code></td>
+<td>RW</td>
+<td>Número de palavras de 32 bits a transferir (lido, as que faltam escrever)</td>
+</tr>
+<tr>
+<td><code>0x0C</code></td>
+<td><code>CONTROL</code></td>
+<td>RW</td>
+<td>Bits de controle e status</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Bits do registrador CONTROL:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Bit</th>
+<th>Escrita</th>
+<th>Leitura</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td><code>START</code></td>
+<td><code>BUSY</code></td>
+<td>Escrever 1 inicia a transferência; lido, indica transferência em andamento</td>
+</tr>
+<tr>
+<td>1</td>
+<td><code>FIXED_DST</code></td>
+<td><code>FIXED_DST</code></td>
+<td>1 = destino fixo (porta de periférico, como as da NPU); 0 = o destino avança 4 bytes por palavra</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>FIXED_SRC</code></td>
+<td><code>FIXED_SRC</code></td>
+<td>1 = origem fixa (por exemplo, a porta de saída da NPU); 0 = a origem avança 4 bytes por palavra</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h4 id="cartao-sd-0x7000_0000">Cartão SD (<code>0x7000_0000</code>)<a class="headerlink" href="#cartao-sd-0x7000_0000" title="Permanent link">&para;</a></h4>
+<p><strong>Mestre SPI do slot de microSD</strong> - Transfere bytes com o cartão; os comandos do cartão ficam no software (o bootloader usa o cartão para guardar um programa).</p>
+<table>
+<thead>
+<tr>
+<th>Offset</th>
+<th>Nome</th>
+<th>Acesso</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0x00</code></td>
+<td><code>DATA</code></td>
+<td>RW</td>
+<td>Escrita: envia um byte; leitura: byte recebido</td>
+</tr>
+<tr>
+<td><code>0x04</code></td>
+<td><code>CTRL</code></td>
+<td>RW</td>
+<td>Bit 0 <code>CS</code> (cartão selecionado), bit 1 <code>PWR</code> (cartão alimentado)</td>
+</tr>
+<tr>
+<td><code>0x08</code></td>
+<td><code>DIV</code></td>
+<td>RW</td>
+<td><code>f_SCK = 100 MHz / (2 (DIV + 1))</code></td>
+</tr>
+<tr>
+<td><code>0x0C</code></td>
+<td><code>STATUS</code></td>
+<td>RO</td>
+<td>Bit 0 <code>BUSY</code>, bit 1 <code>CD</code> (cartão no slot)</td>
+</tr>
+</tbody>
+</table>
+<p>Detalhes em <a href="../../perifericos/sd/">Cartão microSD</a>.</p>
+<hr />
+<h4 id="npu-0x9000_0000">NPU (<code>0x9000_0000</code>)<a class="headerlink" href="#npu-0x9000_0000" title="Permanent link">&para;</a></h4>
+<p><strong>Neural Processing Unit</strong> - Acelerador de hardware para operações de redes neurais.</p>
+<table>
+<thead>
+<tr>
+<th>Offset</th>
+<th>Nome</th>
+<th>Acesso</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0x00</code></td>
+<td><code>STATUS</code></td>
+<td>RO</td>
+<td>Flags de status (BUSY, DONE, OUT_VLD)</td>
+</tr>
+<tr>
+<td><code>0x04</code></td>
+<td><code>CMD</code></td>
+<td>WO</td>
+<td>Comandos de controle (START, RST_PTRS)</td>
+</tr>
+<tr>
+<td><code>0x08</code></td>
+<td><code>CONFIG</code></td>
+<td>RW</td>
+<td>Dimensão K da matriz</td>
+</tr>
+<tr>
+<td><code>0x10</code></td>
+<td><code>WRITE_W</code></td>
+<td>WO</td>
+<td>Porta de escrita de pesos</td>
+</tr>
+<tr>
+<td><code>0x14</code></td>
+<td><code>WRITE_A</code></td>
+<td>WO</td>
+<td>Porta de escrita de ativações</td>
+</tr>
+<tr>
+<td><code>0x18</code></td>
+<td><code>READ_OUT</code></td>
+<td>RO</td>
+<td>Porta de leitura de resultados</td>
+</tr>
+<tr>
+<td><code>0x1C</code></td>
+<td><code>WRITE_IMG</code></td>
+<td>WO</td>
+<td>Porta da imagem crua do im2col em hardware</td>
+</tr>
+<tr>
+<td><code>0x20</code></td>
+<td><code>W_BASE</code></td>
+<td>RW</td>
+<td>Base da região de pesos na RAM local (pesos residentes)</td>
+</tr>
+<tr>
+<td><code>0x24</code></td>
+<td><code>I_BASE</code></td>
+<td>RW</td>
+<td>Base da região de ativações na RAM local</td>
+</tr>
+<tr>
+<td><code>0x28</code></td>
+<td><code>IM2COL_EN</code></td>
+<td>RW</td>
+<td>1 = ativações geradas pelo im2col em hardware</td>
+</tr>
+<tr>
+<td><code>0x2C</code></td>
+<td><code>IM2COL_GEOM</code></td>
+<td>RW</td>
+<td>Geometria: <code>IN_W</code>, <code>OUT_W</code>, <code>STRIDE</code>, <code>KW</code></td>
+</tr>
+<tr>
+<td><code>0x30</code></td>
+<td><code>IM2COL_NWIN</code></td>
+<td>RW</td>
+<td>Total de janelas da convolução</td>
+</tr>
+<tr>
+<td><code>0x0C</code></td>
+<td><code>DESC</code></td>
+<td>WO</td>
+<td>Programa de descritores de camada (processador de comandos)</td>
+</tr>
+<tr>
+<td><code>0x34</code></td>
+<td><code>TILES</code></td>
+<td>RW</td>
+<td>Tiles por START, volta dos ponteiros à base, bias por tile e banco inicial de bias</td>
+</tr>
+<tr>
+<td><code>0x38</code></td>
+<td><code>OUT_CFG</code></td>
+<td>RW</td>
+<td>Formato da saída: linhas em ordem / uma ativação por palavra / LOOP (saída na RAM de Inputs)</td>
+</tr>
+<tr>
+<td><code>0x3C</code></td>
+<td><code>MODE</code></td>
+<td>RW</td>
+<td>Bit 0 GEMV; bit 1 STREAM_I; bit 2 STREAM_W; bit 3 OVERLAP (tiles encadeados)</td>
+</tr>
+<tr>
+<td><code>0x40</code></td>
+<td><code>QUANT_CFG</code></td>
+<td>RW</td>
+<td>Configuração de quantização (shift, zero-point)</td>
+</tr>
+<tr>
+<td><code>0x44</code></td>
+<td><code>QUANT_MULT</code></td>
+<td>RW</td>
+<td>Multiplicador PPU</td>
+</tr>
+<tr>
+<td><code>0x48</code></td>
+<td><code>FLAGS</code></td>
+<td>RW</td>
+<td>Flags de controle (ReLU)</td>
+</tr>
+<tr>
+<td><code>0x80</code>–<code>0xFC</code></td>
+<td><code>BIAS</code></td>
+<td>RW</td>
+<td>Banco de bias: 8 tiles × 4 colunas</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Bits de status (STATUS):</strong></p>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="cp">#define NPU_STATUS_BUSY     (1 &lt;&lt; 0)  </span><span class="c1">// Operação em andamento</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="cp">#define NPU_STATUS_DONE     (1 &lt;&lt; 1)  </span><span class="c1">// Operação concluída</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="cp">#define NPU_STATUS_OUT_VLD  (1 &lt;&lt; 3)  </span><span class="c1">// Saída válida disponível</span>
+</span></code></pre></div>
+<p><strong>Bits de comando (CMD):</strong></p>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="cp">#define NPU_CMD_RST_PTRS     (1 &lt;&lt; 0)  </span><span class="c1">// Reseta ponteiros internos</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="cp">#define NPU_CMD_START        (1 &lt;&lt; 1)  </span><span class="c1">// Inicia execução</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="cp">#define NPU_CMD_ACC_CLEAR    (1 &lt;&lt; 2)  </span><span class="c1">// Limpa acumuladores</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="cp">#define NPU_CMD_ACC_NO_DRAIN (1 &lt;&lt; 3)  </span><span class="c1">// Mantém resultado no array (tiling)</span>
+</span></code></pre></div>
+<hr />
+<h2 id="controlador-dma">Controlador DMA<a class="headerlink" href="#controlador-dma" title="Permanent link">&para;</a></h2>
+<h3 id="gargalo-de-desempenho-transferencia-por-pollingbusy-wait">Gargalo de Desempenho: Transferência por Polling/Busy-Wait<a class="headerlink" href="#gargalo-de-desempenho-transferencia-por-pollingbusy-wait" title="Permanent link">&para;</a></h3>
+<h4 id="o-problema-da-copia-por-software">O Problema da Cópia por Software<a class="headerlink" href="#o-problema-da-copia-por-software" title="Permanent link">&para;</a></h4>
+<p>Quando o processador RISC-V executa uma cópia de memória via software (load/store em loop), cada palavra transferida consome ciclos de CPU que poderiam ser utilizados para outras tarefas. Para uma transferência de <strong>256 KB</strong> (tamanho total da RAM principal):</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>Palavras de 32 bits em 256 KB = 262.144 / 4 = 65.536 palavras
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>Ciclos consumidos por iteração do loop (estimativa realista para multi-cycle):
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>├── LOAD do endereço fonte:         ~3 ciclos (inclui wait states)
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>├── STORE no endereço destino:     ~3 ciclos (inclui wait states)
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>├── Incremento de ponteiros:      ~2 ciclos
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>└── Atualização de contador:      ~2 ciclos
+</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>                                      ──────────
+</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>Total por palavra transferida:  ~10 ciclos
+</span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a>
+</span><span id="__span-12-11"><a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>Total para 256 KB: 65.536 × 10 ≈ 655.360 ciclos de CPU
+</span></code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Nota sobre Gargalo de Von Neumann (Memory Wall)</p>
+<p>A arquitetura RV32I_Zicsr deste SoC é uma <strong>FSM multi-cycle</strong> (não pipeline), onde cada instrução consome múltiplos ciclos de clock. O <strong>memory wall</strong> (gargalo de von Neumann) é o fenômeno onde a velocidade da memória não acompanha a velocidade do processador, criando um limite de desempenho fundamental.</p>
+</div>
+<p>Nesta estimativa, consideramos ~3 ciclos por LOAD/STORE, representando wait states típicos em acessos à memória de dados (DMem) com o <em>handshake</em> <code>vld</code>/<code>rdy</code>.</p>
+<p>Durante esses aproximadamente <strong>655.000 ciclos</strong>, o processador fica <strong>indisponível</strong> para:</p>
+<ul>
+<li>Processamento de interrupções UART (podendo perder dados)</li>
+<li>Atualização de timers e agendamento</li>
+<li>Manipulação de outros periféricos</li>
+<li>Execução de lógica de aplicação</li>
+</ul>
+<h4 id="impacto-no-throughput-do-sistema">Impacto no Throughput do Sistema<a class="headerlink" href="#impacto-no-throughput-do-sistema" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Cenário</th>
+<th>Tempo (100 MHz)</th>
+<th>Ciclos CPU</th>
+<th>Utilização CPU</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cópia 256 KB via CPU (busy-wait)</td>
+<td>6,55 µs</td>
+<td>655.360</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>Cópia 256 KB via DMA</td>
+<td>~0,65 µs (efetivo)</td>
+<td>~6</td>
+<td>0% (livre)</td>
+</tr>
+</tbody>
+</table>
+<p>A CPU poderia utilizar esses ~655.000 ciclos economizados para:</p>
+<ul>
+<li>Processar ~3.000 interrupções UART (200 ciclos cada)</li>
+<li>Executar ~80.000 operações aritméticas inteiras</li>
+<li>Atender múltiplas requisições de software</li>
+</ul>
+<h3 id="visao-geral-do-dma">Visão Geral do DMA<a class="headerlink" href="#visao-geral-do-dma" title="Permanent link">&para;</a></h3>
+<p>O <strong>Direct Memory Access (DMA)</strong> é um controlador que permite transferência de dados entre memória e periféricos <strong>sem intervenção do núcleo de processamento</strong>. Enquanto a CPU configura a transferência, o DMA executa a cópia de dados de forma autônoma, permitindo que o processador execute outras tarefas em paralelo.</p>
+<p>O DMA deste SoC opera em <strong>modo 1D (linear)</strong>, transferindo um bloco contíguo de palavras de 32 bits de uma região de memória para outra. A arquitetura dual-interface permite que o DMA seja simultaneamente <strong>slave</strong> (configurado pela CPU) e <strong>master</strong> (acesso autônomo ao barramento).</p>
+<h3 id="microarquitetura-do-controlador-dma">Microarquitetura do Controlador DMA<a class="headerlink" href="#microarquitetura-do-controlador-dma" title="Permanent link">&para;</a></h3>
+<p>O DMA possui uma arquitetura <strong>dual-interface</strong>:</p>
+<ul>
+<li><strong>Interface Slave (cfg_*)</strong>: Utilizada pela CPU para configurar registradores de controle</li>
+<li><strong>Interface Master (m_*)</strong>: Utilizada para acessar o barramento de memória de forma autônoma</li>
+</ul>
+<figure class="ax-figura">
+<p><img alt="Controlador DMA" src="../../assets/figuras/dma.svg" width="720" />
+  </p>
+<figcaption>Controlador DMA. A CPU configura os registradores pelo escravo de configuração; o motor de leitura e o de escrita são mestres independentes do <em>crossbar</em>, ligados por uma FIFO de 32 palavras. O registrador de saída faz a pré-busca da próxima palavra a cada ciclo livre, de modo que, com a FIFO preenchida, o DMA escreve uma palavra por ciclo.</figcaption>
+</figure>
+<h3 id="registradores-de-configuracao">Registradores de Configuração<a class="headerlink" href="#registradores-de-configuracao" title="Permanent link">&para;</a></h3>
+<p>Estes registradores também estão na <a href="#tabela-consolidada-de-registradores-mmio">tabela consolidada</a>. A configuração só é aceita com o DMA parado. Resumo:</p>
+<table>
+<thead>
+<tr>
+<th>Offset</th>
+<th>Nome</th>
+<th>Tamanho</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0x00</code></td>
+<td><code>SRC_ADDR</code></td>
+<td>32 bits</td>
+<td>Endereço de origem (RAM)</td>
+</tr>
+<tr>
+<td><code>0x04</code></td>
+<td><code>DST_ADDR</code></td>
+<td>32 bits</td>
+<td>Endereço de destino (RAM ou periférico)</td>
+</tr>
+<tr>
+<td><code>0x08</code></td>
+<td><code>COUNT</code></td>
+<td>32 bits</td>
+<td>Número de palavras de 32 bits a transferir</td>
+</tr>
+<tr>
+<td><code>0x0C</code></td>
+<td><code>CONTROL</code></td>
+<td>32 bits</td>
+<td>Bits de controle e status</td>
+</tr>
+</tbody>
+</table>
+<h4 id="detalhamento-do-registrador-control">Detalhamento do Registrador CONTROL<a class="headerlink" href="#detalhamento-do-registrador-control" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Bit</th>
+<th>Escrita</th>
+<th>Leitura</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td><code>START</code></td>
+<td><code>BUSY</code></td>
+<td>Escrever 1 inicia a transferência; lido, indica transferência em andamento</td>
+</tr>
+<tr>
+<td>1</td>
+<td><code>FIXED_DST</code></td>
+<td><code>FIXED_DST</code></td>
+<td>1 = destino fixo (porta de periférico, como as da NPU); 0 = o destino avança 4 bytes por palavra</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>FIXED_SRC</code></td>
+<td><code>FIXED_SRC</code></td>
+<td>1 = origem fixa (por exemplo, a porta de saída da NPU); 0 = a origem avança 4 bytes por palavra</td>
+</tr>
+</tbody>
+</table>
+<h3 id="funcionamento">Funcionamento<a class="headerlink" href="#funcionamento" title="Permanent link">&para;</a></h3>
+<p>O DMA tem duas interfaces de mestre independentes, uma de leitura (<code>m_rd_*</code>) e uma de escrita (<code>m_wr_*</code>), ligadas entre si por uma FIFO interna de 32 palavras. Em vez de uma máquina de estados que alterna "lê uma palavra, escreve uma palavra", os dois lados trabalham ao mesmo tempo, como um produtor e um consumidor:</p>
+<ul>
+<li><strong>Leitura (produtor):</strong> enquanto restam palavras a ler e há espaço na FIFO, o DMA mantém uma requisição de leitura ativa; cada palavra lida entra na FIFO no ciclo seguinte, por um estágio de entrada registrado, e a origem avança 4 bytes (ou fica fixa, com <code>FIXED_SRC</code>).</li>
+<li><strong>Escrita (consumidor):</strong> sempre que a FIFO tem dado, um registrador de saída recebe a próxima palavra e a apresenta ao destino; a cada escrita confirmada, o destino avança 4 bytes (ou fica fixo, com <code>FIXED_DST</code>).</li>
+<li><strong>Fim:</strong> quando a última palavra é escrita, o DMA baixa <code>BUSY</code> e gera um pulso em <code>irq_done_o</code>, ligado ao <a href="../../processador/interrupcoes/">PLIC</a>.</li>
+</ul>
+<p>Como origem e destino costumam ser escravos diferentes (a RAM e a NPU, por exemplo), a <a href="../interconexao/">interconexão</a> atende a leitura e a escrita no mesmo ciclo, e o DMA sustenta perto de uma palavra por ciclo: medido na placa, 0,916 palavras por ciclo da RAM para a NPU. Os estágios registrados na entrada e na saída da FIFO quebram os caminhos combinacionais entre o DMA, a interconexão e os escravos, ao custo de um ciclo a mais na primeira palavra de cada transferência.</p>
+<h3 id="modo-destino-fixo-fifo-mode">Modo Destino Fixo (FIFO Mode)<a class="headerlink" href="#modo-destino-fixo-fifo-mode" title="Permanent link">&para;</a></h3>
+<p>Quando o bit <code>FIXED_DST</code> está setado, o endereço de destino permanece constante durante toda a transferência. Este modo é essencial para periféricos com interface FIFO, como a NPU:</p>
+<div class="language-vhdl highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="k">if</span><span class="w"> </span><span class="n">r_ctrl_fixed_dst</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">&#39;0&#39;</span><span class="w"> </span><span class="k">then</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">    </span><span class="n">r_dst_addr</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">r_dst_addr</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">4</span><span class="p">;</span><span class="w">  </span><span class="c1">-- Incrementa para próximo endereço</span>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="k">else</span>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">    </span><span class="c1">-- Mantém destino fixo (FIFO mode)</span>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="k">end</span><span class="w"> </span><span class="k">if</span><span class="p">;</span>
+</span></code></pre></div>
+<h3 id="exemplo-de-uso-em-software">Exemplo de Uso em Software<a class="headerlink" href="#exemplo-de-uso-em-software" title="Permanent link">&para;</a></h3>
+<h4 id="transferencia-memoria-para-memoria">Transferência Memória-para-Memória<a class="headerlink" href="#transferencia-memoria-para-memoria" title="Permanent link">&para;</a></h4>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1">// Transferir 1024 palavras de buf_src para buf_dst</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="n">DMA_SRC_ADDR</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">uint32_t</span><span class="p">)</span><span class="n">buf_src</span><span class="p">;</span><span class="w">    </span><span class="c1">// Endereço de origem</span>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="n">DMA_DST_ADDR</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">uint32_t</span><span class="p">)</span><span class="n">buf_dst</span><span class="p">;</span><span class="w">    </span><span class="c1">// Endereço de destino</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="n">DMA_COUNT</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="mi">1024</span><span class="p">;</span><span class="w">                  </span><span class="c1">// 1024 palavras (4 KB)</span>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="n">DMA_CONTROL</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="mh">0x01</span><span class="p">;</span><span class="w">                  </span><span class="c1">// START = 1</span>
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>
+</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="c1">// Aguardar conclusão via polling</span>
+</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">DMA_CONTROL</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="mh">0x04</span><span class="p">);</span><span class="w">  </span><span class="c1">// Espera BUSY=0</span>
+</span></code></pre></div>
+<h4 id="transferencia-para-npu-fifo-mode">Transferência para NPU (FIFO Mode)<a class="headerlink" href="#transferencia-para-npu-fifo-mode" title="Permanent link">&para;</a></h4>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1">// Enviar pesos para a NPU (endereço fixo)</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="n">DMA_SRC_ADDR</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">weights_buffer</span><span class="p">;</span><span class="w">                    </span><span class="c1">// Endereço dos pesos</span>
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="n">DMA_DST_ADDR</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">NPU_BASE_ADDR</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mh">0x10</span><span class="p">;</span><span class="w">             </span><span class="c1">// WRITE_W da NPU</span>
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="n">DMA_COUNT</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="n">K_DIM</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">K_DIM</span><span class="p">;</span><span class="w">                     </span><span class="c1">// K² palavras</span>
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="n">DMA_CONTROL</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="mh">0x03</span><span class="p">;</span><span class="w">                              </span><span class="c1">// START | FIXED_DST</span>
+</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>
+</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="c1">// Poll ou interrupção quando concluído</span>
+</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">DMA_CONTROL</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="mh">0x04</span><span class="p">);</span><span class="w">  </span><span class="c1">// Aguarda BUSY=0</span>
+</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>
+</span><span id="__span-15-10"><a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="c1">// Iniciar execução da NPU após carregamento</span>
+</span><span id="__span-15-11"><a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="n">NPU_CMD</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NPU_CMD_START</span><span class="p">;</span>
+</span></code></pre></div>
+<h3 id="interacao-com-a-interconexao">Interação com a interconexão<a class="headerlink" href="#interacao-com-a-interconexao" title="Permanent link">&para;</a></h3>
+<p>O DMA disputa os escravos com a CPU na <a href="../interconexao/">interconexão</a>, que arbitra cada escravo separadamente:</p>
+<ol>
+<li><strong>Escravos diferentes:</strong> CPU e DMA são atendidos no mesmo ciclo, sem espera.</li>
+<li><strong>Mesmo escravo:</strong> o DMA tem prioridade, porque as suas transferências são longas e sequenciais; a CPU espera.</li>
+<li><strong>Trava:</strong> um mestre que começou uma transação mantém a posse do escravo até ele responder, para que nenhum outro a interrompa no meio.</li>
+</ol>
+<h3 id="eficiencia-do-sistema-liberacao-do-nucleo-risc-v">Eficiência do Sistema: Liberação do Núcleo RISC-V<a class="headerlink" href="#eficiencia-do-sistema-liberacao-do-nucleo-risc-v" title="Permanent link">&para;</a></h3>
+<h4 id="analise-comparativa-de-ciclos">Análise Comparativa de Ciclos<a class="headerlink" href="#analise-comparativa-de-ciclos" title="Permanent link">&para;</a></h4>
+<div class="admonition info">
+<p class="admonition-title">Nota: Modelo Baseline Multi-cycle</p>
+<p>Esta análise usa um modelo <strong>baseline multi-cycle</strong> baseado na arquitetura real do RV32I_Zicsr, onde LOAD/STORE consomem ~3 ciclos cada (incluindo wait states de memória).</p>
+</div>
+<p>A tabela a seguir compara os recursos consumidos pela CPU entre os dois métodos de transferência:</p>
+<table>
+<thead>
+<tr>
+<th>Método</th>
+<th>Ciclos CPU</th>
+<th>Ciclos Totais (DMA)</th>
+<th>CPU Disponível</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Busy-Wait (256 KB)</strong></td>
+<td>655.360</td>
+<td>655.360</td>
+<td>0%</td>
+</tr>
+<tr>
+<td><strong>DMA (256 KB)</strong></td>
+<td>~6</td>
+<td>655.360</td>
+<td>99,99%</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Detalhamento dos ciclos de CPU com DMA:</strong>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>Configuração:        4 writes × 1 ciclo    =     4 ciclos
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>Poll/Interrupção:   ~2 verificações × 1   =     2 ciclos
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>                                              ─────────
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>Total CPU:                                      ~6 ciclos
+</span></code></pre></div></p>
+<h4 id="otimizacao-do-dma-vs-cpu-multi-cycle">Otimização do DMA vs CPU Multi-cycle<a class="headerlink" href="#otimizacao-do-dma-vs-cpu-multi-cycle" title="Permanent link">&para;</a></h4>
+<div class="admonition info">
+<p class="admonition-title">DMA vs CPU</p>
+<p>Enquanto o modelo multi-cycle da CPU requer ~10 ciclos para uma operação de LOAD seguida de STORE (incluindo overhead), a DMA realiza a mesma transferência através de sua FSM dedicada em apenas ~4 ciclos por palavra, representando uma redução de <strong>~60%</strong> nos ciclos de transferência.</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Componente</th>
+<th>Estados FSM</th>
+<th>Ciclos/Palavra</th>
+<th>Observação</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>DMA</strong></td>
+<td>READ_REQ → READ_WAIT → WRITE_REQ → CHECK_DONE</td>
+<td>~4</td>
+<td>Sem fetch de instruções</td>
+</tr>
+<tr>
+<td><strong>CPU</strong></td>
+<td>LOAD + STORE + overhead</td>
+<td>~10</td>
+<td>Com fetch+execute+wb</td>
+</tr>
+</tbody>
+</table>
+<p>O DMA é otimizado para transferências massivas de dados pois:</p>
+<ol>
+<li>Não gasta ciclos com fetch de instruções</li>
+<li>Não precisa write-back em registradores</li>
+<li>FSM dedicada com transição contínua entre palavras</li>
+</ol>
+<h4 id="ganho-de-eficiencia">Ganho de Eficiência<a class="headerlink" href="#ganho-de-eficiencia" title="Permanent link">&para;</a></h4>
+<p>Para uma transferência de <strong>256 KB</strong>:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>Ciclos economizados   = 655.360 - 6 = 655.354 ciclos
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>Taxa de liberação     = 655.354 / 655.360 × 100 ≈ 99,999%
+</span></code></pre></div>
+<h4 id="oportunidades-de-paralelismo">Oportunidades de Paralelismo<a class="headerlink" href="#oportunidades-de-paralelismo" title="Permanent link">&para;</a></h4>
+<div class="admonition info">
+<p class="admonition-title">Interrupções com e sem DMA</p>
+<p>Interrupções são mecanismos de hardware que desviam a execução para um handler especial, independente do método de transferência de dados. Com ou sem DMA, interrupções são atendidas (a menos que explicitamente desabilitadas via <code>mstatus.MIE</code>). A diferença é que, sem DMA, a CPU fica em busy-wait e não pode executar outras tarefas úteis durante a transferência.</p>
+</div>
+<p>Com o DMA em operação, a CPU pode executar <strong>concorrentemente</strong>:</p>
+<ol>
+<li><strong>Processamento de dados anteriores</strong> — já processa o bloco N-1 enquanto o bloco N é transferido</li>
+<li><strong>Execução de código útil</strong> — não fica bloqueada em loop de cópia</li>
+<li><strong>Tarefas de controle</strong> — lógica de aplicação continua executando</li>
+</ol>
+<figure class="ax-figura">
+<p><img alt="Cópia por software e por DMA" src="../../assets/figuras/dma_tempo.svg" width="720" />
+  </p>
+<figcaption>Cópia de 256 KB pela CPU e pelo DMA (fora de escala). Com o DMA, a CPU só escreve os quatro registradores de configuração e fica livre durante a transferência; ao fim, a interrupção do DMA avisa que os dados estão prontos.</figcaption>
+</figure>
+<h4 id="resumo-beneficios-arquiteturais-do-dma">Resumo: Benefícios Arquiteturais do DMA<a class="headerlink" href="#resumo-beneficios-arquiteturais-do-dma" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Aspecto</th>
+<th>Sem DMA</th>
+<th>Com DMA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Ciclos CPU (256 KB)</strong></td>
+<td>655.360</td>
+<td>~6</td>
+</tr>
+<tr>
+<td><strong>Disponibilidade da CPU</strong></td>
+<td>0% durante cópia</td>
+<td>99,99%</td>
+</tr>
+<tr>
+<td><strong>Latência outras tarefas</strong></td>
+<td>Bloqueadas</td>
+<td>Executam em paralelo</td>
+</tr>
+<tr>
+<td><strong>Throughput do barramento</strong></td>
+<td>Competição impossível</td>
+<td>Arbiter gerencia</td>
+</tr>
+<tr>
+<td><strong>Perda de interrupções</strong></td>
+<td>Alta probabilidade</td>
+<td>Mínima</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="acesso-ao-barramento">Acesso ao barramento<a class="headerlink" href="#acesso-ao-barramento" title="Permanent link">&para;</a></h2>
+<p>O DMA é o segundo mestre do SoC, ao lado da CPU. Os dois se ligam aos escravos pela <a href="../interconexao/">interconexão</a>, um <em>crossbar</em> com arbitragem por escravo: quando CPU e DMA acessam escravos diferentes, por exemplo a CPU lendo a UART enquanto o DMA copia da RAM para a NPU, os dois são atendidos no mesmo ciclo; só quando disputam o mesmo escravo um deles espera. A busca de instruções segue por um caminho próprio, direto à ROM ou à RAM, fora do <em>crossbar</em>.</p>
+
+
+
+
+
+
+
+  
+    
+  
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Última atualização">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="27 de outubro de 2026 02:02:01 UTC">27 de outubro de 2026 02:02:01</span>
+  </span>
+
+    
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Voltar para o topo
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Rodapé" >
+        
+          
+          <a href="../interconexao/" class="md-footer__link md-footer__link--prev" aria-label="Anterior: Interconexão">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Anterior
+              </span>
+              <div class="md-ellipsis">
+                Interconexão
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../depuracao/" class="md-footer__link md-footer__link--next" aria-label="Próximo: Controlador de depuração">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Próximo
+              </span>
+              <div class="md-ellipsis">
+                Controlador de depuração
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; RISC-V-Azedinha
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/RISC-V-Azedinha/RISC-V" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.instant.progress", "navigation.tabs", "navigation.tabs.sticky", "navigation.tracking", "navigation.sections", "navigation.top", "navigation.footer", "toc.follow", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate", "content.tabs.link", "content.tooltips"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copiado para \u00e1rea de transfer\u00eancia", "clipboard.copy": "Copiar para \u00e1rea de transfer\u00eancia", "search.result.more.one": "mais 1 nesta p\u00e1gina", "search.result.more.other": "# mais nesta p\u00e1gina", "search.result.none": "Nenhum documento encontrado", "search.result.one": "1 documento encontrado", "search.result.other": "# documentos encontrados", "search.result.placeholder": "Digite para iniciar a busca", "search.result.term.missing": "Ausente", "select.version": "Selecione a vers\u00e3o"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../javascript/mathjax.js"></script>
+      
+        <script src="https://unpkg.com/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

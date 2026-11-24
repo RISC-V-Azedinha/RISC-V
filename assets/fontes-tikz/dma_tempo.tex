@@ -1,0 +1,17 @@
+% Cópia de 256 KB por software x por DMA (fora de escala).
+\begin{tikzpicture}[font=\scriptsize,>={Stealth[length=1.6mm]},
+  bar/.style={draw,thick,minimum height=6mm,inner sep=1pt,anchor=west,align=center}]
+  \node[font=\footnotesize\bfseries,anchor=west] at (-2.6,1.1) {Cópia por software};
+  \node[anchor=east] at (-0.1,0.4) {CPU};
+  \node[bar,fill=red!18,minimum width=110mm] at (0,0.4) {\emph{load}/\emph{store} palavra a palavra: CPU ocupada por $\approx$655 mil ciclos};
+  \node[font=\footnotesize\bfseries,anchor=west] at (-2.6,-0.6) {Cópia por DMA};
+  \node[anchor=east] at (-0.1,-1.3) {CPU};
+  \node[bar,fill=yellow!25,minimum width=9mm] (cfg) at (0,-1.3) {config.};
+  \node[bar,fill=green!16,minimum width=93mm] (free) at (0.9,-1.3) {livre: executa outras tarefas (por exemplo, processa o bloco anterior)};
+  \node[bar,fill=yellow!25,minimum width=8mm] at (10.2,-1.3) {IRQ};
+  \node[anchor=east] at (-0.1,-2.1) {DMA};
+  \node[bar,fill=blue!14,minimum width=93mm] (dma) at (0.9,-2.1) {65.536 palavras, perto de 1 por ciclo $\approx$ 72 mil ciclos};
+  \draw[->,thick,laranja!80!black] (10.2,-1.95) -- (10.6,-1.6);
+  \draw[decorate,decoration={brace,amplitude=4pt,mirror}] (0,-2.55) -- (0.9,-2.55) node[midway,below=3pt,font=\tiny,align=center]{4 escritas\\$\approx$6 ciclos};
+  \draw[->] (0,-3.3) -- (11.2,-3.3) node[right]{tempo};
+\end{tikzpicture}

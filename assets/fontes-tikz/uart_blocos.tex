@@ -1,0 +1,19 @@
+% Controlador UART (rtl/perips/uart/uart_controller.vhd).
+\begin{tikzpicture}[font=\scriptsize,>={Stealth[length=1.6mm]},
+  b/.style={draw,thick,align=center,minimum height=10mm,inner sep=2pt},
+  sig/.style={font=\tiny\ttfamily}]
+  \node[b,fill=yellow!22,minimum width=28mm,minimum height=26mm] (reg) at (0,0) {Interface do\\barramento e\\registradores\\[2pt]{\tiny \texttt{DATA}, \texttt{STATUS}, \texttt{CMD}}};
+  % TX
+  \node[b,fill=blue!14,minimum width=22mm] (txr) at (3.8,0.85) {registrador\\de transmissão};
+  \node[b,fill=blue!14,minimum width=26mm] (txf) at (7.0,0.85) {FSM TX\\{\tiny IDLE, START, DATA, STOP}\\{\tiny deslocador de 8 bits}};
+  % RX
+  \node[b,fill=green!16,minimum width=22mm] (fifo) at (3.8,-0.85) {FIFO RX\\$64\times8$ bits};
+  \node[b,fill=green!16,minimum width=26mm] (rxf) at (7.0,-0.85) {FSM RX\\{\tiny amostra no meio do bit}\\{\tiny deslocador de 8 bits}};
+  \draw[->,thick] ($(reg.east)+(0,0.85)$) -- (txr); \draw[->,thick] (txr) -- (txf);
+  \draw[->,thick] (rxf) -- (fifo); \draw[->,thick] (fifo) -- ($(reg.east)+(0,-0.85)$);
+  \draw[->,thick] (txf.east) -- ++(0.8,0) node[right,sig]{uart\_tx};
+  \draw[<-,thick] (rxf.east) -- ++(0.8,0) node[right,sig]{uart\_rx};
+  \draw[<->,thick] (reg.west) -- ++(-0.8,0) node[left,align=right,font=\tiny]{barramento\\(\texttt{addr}, \texttt{data}, \texttt{we},\\ \texttt{vld}, \texttt{rdy})};
+  \draw[->,thick] (reg.south) -- ++(0,-0.6) node[below,sig]{irq\_o: FIFO não vazia $\to$ PLIC};
+  \node[font=\tiny,text=corpo] at (5.4,1.75) {período de bit = $f_{\mathrm{clk}}/\mathrm{baud}$ ciclos};
+\end{tikzpicture}

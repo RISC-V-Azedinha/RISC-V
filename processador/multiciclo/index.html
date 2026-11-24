@@ -1,0 +1,2913 @@
+
+<!doctype html>
+<html lang="pt" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="SoC RISC-V didático em VHDL — núcleo RV32I_Zicsr multiciclo, interconexão crossbar, DMA, periféricos e NPU, validado em FPGA.">
+      
+      
+      
+        <link rel="canonical" href="https://RISC-V-Azedinha.github.io/RISC-V/processador/multiciclo/">
+      
+      
+        <link rel="prev" href="../monociclo/">
+      
+      
+        <link rel="next" href="../interrupcoes/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/favicon.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Microarquitetura multiciclo - SoC RISC-V</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans:300,300i,400,400i,700,700i%7CIBM+Plex+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"IBM Plex Sans";--md-code-font:"IBM Plex Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#microarquitetura-multiciclo" class="md-skip">
+          Pular para conteúdo
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Cabeçalho">
+    <a href="../.." title="SoC RISC-V" class="md-header__button md-logo" aria-label="SoC RISC-V" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            SoC RISC-V
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Microarquitetura multiciclo
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Mudar para modo escuro"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Mudar para modo escuro" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Mudar para modo claro"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Mudar para modo claro" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Buscar" placeholder="Buscar" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Pesquisar">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Limpar" aria-label="Limpar" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Inicializando busca
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/RISC-V-Azedinha/RISC-V" title="Ir para repositório" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    RISC-V
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Abas" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../.." class="md-tabs__link">
+          
+  
+  
+  Início
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../monociclo/" class="md-tabs__link">
+          
+  
+  
+  Processador
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../soc/interconexao/" class="md-tabs__link">
+          
+  
+  
+  SoC
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../perifericos/gpio/" class="md-tabs__link">
+          
+  
+  
+  Periféricos
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../software/build/" class="md-tabs__link">
+          
+  
+  
+  Software
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../aplicacoes/programas/" class="md-tabs__link">
+          
+  
+  
+  Aplicações
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../desenvolvimento/verificacao/" class="md-tabs__link">
+          
+  
+  
+  Desenvolvimento
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navegação" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="SoC RISC-V" class="md-nav__button md-logo" aria-label="SoC RISC-V" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    SoC RISC-V
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/RISC-V-Azedinha/RISC-V" title="Ir para repositório" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    RISC-V
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Início
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Início
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introdução
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../primeiros-passos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Primeiros passos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Processador
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Processador
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../monociclo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Microarquitetura monociclo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Microarquitetura multiciclo
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Microarquitetura multiciclo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="Nesta página">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Nesta página
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#a-transicao-single-cycle-para-multi-cycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A Transição: Single-Cycle para Multi-Cycle
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="A Transição: Single-Cycle para Multi-Cycle">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#motivacao-fisica-o-problema-do-clock" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Motivação Física: O Problema do Clock
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#latencia-de-memoria" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Latência de Memória
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#o-novo-caminho-de-dados-datapath-multiciclo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        O Novo Caminho de Dados (Datapath Multiciclo)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="O Novo Caminho de Dados (Datapath Multiciclo)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#registradores-de-estagio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Registradores de Estágio
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reuso-de-hardware" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reuso de Hardware
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#unidade-de-controle-e-sincronizacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unidade de Controle e Sincronização
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Unidade de Controle e Sincronização">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a-maquina-de-estados-finita-fsm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A Máquina de Estados Finita (FSM)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="A Máquina de Estados Finita (FSM)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#estados-da-fsm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Estados da FSM
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#protocolo-de-sincronizacao-handshake-readyvalid" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Protocolo de Sincronização (Handshake Ready/Valid)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Protocolo de Sincronização (Handshake Ready/Valid)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#interface-de-handshake" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interface de Handshake
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fsm-e-handshake" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FSM e Handshake
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#geracao-de-sinais-de-handshake" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Geração de Sinais de Handshake
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sinais-de-controle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sinais de Controle
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#integracao-no-top-level" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Integração no Top-Level
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Integração no Top-Level">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#diferencas-principais-entre-single-cycle-e-multi-cycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diferenças Principais entre Single-Cycle e Multi-Cycle
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../interrupcoes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exceções e interrupções
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SoC
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    SoC
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../soc/interconexao/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interconexão
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../soc/memoria-dma/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memória e DMA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../soc/depuracao/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Controlador de depuração
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Periféricos
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Periféricos
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../perifericos/gpio/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GPIO
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../perifericos/uart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UART
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../perifericos/vga/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    VGA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../perifericos/sd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cartão microSD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../perifericos/npu/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    NPU
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Software
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Software
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../software/build/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compilação e build
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../software/boot/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Boot
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../software/linker/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Linker scripts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Aplicações
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Aplicações
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../aplicacoes/programas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Programas e testes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../aplicacoes/servidores-npu/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Servidores da NPU
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../aplicacoes/ferramentas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ferramentas do hospedeiro
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Desenvolvimento
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Desenvolvimento
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../desenvolvimento/verificacao/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Verificação
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../desenvolvimento/sintese/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Síntese em FPGA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="Nesta página">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Nesta página
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#a-transicao-single-cycle-para-multi-cycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A Transição: Single-Cycle para Multi-Cycle
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="A Transição: Single-Cycle para Multi-Cycle">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#motivacao-fisica-o-problema-do-clock" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Motivação Física: O Problema do Clock
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#latencia-de-memoria" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Latência de Memória
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#o-novo-caminho-de-dados-datapath-multiciclo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        O Novo Caminho de Dados (Datapath Multiciclo)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="O Novo Caminho de Dados (Datapath Multiciclo)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#registradores-de-estagio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Registradores de Estágio
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reuso-de-hardware" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reuso de Hardware
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#unidade-de-controle-e-sincronizacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unidade de Controle e Sincronização
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Unidade de Controle e Sincronização">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a-maquina-de-estados-finita-fsm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A Máquina de Estados Finita (FSM)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="A Máquina de Estados Finita (FSM)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#estados-da-fsm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Estados da FSM
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#protocolo-de-sincronizacao-handshake-readyvalid" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Protocolo de Sincronização (Handshake Ready/Valid)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Protocolo de Sincronização (Handshake Ready/Valid)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#interface-de-handshake" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interface de Handshake
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fsm-e-handshake" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FSM e Handshake
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#geracao-de-sinais-de-handshake" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Geração de Sinais de Handshake
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sinais-de-controle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sinais de Controle
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#integracao-no-top-level" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Integração no Top-Level
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Integração no Top-Level">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#diferencas-principais-entre-single-cycle-e-multi-cycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diferenças Principais entre Single-Cycle e Multi-Cycle
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="microarquitetura-multiciclo">Microarquitetura multiciclo<a class="headerlink" href="#microarquitetura-multiciclo" title="Permanent link">&para;</a></h1>
+<p>A microarquitetura multiciclo representa uma evolução significativa em relação ao modelo monociclo. Enquanto no monociclo cada instrução é completamente executada em um único pulso de relógio, o multiciclo divide a execução em múltiplos ciclos, permitindo frequencies de operação mais altas e melhor utilização dos recursos de hardware.</p>
+<h2 id="a-transicao-single-cycle-para-multi-cycle">A Transição: Single-Cycle para Multi-Cycle<a class="headerlink" href="#a-transicao-single-cycle-para-multi-cycle" title="Permanent link">&para;</a></h2>
+<h3 id="motivacao-fisica-o-problema-do-clock">Motivação Física: O Problema do Clock<a class="headerlink" href="#motivacao-fisica-o-problema-do-clock" title="Permanent link">&para;</a></h3>
+<p>Na arquitetura monociclo, o período do clock é determinado pelo <strong>caminho crítico</strong> — o maior tempo de propagação combinacional ao longo do circuito. Este caminho crítico inclui obrigatoriamente:</p>
+<ol>
+<li>Leitura da memória de instruções</li>
+<li>Decodificação e leitura do banco de registradores</li>
+<li>Execução na ALU</li>
+<li>Acesso à memória de dados (para loads/stores)</li>
+<li>Escrita no banco de registradores</li>
+</ol>
+<p>Como todas essas etapas devem caber em um único ciclo, o clock deve ser lento o suficiente para acomodar o pior caso. Isso significa que instruções simples (como <code>ADD</code> entre registradores) são forçadas a esperar, pois a sua execução real é muito mais rápida que o tempo total disponível.</p>
+<p><strong>A solução multiciclo:</strong> Ao dividir a execução em etapas menores e balanceadas, cada estágio pode ser completado em um tempo muito menor. O somatório dos estágios resulta em um caminho crítico por estágio significativamente reduzido, permitindo que o processador opere em frequências substancialmente maiores.</p>
+<h3 id="latencia-de-memoria">Latência de Memória<a class="headerlink" href="#latencia-de-memoria" title="Permanent link">&para;</a></h3>
+<p>O modelo monociclo assume implicitamente que as memórias respondem em tempo zero — uma abstração útil para análise, mas irrealista para implementações práticas.</p>
+<p><strong>O problema com memórias reais:</strong></p>
+<ul>
+<li>Memórias síncronas (block RAMs em FPGAs) tipicamente requerem 1 a 3 ciclos de latência</li>
+<li>Memórias externas (DDR, SRAM) podem exigir dezenas de ciclos</li>
+<li>O modelo monociclo não tolera essa variabilidade sem comprometer a frequência</li>
+</ul>
+<p><strong>A solução multiciclo:</strong>
+A arquitetura multiciclo introduz estágios dedicados para acesso à memória. O processador pode "congelar" a FSM em estados de espera até que a memória retorne o sinal de <code>ready</code>, mantendo o determinismo da execução sem fixer a frequência do clock à latência máxima de memória.</p>
+<hr />
+<h2 id="o-novo-caminho-de-dados-datapath-multiciclo">O Novo Caminho de Dados (Datapath Multiciclo)<a class="headerlink" href="#o-novo-caminho-de-dados-datapath-multiciclo" title="Permanent link">&para;</a></h2>
+<p>A principal diferença visual entre o datapath monociclo e multiciclo é a presença de <strong>registradores de estágio</strong> (pipeline registers) que separam logicamente cada fase da execução:</p>
+<figure class="ax-figura">
+<p><img alt="Caminho de dados multiciclo" src="../../assets/figuras/datapath_multi.svg" width="100%" />
+  </p>
+<figcaption>Caminho de dados do núcleo multiciclo (<code>datapath.vhd</code>). Os registradores de estágio, em azul, guardam os resultados entre os ciclos de uma instrução: OPC (PC da instrução), IR, RS1, RS2, ALU<sub>r</sub> e MDR, cada um com a sua habilitação de escrita. As <em>tags</em> indicam sinais ligados entre pontos distantes do diagrama; a mesma ULA é reaproveitada nos vários estágios.</figcaption>
+</figure>
+<h3 id="registradores-de-estagio">Registradores de Estágio<a class="headerlink" href="#registradores-de-estagio" title="Permanent link">&para;</a></h3>
+<p>No modelo multiciclo, registradores intermediários são introduzidos para reter os resultados entre ciclos de clock para uma mesma instrução:</p>
+<table>
+<thead>
+<tr>
+<th>Registrador</th>
+<th>Sigla</th>
+<th>Função</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Instruction Register</strong></td>
+<td><code>IR</code></td>
+<td>Armazena a instrução atual durante sua execução</td>
+</tr>
+<tr>
+<td><strong>Memory Data Register</strong></td>
+<td><code>MDR</code></td>
+<td>Armazena o dado lido da memória antes do write-back</td>
+</tr>
+<tr>
+<td><strong>A / B</strong></td>
+<td><code>RS1</code>, <code>RS2</code></td>
+<td>Armazenam os operandos lidos do banco de registradores</td>
+</tr>
+<tr>
+<td><strong>ALUOut</strong></td>
+<td><code>ALUResult</code></td>
+<td>Armazena o resultado da ALU entre estágios</td>
+</tr>
+<tr>
+<td><strong>OldPC</strong></td>
+<td><code>OPC</code></td>
+<td>Armazena o PC da instrução atual para cálculos relativos</td>
+</tr>
+</tbody>
+</table>
+<p>A implementação no <code>datapath.vhd</code> (linhas 157-163) demonstra esses registradores:</p>
+<div class="language-vhdl highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">signal</span><span class="w"> </span><span class="n">r_PC</span><span class="w">             </span><span class="o">:</span><span class="w"> </span><span class="kt">std_logic_vector</span><span class="p">(</span><span class="mi">31</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">signal</span><span class="w"> </span><span class="n">r_OldPC</span><span class="w">          </span><span class="o">:</span><span class="w"> </span><span class="kt">std_logic_vector</span><span class="p">(</span><span class="mi">31</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">signal</span><span class="w"> </span><span class="n">r_IR</span><span class="w">             </span><span class="o">:</span><span class="w"> </span><span class="kt">std_logic_vector</span><span class="p">(</span><span class="mi">31</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">signal</span><span class="w"> </span><span class="n">r_MDR</span><span class="w">            </span><span class="o">:</span><span class="w"> </span><span class="kt">std_logic_vector</span><span class="p">(</span><span class="mi">31</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">signal</span><span class="w"> </span><span class="n">r_RS1</span><span class="w">            </span><span class="o">:</span><span class="w"> </span><span class="kt">std_logic_vector</span><span class="p">(</span><span class="mi">31</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="k">signal</span><span class="w"> </span><span class="n">r_RS2</span><span class="w">            </span><span class="o">:</span><span class="w"> </span><span class="kt">std_logic_vector</span><span class="p">(</span><span class="mi">31</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="k">signal</span><span class="w"> </span><span class="n">r_ALUResult</span><span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="kt">std_logic_vector</span><span class="p">(</span><span class="mi">31</span><span class="w"> </span><span class="k">downto</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+</span></code></pre></div>
+<p>Cada registrador é habilitado por um sinal de controle específico (definidos em <code>riscv_uarch_pkg.vhd</code>):</p>
+<div class="language-vhdl highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">rs1_write</span><span class="w">   </span><span class="o">:</span><span class="w"> </span><span class="kt">std_logic</span><span class="p">;</span><span class="w">  </span><span class="c1">-- Captura rs1 do banco para o reg interno &#39;A&#39;</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">rs2_write</span><span class="w">   </span><span class="o">:</span><span class="w"> </span><span class="kt">std_logic</span><span class="p">;</span><span class="w">  </span><span class="c1">-- Captura rs2 do banco para o reg interno &#39;B&#39;</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">alur_write</span><span class="w">  </span><span class="o">:</span><span class="w"> </span><span class="kt">std_logic</span><span class="p">;</span><span class="w">  </span><span class="c1">-- Captura resultado da ALU no reg &#39;ALUOut&#39;</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">mdr_write</span><span class="w">   </span><span class="o">:</span><span class="w"> </span><span class="kt">std_logic</span><span class="p">;</span><span class="w">  </span><span class="c1">-- Captura dado da memória no &#39;MDR&#39;</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">ir_write</span><span class="w">    </span><span class="o">:</span><span class="w"> </span><span class="kt">std_logic</span><span class="p">;</span><span class="w">  </span><span class="c1">-- Atualiza o Instruction Register (IR)</span>
+</span></code></pre></div>
+<h3 id="reuso-de-hardware">Reuso de Hardware<a class="headerlink" href="#reuso-de-hardware" title="Permanent link">&para;</a></h3>
+<p>Uma das vantagens mais significativas da arquitetura multiciclo é a <strong>reutilização temporal</strong> de recursos. No monociclo, é necessário hardware duplicado para aumentar paralelismo; no multiciclo, o mesmo hardware pode ser usado em diferentes ciclos para diferentes finalidades.</p>
+<p><strong>Exemplo: A ALU compartilhada</strong></p>
+<p>No monociclo, são necessários somadores dedicados para:</p>
+<ul>
+<li>Calcular <code>PC + 4</code> (próxima instrução)</li>
+<li>Calcular <code>PC + imediato</code> (endereço de branch/jump)</li>
+<li>Executar operações aritméticas da instrução</li>
+</ul>
+<p>No multiciclo, todas essas operações passam pela <strong>mesma ALU</strong> em diferentes ciclos:</p>
+<ul>
+<li>No <strong>IF</strong>: ALU calcula <code>PC + 4</code> para atualizar o PC</li>
+<li>No <strong>EX</strong>: ALU executa a operação aritmética da instrução</li>
+<li>No <strong>EX_ADDR</strong>: ALU calcula o endereço de memória para loads/stores</li>
+</ul>
+<p>O multiplexer <code>ALUSrcA</code> seleciona a entrada correta para cada ciclo:
+<div class="language-vhdl highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">with</span><span class="w"> </span><span class="n">Control_i</span><span class="p">.</span><span class="n">alu_src_a</span><span class="w"> </span><span class="k">select</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span><span class="n">s_alu_in_a</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">r_RS1</span><span class="w">       </span><span class="k">when</span><span class="w"> </span><span class="s">&quot;00&quot;</span><span class="p">,</span><span class="w">    </span><span class="c1">-- Operando normal (rs1)</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">                  </span><span class="n">r_OldPC</span><span class="w">     </span><span class="k">when</span><span class="w"> </span><span class="s">&quot;01&quot;</span><span class="p">,</span><span class="w">    </span><span class="c1">-- PC para AUIPC</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">                  </span><span class="mh">x&quot;00000000&quot;</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="s">&quot;10&quot;</span><span class="p">,</span><span class="w">    </span><span class="c1">-- Zero para LUI</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">                  </span><span class="n">r_RS1</span><span class="w">       </span><span class="k">when</span><span class="w"> </span><span class="k">others</span><span class="p">;</span>
+</span></code></pre></div></p>
+<p>Da mesma forma, o <code>ALUSrcB</code> seleciona entre o registrador <code>rs2</code> ou o imediato:
+<div class="language-vhdl highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">s_alu_in_b</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">r_RS2</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="n">Control_i</span><span class="p">.</span><span class="n">alu_src_b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">&#39;0&#39;</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="n">s_immediate</span><span class="p">;</span>
+</span></code></pre></div></p>
+<hr />
+<h2 id="unidade-de-controle-e-sincronizacao">Unidade de Controle e Sincronização<a class="headerlink" href="#unidade-de-controle-e-sincronizacao" title="Permanent link">&para;</a></h2>
+<h3 id="a-maquina-de-estados-finita-fsm">A Máquina de Estados Finita (FSM)<a class="headerlink" href="#a-maquina-de-estados-finita-fsm" title="Permanent link">&para;</a></h3>
+<p>Na arquitetura multiciclo, a Unidade de Controle é implementada como uma <strong>FSM de Moore</strong> — uma máquina de estados finitos onde as saídas dependem exclusivamente do estado atual. O arquivo <code>main_fsm.vhd</code> implementa esta FSM, organizada em estados que correspondem às fases lógicas de execução:</p>
+<figure class="ax-figura">
+<p><img alt="Máquina de estados do multiciclo" src="../../assets/figuras/fsm_multi.svg" width="100%" />
+  </p>
+<figcaption>Máquina de estados do núcleo multiciclo (<code>main_fsm.vhd</code>), organizada pelos estágios IF, ID, EX, MEM e WB. Cada instrução passa por IF e ID e segue o caminho do seu tipo. Além dos estados mostrados, IF, MEM_RD e MEM_WR esperam o <code>rdy</code> da memória; EX_FENCE e EX_SYSTEM (CSR, <code>ecall</code>, <code>mret</code>) partem de ID; e uma interrupção pendente em ID desvia a próxima busca para o tratador.</figcaption>
+</figure>
+<h4 id="estados-da-fsm">Estados da FSM<a class="headerlink" href="#estados-da-fsm" title="Permanent link">&para;</a></h4>
+<p>A FSM é definida pelo tipo <code>t_state</code> em <code>main_fsm.vhd:127-134</code>:</p>
+<div class="language-vhdl highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">type</span><span class="w"> </span><span class="n">t_state</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="p">(</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span><span class="n">S_IF</span><span class="p">,</span><span class="w">                                                                        </span><span class="c1">-- IF  (Instruction Fetch)</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="n">S_ID</span><span class="p">,</span><span class="w">                                                                        </span><span class="c1">-- ID  (Instruction Decode)</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="n">S_EX_ALU</span><span class="p">,</span><span class="w"> </span><span class="n">S_EX_ADDR</span><span class="p">,</span><span class="w"> </span><span class="n">S_EX_BR</span><span class="p">,</span><span class="w"> </span><span class="n">S_EX_JAL</span><span class="p">,</span><span class="w"> </span><span class="n">S_EX_JALR</span><span class="p">,</span><span class="w"> </span><span class="n">S_EX_LUI</span><span class="p">,</span><span class="w"> </span><span class="n">S_EX_AUIPC</span><span class="p">,</span><span class="w">   </span><span class="c1">-- EX  (Execution)</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="n">S_EX_FENCE</span><span class="p">,</span><span class="w"> </span><span class="n">S_EX_SYSTEM</span><span class="p">,</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="n">S_MEM_RD</span><span class="p">,</span><span class="w"> </span><span class="n">S_MEM_WR</span><span class="p">,</span><span class="w">                                                          </span><span class="c1">-- MEM (Memory Access)</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="n">S_WB_REG</span><span class="p">,</span><span class="w"> </span><span class="n">S_WB_JAL</span><span class="p">,</span><span class="w"> </span><span class="n">S_WB_JALR</span><span class="w">                                                </span><span class="c1">-- WB  (Write-Back)</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="p">);</span>
+</span></code></pre></div>
+<p><strong>Fluxo de Estados:</strong></p>
+<ol>
+<li>
+<p><strong>S_IF (Instruction Fetch):</strong> </p>
+<ul>
+<li>PC é enviado para memória de instruções</li>
+<li>Instrução é armazenada no IR</li>
+<li>PC é incrementado para PC+4</li>
+</ul>
+</li>
+<li>
+<p><strong>S_ID (Instruction Decode):</strong></p>
+<ul>
+<li>Instrução é decodificada</li>
+<li>Registradores rs1 e rs2 são lidos para os registradores A e B</li>
+<li>Imediato é gerado</li>
+</ul>
+</li>
+<li>
+<p><strong>S_EX_* (Execution):</strong></p>
+<ul>
+<li>A ALU executa a operação conforme o tipo de instrução</li>
+<li>Cada variante (ALU, ADDR, BR, JAL, etc.) configura a ALU de forma diferente</li>
+</ul>
+</li>
+<li>
+<p><strong>S_MEM_RD / S_MEM_WR (Memory Access):</strong></p>
+<ul>
+<li>Acesso à memória de dados para loads e stores</li>
+</ul>
+</li>
+<li>
+<p><strong>S_WB_* (Write-Back):</strong></p>
+<ul>
+<li>Resultado é escrito no registrador de destino</li>
+</ul>
+</li>
+</ol>
+<p>Em uma <strong>FSM do tipo Moore</strong>, os sinais de saída dependem exclusivamente do <strong>estado atual</strong>, e não diretamente das entradas, o que torna o comportamento do controle mais estável e alinhado à divisão do processamento em ciclos bem definidos.</p>
+<p><strong>Tabela Completa de Transição de Estado</strong></p>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">Estado Atual</th>
+<th style="text-align: center;">Condição</th>
+<th style="text-align: center;">Próximo Estado</th>
+<th style="text-align: center;">Descrição do Estado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">IF</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">ID</td>
+<td style="text-align: center;">Busca instrução e incrementa PC (PC+4)</td>
+</tr>
+<tr>
+<td style="text-align: center;">ID</td>
+<td style="text-align: center;">Tipo-R/I</td>
+<td style="text-align: center;">EX_ALU</td>
+<td style="text-align: center;">Decodifica instruções aritméticas/lógicas</td>
+</tr>
+<tr>
+<td style="text-align: center;">ID</td>
+<td style="text-align: center;">Load/Store</td>
+<td style="text-align: center;">EX_ADDR</td>
+<td style="text-align: center;">Decodifica acesso à memória</td>
+</tr>
+<tr>
+<td style="text-align: center;">ID</td>
+<td style="text-align: center;">Branch</td>
+<td style="text-align: center;">EX_BR</td>
+<td style="text-align: center;">Decodifica desvio condicional</td>
+</tr>
+<tr>
+<td style="text-align: center;">ID</td>
+<td style="text-align: center;">JAL</td>
+<td style="text-align: center;">EX_JAL</td>
+<td style="text-align: center;">Decodifica salto incondicional imediato</td>
+</tr>
+<tr>
+<td style="text-align: center;">ID</td>
+<td style="text-align: center;">JALR</td>
+<td style="text-align: center;">EX_JALR</td>
+<td style="text-align: center;">Decodifica salto incondicional via registrador</td>
+</tr>
+<tr>
+<td style="text-align: center;">ID</td>
+<td style="text-align: center;">LUI</td>
+<td style="text-align: center;">EX_LUI</td>
+<td style="text-align: center;">Decodifica carregamento imediato superior</td>
+</tr>
+<tr>
+<td style="text-align: center;">ID</td>
+<td style="text-align: center;">AUIPC</td>
+<td style="text-align: center;">EX_AUIPC</td>
+<td style="text-align: center;">Decodifica adição de imediato ao PC</td>
+</tr>
+<tr>
+<td style="text-align: center;">EX_ALU</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">WB_REG</td>
+<td style="text-align: center;">Operação da ALU concluída. Vai escrever no RegFile</td>
+</tr>
+<tr>
+<td style="text-align: center;">EX_ADDR</td>
+<td style="text-align: center;">Load</td>
+<td style="text-align: center;">MEM_RD</td>
+<td style="text-align: center;">Endereço calculado. Vai ler da memória</td>
+</tr>
+<tr>
+<td style="text-align: center;">EX_ADDR</td>
+<td style="text-align: center;">Store</td>
+<td style="text-align: center;">MEM_WR</td>
+<td style="text-align: center;">Endereço calculado. Vai escrever na memória</td>
+</tr>
+<tr>
+<td style="text-align: center;">EX_BR</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">IF</td>
+<td style="text-align: center;">Avalia condição (<code>Zero</code>) e atualiza PC se necessário</td>
+</tr>
+<tr>
+<td style="text-align: center;">EX_JAL</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">WB_JAL</td>
+<td style="text-align: center;">Calcula alvo (<code>OldPC+IMM</code>) imediatamente</td>
+</tr>
+<tr>
+<td style="text-align: center;">EX_JALR</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">WB_JALR</td>
+<td style="text-align: center;">Calcula alvo (<code>rs1+IMM</code>) e salva em ALUResult</td>
+</tr>
+<tr>
+<td style="text-align: center;">EX_LUI</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">WB_REG</td>
+<td style="text-align: center;">Soma <code>0+IMM</code>. Vai para write-back</td>
+</tr>
+<tr>
+<td style="text-align: center;">EX_AUIPC</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">WB_REG</td>
+<td style="text-align: center;">Soma <code>PC+IMM</code>. Vai para write-back</td>
+</tr>
+<tr>
+<td style="text-align: center;">MEM_RD</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">WB_REG</td>
+<td style="text-align: center;">Lê <code>DMem[ALUResult]</code> e atualiza MDR</td>
+</tr>
+<tr>
+<td style="text-align: center;">MEM_WR</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">IF</td>
+<td style="text-align: center;">Escreve RS2 em <code>DMem[ALUResult]</code></td>
+</tr>
+<tr>
+<td style="text-align: center;">WB_REG</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">IF</td>
+<td style="text-align: center;">Escrita do resultado em <code>rd</code></td>
+</tr>
+<tr>
+<td style="text-align: center;">WB_JAL</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">IF</td>
+<td style="text-align: center;">Escreve retorno (<code>PC+4</code>) em <code>rd</code>. PC já foi atualizado</td>
+</tr>
+<tr>
+<td style="text-align: center;">WB_JALR</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">IF</td>
+<td style="text-align: center;">Escreve retorno (<code>PC+4</code>) em <code>rd</code>. PC é atualizado</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Tabela Completa de Sinais de Controle</strong></p>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">Sinal</th>
+<th style="text-align: left;">Descrição do Sinal de Controle</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><code>PCWrite</code></td>
+<td style="text-align: left;">Habilita escrita no <code>PC</code>. Permite que o PC seja atualizado apenas em estados específicos (como Fetch ou ao realizar um salto - branch/jump)</td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>OPCWrite</code></td>
+<td style="text-align: left;">Atualiza o <code>OldPC</code>. Guarda o valor atual do PC no registrador <code>r_OldPC</code>. É usado para salvar o endereço da instrução corrente - usando-o para cálculos relativos - atualizado normalmente no estado de Fetch</td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>PCSrc</code></td>
+<td style="text-align: left;">Seletor da fonte do próximo <code>PC</code>. Controla o multiplexador que define o novo valor do PC. Oppções são: <code>00</code> (<code>PC + 4</code>); <code>01</code> (Branch/JAL); <code>10</code> (JALR)</td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>IRWrite</code></td>
+<td style="text-align: left;">Habilita a escrita no <code>IR</code>. Permite carregar uma nova instrução apenas durante o estado de Fetch.</td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>MemWrite</code></td>
+<td style="text-align: left;">Habilita a escrita na memória. Sinal enviado para a unidade de armazenamento e carga (LSU) para efetuar a gravação de um dado.</td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>ALUSrcA</code></td>
+<td style="text-align: left;">Seletor do Operando A da ALU. Opções: <code>00</code> (rs1); <code>01</code> (PC atual); <code>10</code> (zero)</td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>ALUSrcB</code></td>
+<td style="text-align: left;">Seletor do Operando B da ALU. Opções: <code>0</code> (rs2); <code>1</code> (imediato)</td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>ALUControl</code></td>
+<td style="text-align: left;">Seletor para a operação da ALU. Define qual operação a ALU deve executar (ADD, SUB, AND etc.)</td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>RegWrite</code></td>
+<td style="text-align: left;">Habilita a escrita no banco de registradores. Permite gravar no registrador <code>rd</code> durante o estágio de write-back (WB)</td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>WBSel</code></td>
+<td style="text-align: left;">Seletor do dado de write-back. Opções: <code>00</code> (resultado da ALU); <code>01</code> (MDR); <code>10</code> (próximo PC)</td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>RS1Write</code></td>
+<td style="text-align: left;">Habilita a atualização do regisitrador de RS1. Controla a capatura do valor lido de <code>rs1</code> do banco de registradores</td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>RS2Write</code></td>
+<td style="text-align: left;">Habilita a atualização do regisitrador de RS2. Controla a capatura do valor lido de <code>rs2</code> do banco de registradores</td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>ALUrWrite</code></td>
+<td style="text-align: left;">Habilita a atualização do ALUResult. Controla a captura do resultado da ALU</td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>MDRWrite</code></td>
+<td style="text-align: left;">Habilita a escrita no MDR. Captura o dado carregado da memória</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Tabela Completa de Sinais por Estado</strong></p>
+<p><strong>Legenda de Sinais</strong></p>
+<ul>
+<li><strong>ALUSrcA:</strong> <code>00</code>=rs1; <code>01</code>=OldPC; <code>10</code>=Zero</li>
+<li><strong>ALUSrcB:</strong> <code>0</code>=rs2; <code>1</code>=Imediato</li>
+<li><strong>PCSrc:</strong> <code>00</code>=PC+4; <code>01</code>=Branch/JAL (Somador Dedicado); <code>10</code>=JALR (ALUResult)</li>
+<li><strong>WBSel:</strong> <code>00</code>=ALUResult; <code>01</code>=MDR; <code>10</code>=PC+4 (Retorno)</li>
+<li><strong>Cond:</strong> Habilitado apenas se a condição de Branch for satisfeita (Zero flag)</li>
+<li><strong>ALUControl:</strong> <code>ADD</code> (Força Soma); <code>Funct</code> (Tipo-R/I); <code>Branch</code> (Resolve SUB/SLT/SLTU via funct3)</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Estado</th>
+<th style="text-align: center;"><code>PCWrite</code></th>
+<th style="text-align: center;"><code>OPCWrite</code></th>
+<th style="text-align: center;"><code>PCSrc</code></th>
+<th style="text-align: center;"><code>IRWrite</code></th>
+<th style="text-align: center;"><code>MemWrite</code></th>
+<th style="text-align: center;"><code>ALUSrcA</code></th>
+<th style="text-align: center;"><code>ALUSrcB</code></th>
+<th style="text-align: center;"><code>ALUControl</code></th>
+<th style="text-align: center;"><code>RegWrite</code></th>
+<th style="text-align: center;"><code>WBSel</code></th>
+<th style="text-align: center;"><code>RS1Write</code></th>
+<th style="text-align: center;"><code>RS2Write</code></th>
+<th style="text-align: center;"><code>ALUrWrite</code></th>
+<th style="text-align: center;"><code>MDRWrite</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>IF</strong></td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">00</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>ID</strong></td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>EX_ALU</strong></td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">00</td>
+<td style="text-align: center;"><strong>0/1</strong></td>
+<td style="text-align: center;"><strong>Funct</strong></td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">0</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>EX_ADDR</strong></td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">00</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;"><strong>ADD</strong></td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">0</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>EX_BR</strong></td>
+<td style="text-align: center;"><strong>Cond</strong></td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">01</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">00</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;"><strong>Branch</strong></td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>EX_JAL</strong></td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>EX_JALR</strong></td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">00</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;"><strong>ADD</strong></td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">0</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>EX_LUI</strong></td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">10</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;"><strong>ADD</strong></td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">0</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>EX_AUIPC</strong></td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">01</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;"><strong>ADD</strong></td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">0</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>MEM_RD</strong></td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">1</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>MEM_WR</strong></td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>WB_REG</strong></td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;"><strong>00/01</strong></td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>WB_JAL</strong></td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">01</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">10</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>WB_JALR</strong></td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">10</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">10</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+</tr>
+</tbody>
+</table>
+<h3 id="protocolo-de-sincronizacao-handshake-readyvalid">Protocolo de Sincronização (Handshake Ready/Valid)<a class="headerlink" href="#protocolo-de-sincronizacao-handshake-readyvalid" title="Permanent link">&para;</a></h3>
+<p>Para tolerar memórias com latência variável, o processador implementa um protocolo de handshake <code>ready</code>/<code>valid</code> nas interfaces de memória.</p>
+<div class="admonition note">
+<p class="admonition-title">Hierarquia de Memória</p>
+<p>O contraste entre BRAM e Memória Distribuída é definido pela latência: a BRAM economiza lógica mas "atrasa" o dado em 1-2 ciclos, enquanto a distribuída (registradores) é instantânea, mas cara em área. O protocolo Ready/Valid amarra essa hierarquia, servindo como o controle de tráfego que impede que a latência de acesso da memória cause perda de dados ou quebre o fluxo do pipeline (throughput) em altas frequências.</p>
+</div>
+<h4 id="interface-de-handshake">Interface de Handshake<a class="headerlink" href="#interface-de-handshake" title="Permanent link">&para;</a></h4>
+<p>Em <code>processor_top.vhd:71-76</code>:
+<div class="language-vhdl highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">IMem_rdy_i</span><span class="w">  </span><span class="o">:</span><span class="w"> </span><span class="k">in</span><span class="w">  </span><span class="kt">std_logic</span><span class="p">;</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">IMem_vld_o</span><span class="w">  </span><span class="o">:</span><span class="w"> </span><span class="k">out</span><span class="w"> </span><span class="kt">std_logic</span><span class="p">;</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">DMem_rdy_i</span><span class="w">  </span><span class="o">:</span><span class="w"> </span><span class="k">in</span><span class="w">  </span><span class="kt">std_logic</span><span class="p">;</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">DMem_vld_o</span><span class="w">  </span><span class="o">:</span><span class="w"> </span><span class="k">out</span><span class="w"> </span><span class="kt">std_logic</span><span class="p">;</span>
+</span></code></pre></div></p>
+<figure class="ax-figura">
+<p><img alt="Handshake vld/rdy" src="../../assets/figuras/handshake.svg" width="620" />
+  </p>
+<figcaption><em>Handshake</em> <code>vld</code>/<code>rdy</code> do barramento. O mestre ergue <code>vld</code> e mantém endereço e dados estáveis até o escravo responder com <code>rdy</code>; a transferência acontece no ciclo em que os dois estão em 1, e o mestre fica parado (<em>stall</em>) enquanto espera.</figcaption>
+</figure>
+<h4 id="fsm-e-handshake">FSM e Handshake<a class="headerlink" href="#fsm-e-handshake" title="Permanent link">&para;</a></h4>
+<p>A FSM permanece em estados de espera até que a memória sinalize que a transação foi completada:</p>
+<p><strong>Estado S_IF (main_fsm.vhd:215-221):</strong>
+<div class="language-vhdl highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">when</span><span class="w"> </span><span class="n">S_IF</span><span class="w"> </span><span class="o">=&gt;</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">    </span><span class="c1">-- STALL DE INSTRUÇÃO: Só avança se a memória entregar a instrução</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">imem_rdy_i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">&#39;1&#39;</span><span class="w"> </span><span class="k">then</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">        </span><span class="n">next_state</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">S_ID</span><span class="p">;</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">    </span><span class="k">else</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">        </span><span class="n">next_state</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">S_IF</span><span class="p">;</span><span class="w">  </span><span class="c1">-- Permanece esperando</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">    </span><span class="k">end</span><span class="w"> </span><span class="k">if</span><span class="p">;</span>
+</span></code></pre></div></p>
+<p><strong>Estado S_MEM_RD (main_fsm.vhd:297-302):</strong>
+<div class="language-vhdl highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">when</span><span class="w"> </span><span class="n">S_MEM_RD</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">dmem_rdy_i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">&#39;1&#39;</span><span class="w"> </span><span class="k">then</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">        </span><span class="n">next_state</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">S_WB_REG</span><span class="p">;</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">    </span><span class="k">else</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">        </span><span class="n">next_state</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">S_MEM_RD</span><span class="p">;</span><span class="w">  </span><span class="c1">-- Stall: fica esperando</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">    </span><span class="k">end</span><span class="w"> </span><span class="k">if</span><span class="p">;</span>
+</span></code></pre></div></p>
+<p><strong>Estado S_MEM_WR (main_fsm.vhd:305-310):</strong>
+<div class="language-vhdl highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">when</span><span class="w"> </span><span class="n">S_MEM_WR</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">dmem_rdy_i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">&#39;1&#39;</span><span class="w"> </span><span class="k">then</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">        </span><span class="n">next_state</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">S_IF</span><span class="p">;</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">    </span><span class="k">else</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">        </span><span class="n">next_state</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">S_MEM_WR</span><span class="p">;</span><span class="w">  </span><span class="c1">-- Stall: fica esperando</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">    </span><span class="k">end</span><span class="w"> </span><span class="k">if</span><span class="p">;</span>
+</span></code></pre></div></p>
+<h4 id="geracao-de-sinais-de-handshake">Geração de Sinais de Handshake<a class="headerlink" href="#geracao-de-sinais-de-handshake" title="Permanent link">&para;</a></h4>
+<p>A FSM também gera os sinais <code>valid</code> para indicar ao sistema de memória que o processador está pronto para uma transação:</p>
+<p><strong>Sinais de saída em S_IF (main_fsm.vhd:359-366):</strong>
+<div class="language-vhdl highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">when</span><span class="w"> </span><span class="n">S_IF</span><span class="w"> </span><span class="o">=&gt;</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">    </span><span class="n">imem_vld_o</span><span class="w">     </span><span class="o">&lt;=</span><span class="w"> </span><span class="sc">&#39;1&#39;</span><span class="p">;</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">    </span><span class="c1">-- Só atualiza quando o dado chega</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">imem_rdy_i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">&#39;1&#39;</span><span class="w"> </span><span class="k">then</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">        </span><span class="n">IRWrite_o</span><span class="w">  </span><span class="o">&lt;=</span><span class="w"> </span><span class="sc">&#39;1&#39;</span><span class="p">;</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">        </span><span class="n">PCWrite_o</span><span class="w">  </span><span class="o">&lt;=</span><span class="w"> </span><span class="sc">&#39;1&#39;</span><span class="p">;</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="w">        </span><span class="n">OPCWrite_o</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="sc">&#39;1&#39;</span><span class="p">;</span>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="w">    </span><span class="k">end</span><span class="w"> </span><span class="k">if</span><span class="p">;</span>
+</span></code></pre></div></p>
+<p><strong>Sinais de saída em S_MEM_RD (main_fsm.vhd:533-540):</strong>
+<div class="language-vhdl highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="k">when</span><span class="w"> </span><span class="n">S_MEM_RD</span><span class="w"> </span><span class="o">=&gt;</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">    </span><span class="n">dmem_vld_o</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="sc">&#39;1&#39;</span><span class="p">;</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span><span class="c1">-- Só grava no MDR quando o dado estiver PRONTO</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">dmem_rdy_i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">&#39;1&#39;</span><span class="w"> </span><span class="k">then</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">        </span><span class="n">MDRWrite_o</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="sc">&#39;1&#39;</span><span class="p">;</span>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">    </span><span class="k">end</span><span class="w"> </span><span class="k">if</span><span class="p">;</span>
+</span></code></pre></div></p>
+<h3 id="sinais-de-controle">Sinais de Controle<a class="headerlink" href="#sinais-de-controle" title="Permanent link">&para;</a></h3>
+<p>A FSM gera todos os sinais necessários para controlar o datapath:</p>
+<table>
+<thead>
+<tr>
+<th>Sinal</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PCWrite</code></td>
+<td>Habilita escrita no PC</td>
+</tr>
+<tr>
+<td><code>OPCWrite</code></td>
+<td>Atualiza o OldPC</td>
+</tr>
+<tr>
+<td><code>IRWrite</code></td>
+<td>Habilita escrita no IR</td>
+</tr>
+<tr>
+<td><code>MemWrite</code></td>
+<td>Habilita escrita na memória de dados</td>
+</tr>
+<tr>
+<td><code>RegWrite</code></td>
+<td>Habilita escrita no banco de registradores</td>
+</tr>
+<tr>
+<td><code>RS1Write</code> / <code>RS2Write</code></td>
+<td>Captura operandos do banco de registradores</td>
+</tr>
+<tr>
+<td><code>ALUrWrite</code></td>
+<td>Captura resultado da ALU</td>
+</tr>
+<tr>
+<td><code>MDRWrite</code></td>
+<td>Captura dado da memória</td>
+</tr>
+<tr>
+<td><code>ALUSrcA</code></td>
+<td>Seleciona operando A da ALU (rs1, PC, Zero)</td>
+</tr>
+<tr>
+<td><code>ALUSrcB</code></td>
+<td>Seleciona operando B da ALU (rs2, Imediato)</td>
+</tr>
+<tr>
+<td><code>PCSrc</code></td>
+<td>Seleciona fonte do próximo PC</td>
+</tr>
+<tr>
+<td><code>WBSel</code></td>
+<td>Seleciona dado para write-back (ALUOut, MDR, PC+4, CSR)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="integracao-no-top-level">Integração no Top-Level<a class="headerlink" href="#integracao-no-top-level" title="Permanent link">&para;</a></h2>
+<p>O <code>processor_top.vhd</code> do multiciclo apresenta a mesma estrutura de integração que o monociclo, porém com a diferença fundamental de que o Control Path agora é uma FSM em vez de lógica puramente combinacional.</p>
+<p>A arquitetura de Harvard Modificada é mantida, com barramentos separados para IMEM e DMEM, permitindo acesso simultâneo a instruções e dados.</p>
+<h3 id="diferencas-principais-entre-single-cycle-e-multi-cycle">Diferenças Principais entre Single-Cycle e Multi-Cycle<a class="headerlink" href="#diferencas-principais-entre-single-cycle-e-multi-cycle" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Aspecto</th>
+<th>Single-Cycle</th>
+<th>Multi-Cycle</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>** clock por instrução</td>
+<td>1</td>
+<td>2-5 (variável)</td>
+</tr>
+<tr>
+<td><strong>Frequência máxima</strong></td>
+<td>Limitada pelo caminho crítico completo</td>
+<td>Maior (caminho crítico por estágio)</td>
+</tr>
+<tr>
+<td><strong>Unidade de Controle</strong></td>
+<td>Lógica combinacional</td>
+<td>FSM sequencial</td>
+</tr>
+<tr>
+<td><strong>Recursos de hardware</strong></td>
+<td>Duplicados para paralelismo</td>
+<td>Compartilhados no tempo</td>
+</tr>
+<tr>
+<td><strong>Registradores intermediários</strong></td>
+<td>Não existem</td>
+<td>IR, MDR, A, B, ALUOut, OldPC</td>
+</tr>
+<tr>
+<td><strong>Handshake de memória</strong></td>
+<td>Não suportado nativamente</td>
+<td>Suportado via Ready/Valid</td>
+</tr>
+<tr>
+<td><strong>Complexidade de controle</strong></td>
+<td>Baixa</td>
+<td>Média-Alta</td>
+</tr>
+</tbody>
+</table>
+<hr />
+
+
+
+
+
+
+
+  
+    
+  
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Última atualização">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="13 de maio de 2026 21:09:49 UTC">13 de maio de 2026 21:09:49</span>
+  </span>
+
+    
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Voltar para o topo
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Rodapé" >
+        
+          
+          <a href="../monociclo/" class="md-footer__link md-footer__link--prev" aria-label="Anterior: Microarquitetura monociclo">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Anterior
+              </span>
+              <div class="md-ellipsis">
+                Microarquitetura monociclo
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../interrupcoes/" class="md-footer__link md-footer__link--next" aria-label="Próximo: Exceções e interrupções">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Próximo
+              </span>
+              <div class="md-ellipsis">
+                Exceções e interrupções
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; RISC-V-Azedinha
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/RISC-V-Azedinha/RISC-V" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.instant.progress", "navigation.tabs", "navigation.tabs.sticky", "navigation.tracking", "navigation.sections", "navigation.top", "navigation.footer", "toc.follow", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate", "content.tabs.link", "content.tooltips"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copiado para \u00e1rea de transfer\u00eancia", "clipboard.copy": "Copiar para \u00e1rea de transfer\u00eancia", "search.result.more.one": "mais 1 nesta p\u00e1gina", "search.result.more.other": "# mais nesta p\u00e1gina", "search.result.none": "Nenhum documento encontrado", "search.result.one": "1 documento encontrado", "search.result.other": "# documentos encontrados", "search.result.placeholder": "Digite para iniciar a busca", "search.result.term.missing": "Ausente", "select.version": "Selecione a vers\u00e3o"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../javascript/mathjax.js"></script>
+      
+        <script src="https://unpkg.com/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

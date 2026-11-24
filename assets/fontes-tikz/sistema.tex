@@ -1,0 +1,39 @@
+\begin{tikzpicture}[font=\footnotesize, >={Stealth[length=2mm]},
+  blk/.style={draw,thick,rounded corners=2pt,align=center,minimum height=9mm,fill=white},
+  hst/.style={blk,fill=blue!6,text width=50mm},
+  soc/.style={blk,fill=orange!8,text width=28mm},
+  npu/.style={blk,fill=red!12,text width=32mm}]
+  % ------------------------------- Host
+  \node[hst] (tr)  at (0,3.0)  {Treino em ponto flutuante\\(PyTorch, Adam, 12 épocas)};
+  \node[hst] (qt)  at (0,1.6)  {Calibração e quantização\\int8 simétrica};
+  \node[hst] (pk)  at (0,0.2)  {Empacotamento: $4\times$int8\\por palavra de 32 bits};
+  \node[hst] (gui) at (0,-1.2) {GUI Tkinter: desenho $280^2$\\$\to$ recorte $\to 28\times28$ int8};
+  \node[hst] (drv) at (0,-2.6) {\texttt{NPUDriverEdge}\\(pyserial, comandos de 1 byte)};
+  \draw[->] (tr) -- (qt);
+  \draw[->] (qt) -- (pk);
+  \draw[->] (pk.west) -- ++(-3mm,0) |- (drv.west);
+  \draw[->] (gui) -- (drv);
+  \begin{scope}[on background layer]
+    \node[draw,dashed,rounded corners,fill=blue!2,fit=(tr)(drv),inner sep=3.5mm,
+          label={[font=\small\bfseries]above:Hospedeiro (PC)}] (H) {};
+  \end{scope}
+  % ------------------------------- SoC
+  \def\yb{0.6}
+  \node[soc] (cpu)  at (7.9,2.2)   {CPU RV32I\\multiciclo};
+  \node[soc] (ram)  at (11.3,2.2)  {RAM (instruções\\e dados)};
+  \node[soc] (gpio) at (14.7,2.2)  {GPIO\\LEDs $=2^{\hat y}$};
+  \node[soc] (uart) at (7.9,-2.6)  {UART\\921\,600 bit/s\\FIFO RX de 64 B};
+  \node[soc] (dma)  at (11.3,-1.0) {DMA\\(rajadas, origem\\e destino fixos)};
+  \node[npu] (npu)  at (14.7,-2.6) {\textbf{NPU} \texttt{0x9000\_0000}\\arranjo sistólico $4\times4$\\PPU int8, im2col\\descritores de camada};
+  \draw[line width=2.2pt,gray!70] (6.4,\yb) -- (16.5,\yb);
+  \node[font=\scriptsize,anchor=south] at (9.6,\yb+0.06) {barramento + árbitro};
+  \foreach \n in {cpu,ram,gpio} \draw[<->,thick] (\n.south) -- (\n.south |- 0,\yb);
+  \foreach \n in {uart,dma,npu} \draw[<->,thick] (\n.north) -- (\n.north |- 0,\yb);
+  \begin{scope}[on background layer]
+    \node[draw,dashed,rounded corners,fill=orange!3,fit=(cpu)(gpio)(uart)(npu),inner sep=3.5mm,
+          label={[font=\small\bfseries]above:FPGA --- SoC RISC-V (100 MHz)}] (S) {};
+  \end{scope}
+  % ------------------------------- enlace
+  \draw[<->,very thick,blue!60!black] (drv.east) -- node[above,align=center,font=\scriptsize]{USB--UART\\8N1}
+     node[below,font=\scriptsize,align=center]{pesos, imagens $\to$\\$\leftarrow$ logits int8} (uart.west);
+\end{tikzpicture}

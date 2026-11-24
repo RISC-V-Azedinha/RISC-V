@@ -1,0 +1,40 @@
+\begin{tikzpicture}[font=\footnotesize,>={Stealth[length=1.8mm,width=1.6mm]},
+    mestre/.style={draw=marinho,rounded corners=2pt,minimum width=1.75cm,minimum height=0.62cm,
+                   align=center,font=\scriptsize\bfseries,text=marinho},
+    escravo/.style={draw=marinho,rounded corners=1.5pt,minimum width=0.78cm,minimum height=0.5cm,
+                    inner sep=1pt,font=\tiny\bfseries,text=marinho},
+    arb/.style={draw=gray!70,fill=white,minimum width=0.5cm,minimum height=0.22cm,inner sep=0pt,
+                font=\fontsize{4}{4}\selectfont,text=gray!80!black},
+    fio/.style={gray!45,line width=0.6pt},
+    ativo/.style={line width=1.6pt}]
+  % área da crossbar
+  \fill[marinho!5,rounded corners=4pt] (1.15,-3.55) rectangle (8.05,-0.55);
+  \node[font=\scriptsize\bfseries\itshape,text=marinho!70,anchor=south east] at (8.0,-3.52) {crossbar};
+  % escravos (colunas) e árbitros
+  \foreach \n/\t/\c [count=\k from 0] in {rom/ROM/blue!8, uart/UART/orange!22, gpio/GPIO/orange!22,
+      ram/RAM/blue!8, npu/NPU/red!16, sd/SD/orange!22, out/\dots/green!14} {
+    \pgfmathsetmacro{\x}{1.75+\k*0.98}
+    \node[escravo,fill=\c] (\n) at (\x,0.25) {\t};
+    \node[arb] (a\n) at (\x,-0.33) {árbitro};
+    \draw[fio] (a\n.south) -- (\x,-3.25);
+    \draw[gray!60] (\n.south) -- (a\n.north);
+  }
+  % mestres (linhas)
+  \foreach \n/\t/\c/\y in {cpu/CPU/blue!14/-1.15, rd/{DMA\\leitura}/violet!14/-2.05, wr/{DMA\\escrita}/violet!14/-2.95} {
+    \node[mestre,fill=\c] (\n) at (0,\y) {\t};
+    \draw[fio] (\n.east) -- (7.85,\y);
+    \foreach \k in {0,...,6} \fill[gray!55] ({1.75+\k*0.98},\y) circle (1.1pt);
+  }
+  % três transações no mesmo ciclo
+  \draw[ativo,azul,->] (cpu.east) -- (2.73,-1.15) -- (auart.south);
+  \fill[azul] (2.73,-1.15) circle (2.6pt);
+  \draw[ativo,verde,->] (aram.south) -- (4.69,-2.05) -- (rd.east);
+  \fill[verde] (4.69,-2.05) circle (2.6pt);
+  \draw[ativo,laranjaesc,->] (wr.east) -- (5.67,-2.95) -- (anpu.south);
+  \fill[laranjaesc] (5.67,-2.95) circle (2.6pt);
+  % legenda
+  \node[anchor=north west,font=\scriptsize,text=corpo,align=left] at (-0.88,-3.75)
+    {No mesmo ciclo: {\color{azul}\textbf{CPU $\to$ UART}}, {\color{verde}\textbf{RAM $\to$ DMA}}
+     e {\color{laranjaesc}\textbf{DMA $\to$ NPU}}.\\
+     Cada ponto é uma chave: só fecha uma por coluna, e o árbitro decide qual.};
+\end{tikzpicture}

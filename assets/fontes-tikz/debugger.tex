@@ -1,0 +1,21 @@
+% Depuração: do debugger.py ao núcleo.
+\begin{tikzpicture}[font=\scriptsize,>={Stealth[length=1.6mm]},
+  b/.style={draw,thick,align=center,inner sep=3pt},
+  sig/.style={font=\tiny\ttfamily}]
+  \node[b,fill=gray!10,minimum width=26mm,minimum height=16mm] (py) at (0,0) {\texttt{debugger.py}\\[-1pt]{\tiny no computador}};
+  \node[font=\tiny,align=left,anchor=north west,text=corpo] at (-1.3,-0.95) {%
+    \texttt{h}: \texttt{CAFEBABE} + \texttt{01} (pausa)\\
+    \texttt{r}: \texttt{02} (retoma)\quad \texttt{s}: \texttt{03} (passo)\\
+    \texttt{b <end>}: \texttt{05} + 4 bytes\quad \texttt{c}: \texttt{06}\\
+    \texttt{p}: \texttt{10} $\to$ 32 registradores + PC\\
+    \texttt{rst}: \texttt{04}\quad \texttt{boot}: \texttt{09} + \texttt{08}\quad \texttt{cr}: \texttt{0A}};
+  \node[b,fill=yellow!22,minimum width=56mm,minimum height=30mm,anchor=north] (dc) at (6.2,1.5) {};
+  \node[font=\footnotesize\bfseries,anchor=north] at (dc.north) {Controlador de depuração};
+  \foreach \t [count=\i from 0] in {FSM de recepção (UART),FSM de transmissão (UART),FSM de depuração,comparador de \emph{breakpoint}}
+    \node[draw,fill=white,minimum width=44mm,inner sep=1.5pt,font=\tiny] at (6.2,{0.85-\i*0.52}) {\t};
+  \draw[<->,thick] (py.east) -- node[sig,above]{UART 921.600 bit/s} node[sig,below]{(RTS = 1)} (dc.west |- py.east);
+  \node[b,fill=blue!14,minimum width=56mm,minimum height=16mm] (cpu) at (6.2,-3.9) {Núcleo (\texttt{processor\_top})\\[2pt]{\tiny banco de registradores e PC}};
+  \foreach \x/\n/\d in {4.0/soc\_en\_o/->,5.1/debug\_rst\_o/->,6.2/reg\_addr\_o/->,7.3/reg\_data\_i/<-,8.4/pc\_i/<-}
+    \draw[\d,thick] (\x,-1.5) -- node[sig,fill=fundo,inner sep=1pt,rotate=90]{\n} (\x,-3.1);
+  \node[font=\tiny,text=corpo,align=left,anchor=west] at (9.5,-2.3) {também: endereço de boot\\(\texttt{dbg\_boot\_addr\_o}) e\\limpeza dos registradores};
+\end{tikzpicture}

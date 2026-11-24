@@ -1,0 +1,26 @@
+% Fluxo de boot com o cartão microSD (fpga/sw/platform/bootloader/boot.c).
+\begin{tikzpicture}[font=\scriptsize,>={Stealth[length=1.6mm]},node distance=6mm and 9mm,
+  b/.style={draw,thick,rounded corners=2pt,fill=blue!10,align=center,minimum height=8mm,inner sep=3pt},
+  d/.style={draw,thick,diamond,aspect=2.4,fill=yellow!22,align=center,inner sep=1pt,font=\tiny},
+  e/.style={draw,thick,rounded corners=6pt,fill=green!16,align=center,minimum height=8mm,inner sep=3pt,font=\scriptsize\bfseries}]
+  \node[b,fill=gray!12] (rst) {\emph{reset}: bootloader na Boot ROM};
+  \node[d,below=of rst] (cafe) {\texttt{CAFEBABE} pela UART\\em até 1 s?};
+  \node[b,right=of cafe] (load) {recebe o programa\\e o copia para a RAM};
+  \node[d,below=of load] (save) {bit 31 do\\tamanho ligado?};
+  \node[b,right=of save] (wr) {grava o programa\\no cartão};
+  \node[d,below=of cafe] (hdr) {cabeçalho do cartão\\válido?};
+  \node[b,below=of hdr] (cp) {copia o programa\\do cartão para a RAM};
+  \node[e,below=of save,yshift=-11mm] (run) {executa o programa\\em \texttt{0x8000\_0800}};
+  \node[b,fill=red!12,left=of hdr] (wait) {espera um programa\\pela UART};
+  \draw[->] (rst) -- (cafe);
+  \draw[->] (cafe) -- node[above,font=\tiny]{sim} (load);
+  \draw[->] (cafe) -- node[left,font=\tiny]{não} (hdr);
+  \draw[->] (load) -- (save);
+  \draw[->] (save) -- node[above,font=\tiny]{sim} (wr);
+  \draw[->] (save) -- node[left,font=\tiny]{não} (run);
+  \draw[->] (wr) |- (run);
+  \draw[->] (hdr) -- node[left,font=\tiny]{sim} (cp);
+  \draw[->] (cp) -- (run);
+  \draw[->] (hdr) -- node[above,font=\tiny]{não} (wait);
+  \node[font=\tiny,text=corpo,align=center,below=1mm of wait] {sem cartão, sem programa\\ou \emph{checksum} inválido};
+\end{tikzpicture}

@@ -1,0 +1,109 @@
+% Caminho de dados do núcleo monociclo, no estilo do diagrama do multiciclo da apresentação.
+\definecolor{dpReg}{HTML}{DBDBFF}
+\definecolor{dpMem}{HTML}{EDDBED}
+\definecolor{dpRF}{HTML}{F2F2FF}
+\definecolor{dpALU}{HTML}{FFD6D6}
+\definecolor{dpMux}{HTML}{FFE6CC}
+\begin{tikzpicture}[x=1cm,y=1cm,font=\fontfamily{ptm}\selectfont\scriptsize,>={Stealth[length=1.3mm]},
+  lbl/.style={font=\fontfamily{ptm}\selectfont\tiny},
+  big/.style={font=\fontfamily{ptm}\selectfont\normalsize},
+  stg/.style={font=\fontfamily{ptm}\selectfont\large}]
+  % tag de sinal (pentágono com ponta à direita)
+  \newcommand{\tagr}[3]{\draw[fill=white] (#1,#2) -- ++(1.05,0) -- ++(0.15,-0.12) -- ++(-0.15,-0.12) -- ++(-1.05,0) -- ++(0.15,0.12) -- cycle;
+    \node[font=\fontfamily{ptm}\selectfont\fontsize{4.6}{5}\selectfont] at (#1+0.6,#2-0.12) {#3};}
+  \newcommand{\mux}[3]{\draw[fill=dpMux] (#1,#2) -- ++(0.32,-0.15) -- (#1+0.32,#3+0.15) -- (#1,#3) -- cycle;}
+  \newcommand{\adder}[2]{\draw[fill=dpMux] (#1,#2) -- ++(0.5,-0.25) -- ++(0,-0.6) -- ++(-0.5,-0.25) -- ++(0,0.45) -- ++(0.15,0.2) -- ++(-0.15,0.2) -- cycle; \node at (#1+0.32,#2-0.55) {$+$};}
+  \newcommand{\jd}[1]{\fill #1 circle (0.9pt);}
+  % ---------------- estágios
+  \foreach \x in {4.0,10.4,14.0,17.35} \draw[dashed,gray] (\x,3.3) -- (\x,-3.9);
+  \foreach \x/\n in {1.6/IF,7.2/ID,12.2/EX,15.6/MEM,18.4/WB} \node[stg] at (\x,2.9) {\n};
+  % ================= IF
+  \tagr{-2.1}{0.62}{PC + 4}
+  \tagr{-2.1}{0.17}{PC + IMM}
+  \tagr{-2.1}{-0.28}{ALU result}
+  \mux{-0.4}{0.9}{-0.6}
+  \node[lbl] at (-0.24,1.12) {PC$_{\mathrm{src}}$};
+  \foreach \y/\n in {0.5/00,0.05/01,-0.4/10} {\draw (-0.85,\y) -- (-0.4,\y); \node[lbl] at (-0.23,\y) {\n};}
+  \draw[fill=dpReg] (0.4,0.95) rectangle (1.3,-0.75);
+  \node[big] at (0.85,0.0) {PC}; \node[lbl] at (0.6,0.62) {D$_\mathrm{i}$}; \node[lbl] at (1.1,0.62) {D$_\mathrm{o}$}; \node[lbl] at (0.85,-0.58) {Reset$_\mathrm{i}$};
+  \draw (0.73,0.95) -- (0.85,0.83) -- (0.97,0.95); \draw (0.85,0.95) -- ++(0,0.25) node[above,lbl]{CLK};
+  \draw[->] (-0.08,0.15) -- (0.4,0.15);
+  \draw[fill=dpMem] (1.9,1.0) rectangle (3.2,-0.8);
+  \node[big] at (2.55,0.0) {IMem}; \node[lbl] at (2.15,0.6) {Addr}; \node[lbl] at (3.0,0.6) {RD};
+  \draw[->] (1.3,0.6) -- (1.9,0.6); \jd{(1.6,0.6)}
+  \adder{1.75}{-1.45}
+  \draw[->] (1.6,0.6) -- (1.6,-1.65) -- (1.75,-1.65);
+  \node at (1.25,-2.15) {4}; \draw[->] (1.4,-2.15) -- (1.75,-2.15);
+  \draw (2.25,-1.9) -- (2.55,-1.9); \tagr{2.55}{-1.78}{PC + 4}
+  % ================= ID
+  \draw (3.2,0.6) -- (4.4,0.6); \jd{(4.4,0.6)}
+  \draw (4.4,1.75) -- (4.4,-2.55);
+  \draw[->] (4.4,1.75) -- (4.6,1.75); \tagr{4.6}{1.87}{Instruction}
+  \draw[fill=dpRF] (6.1,1.0) rectangle (8.7,-1.2);
+  \node[big] at (7.6,-0.1) {Reg File};
+  \draw (6.65,1.0) -- (6.77,0.88) -- (6.89,1.0); \draw (6.77,1.0) -- ++(0,0.25) node[above,lbl]{CLK};
+  \draw (7.7,1.0) -- ++(0,0.25) node[above,lbl]{REG$_{\mathrm{write}}$}; \node[lbl] at (7.7,0.82) {RW$_\mathrm{i}$};
+  \foreach \y/\t/\b in {0.6/RA1/19:15,0.25/RA2/24:20,-0.1/WA/11:7} {
+    \draw[->] (4.4,\y) -- (6.1,\y) node[lbl,right]{\t$_\mathrm{i}$}; \node[lbl,above] at (5.7,\y) {\b}; \jd{(4.4,\y)} }
+  \node[lbl,right] at (6.1,-0.75) {WD$_\mathrm{i}$};
+  \node[lbl,left] at (8.7,0.4) {RD1$_\mathrm{o}$};
+  \node[lbl,left] at (8.7,-0.3) {RD2$_\mathrm{o}$};
+  % mux de write-back
+  \tagr{3.95}{-0.68}{ALU result}
+  \tagr{3.95}{-1.0}{load data}
+  \tagr{3.95}{-1.32}{PC + 4}
+  \mux{5.4}{-0.55}{-1.7}
+  \node[lbl] at (5.56,-1.95) {WB$_{\mathrm{sel}}$};
+  \foreach \y/\n in {-0.8/00,-1.12/01,-1.44/10} {\draw (5.15,\y) -- (5.4,\y); \node[lbl] at (5.57,\y) {\n};}
+  \draw[->] (5.72,-1.12) -- (5.9,-1.12) |- (6.1,-0.75);
+  % gerador de imediatos
+  \draw[fill=dpRF] (5.7,-2.25) -- (7.7,-2.0) -- (7.7,-2.85) -- (5.7,-2.85) -- cycle;
+  \node[big] at (6.75,-2.55) {IMM}; \node[lbl] at (6.05,-2.6) {Instr$_\mathrm{i}$}; \node[lbl] at (7.4,-2.6) {Imm$_\mathrm{o}$};
+  \draw[->] (4.4,-2.55) -- (5.7,-2.55);
+  \draw (7.7,-2.55) -- (8.4,-2.55); \jd{(8.4,-2.55)}
+  % PC + IMM
+  \adder{9.2}{-2.55}
+  \draw[->] (8.4,-2.55) |- (9.2,-2.75);
+  \tagr{7.9}{-3.13}{PC}
+  \draw[->] (9.05,-3.25) -- (9.2,-3.25);
+  \draw (9.7,-3.0) -- (9.95,-3.0); \tagr{9.95}{-2.88}{PC + IMM}
+  % ================= EX
+  \mux{11.1}{0.95}{-0.25}
+  \node[lbl] at (11.26,1.17) {ALU$_{\mathrm{src\_a}}$};
+  \foreach \y/\n in {0.65/00,0.35/01,0.05/10} \node[lbl] at (11.27,\y) {\n};
+  \draw[->] (8.7,0.4) -- (9.1,0.4) |- (11.1,0.65);
+  \tagr{9.75}{0.47}{PC}
+  \draw[->] (10.85,0.35) -- (11.1,0.35);
+  \node[lbl] at (10.75,0.05) {0}; \draw[->] (10.85,0.05) -- (11.1,0.05);
+  \mux{11.1}{-0.45}{-1.35}
+  \node[lbl] at (11.26,-1.6) {ALU$_{\mathrm{src\_b}}$};
+  \foreach \y/\n in {-0.7/0,-1.1/1} \node[lbl] at (11.27,\y) {\n};
+  \draw[->] (8.7,-0.3) -- (9.4,-0.3) |- (11.1,-0.7); \jd{(9.4,-0.7)}
+  \draw[->] (8.4,-2.55) -- (8.4,-1.1) -- (11.1,-1.1);
+  \node[lbl,above] at (10.0,-1.1) {IMM};
+  % ULA
+  \draw[fill=dpALU] (12.0,0.75) -- (12.8,0.35) -- (12.8,-0.85) -- (12.0,-1.25) -- (12.0,-0.45) -- (12.25,-0.25) -- (12.0,-0.05) -- cycle;
+  \node[big,rotate=90] at (12.55,-0.25) {\textbf{ALU}};
+  \node[lbl] at (12.15,0.3) {A$_\mathrm{i}$}; \node[lbl] at (12.15,-0.8) {B$_\mathrm{i}$};
+  \draw (12.4,0.55) -- ++(0,0.35) node[above,lbl]{ALU$_{\mathrm{control}}$};
+  \draw[->] (11.42,0.35) -- (11.7,0.35) |- (12.0,0.3);
+  \draw[->] (11.42,-0.9) -- (11.7,-0.9) |- (12.0,-0.8);
+  \draw (12.4,-1.05) -- ++(0,-0.5) -- ++(0.25,0); \tagr{12.65}{-1.43}{ALU zero}
+  % ================= MEM
+  \draw (12.8,-0.25) -- (13.4,-0.25); \jd{(13.4,-0.25)}
+  \draw[->] (13.4,-0.25) -- (14.9,-0.25);
+  \draw (13.4,-0.25) |- (13.6,1.3); \tagr{13.6}{1.42}{ALU result}
+  \draw[fill=dpMem] (14.9,0.85) rectangle (17.0,-1.35);
+  \node[font=\fontfamily{ptm}\selectfont\small] at (16.0,-0.35) {DMem}; \node[font=\fontfamily{ptm}\selectfont\small] at (16.0,-0.72) {(LSU)};
+  \draw (15.95,0.85) -- ++(0,0.35) node[above,lbl]{MEM$_{\mathrm{write}}$}; \node[lbl] at (15.95,0.68) {MW$_\mathrm{i}$};
+  \node[lbl,right] at (14.9,-0.25) {Addr$_\mathrm{i}$};
+  \node[lbl,right] at (14.9,-0.6) {WD$_\mathrm{i}$};
+  \node[lbl,right] at (14.9,-0.95) {F3$_\mathrm{i}$};
+  \node[lbl,left] at (17.0,-0.25) {LD$_\mathrm{o}$};
+  \draw[->] (9.4,-0.7) -- (9.4,-1.8) -- (14.55,-1.8) |- (14.9,-0.6);
+  \node[lbl,above] at (10.2,-1.8) {RD2};
+  \tagr{13.25}{-0.83}{Instruction}
+  \draw[->] (14.35,-0.95) -- (14.9,-0.95); \node[lbl,above] at (14.6,-0.95) {14:12};
+  % ================= WB
+  \draw (17.0,-0.25) -- (17.6,-0.25); \tagr{17.6}{-0.13}{load data}
+\end{tikzpicture}
