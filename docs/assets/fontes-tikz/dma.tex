@@ -1,0 +1,29 @@
+% Controlador DMA (rtl/soc/dma_controller.vhd): leitura e escrita desacopladas por uma FIFO.
+\begin{tikzpicture}[font=\scriptsize,>={Stealth[length=1.6mm]},
+  b/.style={draw,thick,align=center,minimum height=12mm,inner sep=2pt},
+  sig/.style={font=\tiny\ttfamily},
+  ctl/.style={text=azul,font=\tiny\itshape}]
+  % registradores de configuração
+  \node[b,fill=yellow!22,minimum width=60mm,minimum height=8mm] (cfg) at (5.1,2.3)
+    {Registradores: \texttt{SRC\_ADDR}, \texttt{DST\_ADDR}, \texttt{COUNT}, \texttt{CONTROL} (\texttt{START}/\texttt{BUSY}, \texttt{FIXED\_DST}, \texttt{FIXED\_SRC})};
+  \draw[<->,thick] (cfg.north) -- ++(0,0.55) node[above,font=\scriptsize]{CPU: escravo de configuração (\texttt{cfg\_*})};
+  % caminho
+  \node[b,fill=blue!14,minimum width=19mm] (rd) at (0,0) {Motor de\\leitura};
+  \node[b,fill=gray!12,minimum width=12mm] (in) at (2.45,0) {estágio\\de entrada};
+  \node[b,fill=green!16,minimum width=24mm] (fifo) at (5.1,0) {FIFO\\$32\times32$ bits};
+  \node[b,fill=gray!12,minimum width=14mm] (out) at (7.8,0) {registrador\\de saída};
+  \node[b,fill=blue!14,minimum width=19mm] (wr) at (10.3,0) {Motor de\\escrita};
+  \draw[->,thick] (rd) -- (in); \draw[->,thick] (in) -- (fifo); \draw[->,thick] (fifo) -- (out); \draw[->,thick] (out) -- (wr);
+  \foreach \x in {0,2.45,5.1,7.8,10.3} \draw[->,gray] (\x,1.85) -- (\x,0.62);
+  % FIFO: palavras
+  \foreach \i in {0,...,7} \draw[fill=green!35] ($(fifo.south west)+(0.25+\i*0.25,0.12)$) rectangle ++(0.18,0.2);
+  % barramento
+  \draw[<->,thick] (rd.south) -- ++(0,-0.9) node[below,align=center,font=\scriptsize]{\emph{crossbar} $\to$ origem\\(\texttt{m\_rd\_*}, ex.: RAM)};
+  \draw[<->,thick] (wr.south) -- ++(0,-0.9) node[below,align=center,font=\scriptsize]{\emph{crossbar} $\to$ destino\\(\texttt{m\_wr\_*}, ex.: NPU)};
+  \draw[->,thick] (wr.east) -- ++(0.7,0) node[right,sig]{irq\_done\_o}; \node[font=\tiny,right] at (11.95,-0.3) {$\to$ PLIC};
+  % anotações
+  \node[ctl,align=center] at (0,-0.95) {};
+  \node[font=\tiny,text=corpo,align=center,anchor=north] at (2.45,-0.75) {lê enquanto\\há espaço na FIFO};
+  \node[font=\tiny,text=corpo,align=center,anchor=north] at (7.8,-0.75) {pré-busca: recarregado\\a cada ciclo livre};
+  \node[font=\scriptsize,text=laranja!80!black,align=center] at (5.1,-2.35) {com a FIFO preenchida: 1 palavra por ciclo\\(0,916 palavras/ciclo medidas da RAM para a NPU)};
+\end{tikzpicture}

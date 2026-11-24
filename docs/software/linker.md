@@ -1,12 +1,12 @@
-# Organização da Memória Executável: Scripts do Linker
+# Linker scripts
 
 Este documento explica o papel do Linker no fluxo de compilação de software embarcado e como os scripts de linkagem distribuem o código compilado nos endereços físicos de memória do SoC RISC-V. A compreensão deste processo é fundamental para entender como o hardware e o software interagem durante a execução.
 
 ---
 
-## 1. O Papel do Linker no Fluxo de Compilação
+## O Papel do Linker no Fluxo de Compilação
 
-### 1.1 Visão Geral da Cadeia de Compilação
+### Visão Geral da Cadeia de Compilação
 
 Em sistemas embarcados, a transformação do código-fonte em um binário executável passa por múltiplas etapas sequenciais:
 
@@ -18,7 +18,7 @@ Em sistemas embarcados, a transformação do código-fonte em um binário execut
 
 O **Linker** é o programa responsável por resolver referências simbólicas entre arquivos objeto, alocar símbolos em endereços de memória específicos e gerar o formato final executável. É ele quem "costura" todas as peças do programa em um todo coerente.
 
-### 1.2 Seções Lógicas do Programa
+### Seções Lógicas do Programa
 
 Durante a compilação, o compilador organiza o conteúdo do programa em **seções lógicas** (sections), cada uma com uma finalidade específica:
 
@@ -34,9 +34,9 @@ A razão para separar o programa em seções reside na natureza diferente de cad
 
 ---
 
-## 2. Organização e Mapeamento de Memória
+## Organização e Mapeamento de Memória
 
-### 2.1 O Linker Script
+### O Linker Script
 
 O **Linker Script** é um arquivo de configuração (extensão `.ld`) que instrui o linker sobre como distribuir as seções lógicas nos endereços físicos de memória do hardware. Ele define:
 
@@ -46,7 +46,7 @@ O **Linker Script** é um arquivo de configuração (extensão `.ld`) que instru
 
 O formato é uma linguagem específica do linker GNU (ld), contendo diretivas como `MEMORY` para descrever a memória física e `SECTIONS` para mapear as seções lógicas.
 
-### 2.2 Análise do boot.ld (Bootloader)
+### Análise do boot.ld (Bootloader)
 
 O arquivo `boot.ld` é usado para compilar o bootloader — o programa que reside permanentemente em memória ROM e executa após o reset:
 
@@ -104,7 +104,7 @@ Este símbolo é consumido pelo código de startup (crt0.s/start.s) para inicial
 
 Como esses 2 KB são pequenos, o bootloader é compilado com `-Os -ffunction-sections -fdata-sections -Wl,--gc-sections` (`BOOT_OPT` no makefile): o código cabe nos 4 KB da ROM, e as funções do BSP que ele não usa são descartadas. Ele também não usa variáveis globais inicializadas, porque o startup não copia `.data` da ROM para a RAM.
 
-### 2.3 Análise do link.ld (Aplicação do Usuário)
+### Análise do link.ld (Aplicação do Usuário)
 
 O arquivo `link.ld` é usado para compilar a aplicação que será carregada dinamicamente pelo bootloader:
 
@@ -160,7 +160,7 @@ Todas as seções (.text, .rodata, .data, .bss) são colocadas em RAM porque:
 
 Aqui o topo da pilha está em `0x80040800` (256KB após `0x80000800`), diferente do bootloader (`0x80000800`): a aplicação tem a RAM toda para si, enquanto o bootloader se limita aos 2 KB abaixo dela.
 
-### 2.4 Símbolos Definidos e Consumidos pelo Startup
+### Símbolos Definidos e Consumidos pelo Startup
 
 O linker script gera símbolos que o código assembly utiliza como referências fixas. O caso mais evidente é `_stack_start`:
 
@@ -172,7 +172,7 @@ addi sp, sp, %lo(_stack_start)
 
 O linker substitui `_stack_start` pelo endereço calculado (`0x80000800` para bootloader, `0x80040800` para aplicação), e o código de startup usa esse valor para inicializar o Stack Pointer.
 
-### 2.5 Justificativa das Escolhas de Endereçamento
+### Justificativa das Escolhas de Endereçamento
 
 #### Por que ROM em 0x00000000?
 
@@ -197,7 +197,7 @@ O bootloader termina sua execução gravando a aplicação em `0x80000800` e sal
 
 ---
 
-## 3. Resumo Comparativo
+## Resumo Comparativo
 
 | Aspecto | boot.ld (Bootloader) | link.ld (Aplicação) |
 |---------|----------------------|---------------------|

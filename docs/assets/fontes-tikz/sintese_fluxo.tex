@@ -1,0 +1,18 @@
+% Fluxo de implementação na FPGA.
+\begin{tikzpicture}[font=\scriptsize,>={Stealth[length=1.6mm]},node distance=4mm,
+  b/.style={draw,thick,rounded corners=2pt,align=center,minimum width=24mm,minimum height=11mm,inner sep=2pt},
+  t/.style={font=\tiny\ttfamily,text=azul}]
+  \node[b,fill=gray!12] (rtl) {RTL em VHDL\\{\tiny + bootloader (.hex)}};
+  \node[b,fill=blue!14,right=of rtl] (syn) {Síntese\\{\tiny \texttt{synth\_design}}};
+  \node[b,fill=blue!14,right=of syn] (impl) {Implementação\\{\tiny opt, place, phys\_opt, route}};
+  \node[b,fill=yellow!22,right=of impl] (bit) {\emph{bitstream}\\{\tiny .bit e .mcs}};
+  \node[b,fill=green!16,below=8mm of bit,xshift=-16mm] (jtag) {FPGA configurada\\{\tiny JTAG (volátil)}};
+  \node[b,fill=green!16,below=8mm of bit,xshift=16mm] (flash) {flash Quad-SPI\\{\tiny boot ao ligar}};
+  \node[b,fill=orange!18,below=8mm of jtag,xshift=16mm] (app) {programa na RAM\\{\tiny UART ou cartão microSD}};
+  \draw[->,thick] (rtl) -- (syn); \draw[->,thick] (syn) -- (impl); \draw[->,thick] (impl) -- (bit);
+  \draw[->,thick] (bit) -- node[t,left]{program.tcl} (jtag);
+  \draw[->,thick] (bit) -- node[t,right]{flash.tcl} (flash);
+  \draw[->,thick] (jtag) -- node[t,left]{upload.py} (app);
+  \draw[->,thick] (flash) -- (app);
+  \draw[decorate,decoration={brace,amplitude=5pt}] ($(syn.north west)+(0,0.15)$) -- ($(bit.north east)+(0,0.15)$) node[midway,above=5pt,t]{build.tcl (make fpga-build)};
+\end{tikzpicture}

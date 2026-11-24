@@ -1,100 +1,129 @@
-site_name: RISC-V SOC
-site_description: Arquitetura, Drivers e Aplicações do SoC RISC-V
+site_name: SoC RISC-V
+site_description: SoC RISC-V didático em VHDL — núcleo RV32I_Zicsr multiciclo, interconexão crossbar, DMA, periféricos e NPU, validado em FPGA.
 site_url: https://RISC-V-Azedinha.github.io/RISC-V/
+repo_name: RISC-V
 repo_url: https://github.com/RISC-V-Azedinha/RISC-V
-repo_name: RISC-V-Azedinha/RISC-V
+edit_uri: edit/main/docs/
+copyright: Copyright &copy; RISC-V-Azedinha
 
 theme:
   name: material
-  
-  # Logo no canto superior esquerdo (usando vetor embutido)
+  language: pt-BR
+  logo: assets/logo.svg
+  favicon: assets/favicon.svg
+  font:
+    text: IBM Plex Sans
+    code: IBM Plex Mono
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Mudar para modo escuro
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Mudar para modo claro
   icon:
-    logo: material/memory
-    
-  # Favicon da aba do navegador. 
-  # IMPORTANTE: Crie a pasta docs/assets, coloque um arquivo favicon.png lá e descomente a linha abaixo!
-  # favicon: assets/favicon.png 
-
+    repo: fontawesome/brands/github
   features:
     - navigation.instant
+    - navigation.instant.progress
     - navigation.tabs
-    - navigation.footer
+    - navigation.tabs.sticky
     - navigation.tracking
+    - navigation.sections
     - navigation.top
+    - navigation.footer
     - toc.follow
-    - content.code.copy
-    - content.tabs.link
-    - search.highlight
     - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
     - content.tooltips
 
-  palette:
-    # Apenas Modo Escuro para forçar o estilo da imagem que você mandou
-    - scheme: slate
-      primary: black 
-      accent: indigo
-
-  font:
-    text: Inter
-    code: JetBrains Mono
-
 markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - def_list
+  - footnotes
+  - tables
+  - toc:
+      permalink: true
+      title: Nesta página
+  - pymdownx.details
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span
+      pygments_lang_class: true
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.arithmatex:
       generic: true
-  - admonition
-  - pymdownx.details
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.emoji:
-      emoji_index: !!python/name:pymdownx.emoji.twemoji
-      emoji_generator: !!python/name:pymdownx.emoji.to_svg
-  - tables
-  - attr_list
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
 
-# Estrutura do Menu Lateral (Ajuste conforme seus arquivos)
-nav:
-  - Introdução:
-      - Visão Geral: index.md
-      - Requisitos e Setup: intro/setup.md
-  - Arquitetura de Hardware:
-      - Microarquitetura Monociclo: hardware/single-cycle.md
-      - Microarquitetura Multiciclo: hardware/multi-cycle.md
-      - Subsistema de Interrupções: hardware/interrupts.md
-      - Barramento: soc/barramento.md
-      - Memória e DMA: soc/memoria_dma.md
-  - Periféricos:
-      - Controlador GPIO: soc/gpio_controller.md
-      - Controlador UART: soc/uart_controller.md
-      - Controlador VGA: soc/vga_controller.md
-      - Cartão microSD: soc/sd_controller.md
-      - Controlador de Depuração: soc/debug_controller.md
-  - Software:
-      - Toolchain e Build System: software/toolchain_build_system.md
-      - Processo de Boot: software/boot.md
-      - Linker Scripts: software/linker.md
-  - Desenvolvimento:
-      - Fluxo de Síntese (FPGA): dev/fpga_build.md         # Baseado em fpga/scripts/
-  - Aplicações:
-      - Aplicações e Servidores IA: software/apps_servidores_ia.md
-      - Protocolo de Comunicação: software/protocolo_comunicacao_host_fpga.md
-      - Interface Gráfica Educacional e Depuração: software/interface_grafica_educacional_depuracao.md
-      - Clientes de Inteligência Artificial: software/clientes_inteligencia_artificial.md
-
+plugins:
+  - search:
+      lang: pt
+  - git-revision-date-localized:
+      type: datetime
+      locale: pt
+      fallback_to_build_date: true
 
 extra_css:
   - stylesheets/extra.css
 
-plugins:
-  - search
-  - git-revision-date-localized:
-      type: datetime
-
 extra_javascript:
   - javascript/mathjax.js
-  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+  - https://unpkg.com/mathjax@3.2.2/es5/tex-mml-chtml.js
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/RISC-V-Azedinha/RISC-V
+
+nav:
+  - Início:
+      - Introdução: index.md
+      - Primeiros passos: primeiros-passos.md
+  - Processador:
+      - Microarquitetura monociclo: processador/monociclo.md
+      - Microarquitetura multiciclo: processador/multiciclo.md
+      - Exceções e interrupções: processador/interrupcoes.md
+  - SoC:
+      - Interconexão: soc/interconexao.md
+      - Memória e DMA: soc/memoria-dma.md
+      - Controlador de depuração: soc/depuracao.md
+  - Periféricos:
+      - GPIO: perifericos/gpio.md
+      - UART: perifericos/uart.md
+      - VGA: perifericos/vga.md
+      - Cartão microSD: perifericos/sd.md
+      - NPU: perifericos/npu.md
+  - Software:
+      - Compilação e build: software/build.md
+      - Boot: software/boot.md
+      - Linker scripts: software/linker.md
+  - Aplicações:
+      - Programas e testes: aplicacoes/programas.md
+      - Servidores da NPU: aplicacoes/servidores-npu.md
+      - Ferramentas do hospedeiro: aplicacoes/ferramentas.md
+  - Desenvolvimento:
+      - Verificação: desenvolvimento/verificacao.md
+      - Síntese em FPGA: desenvolvimento/sintese.md

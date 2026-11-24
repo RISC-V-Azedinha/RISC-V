@@ -1,0 +1,38 @@
+% Handshake vld/rdy entre um mestre e um escravo do barramento.
+\begin{tikzpicture}[font=\footnotesize,>={Stealth[length=1.6mm]},
+  mod/.style={draw,thick,rounded corners=3pt,align=center,minimum width=26mm,minimum height=22mm,font=\footnotesize\bfseries},
+  sig/.style={font=\scriptsize\ttfamily}]
+  % ---------------- blocos
+  \node[mod,fill=blue!14] (m) at (0,0) {Mestre\\[-1pt]{\scriptsize\normalfont (CPU ou DMA)}};
+  \node[mod,fill=green!16] (s) at (6.4,0) {Escravo\\[-1pt]{\scriptsize\normalfont (memória ou periférico)}};
+  \draw[->,thick] ($(m.east)+(0,0.65)$) -- node[sig,above]{vld} ($(s.west)+(0,0.65)$);
+  \draw[->,thick] ($(m.east)+(0,0.2)$) -- node[sig,above]{addr, we, data} ($(s.west)+(0,0.2)$);
+  \draw[<-,thick] ($(m.east)+(0,-0.3)$) -- node[sig,above]{rdy} ($(s.west)+(0,-0.3)$);
+  \draw[<-,thick] ($(m.east)+(0,-0.75)$) -- node[sig,above]{data (leitura)} ($(s.west)+(0,-0.75)$);
+  % ---------------- formas de onda
+  \begin{scope}[shift={(-1.5,-2.4)}]
+    \def\w{0.8}
+    \foreach \y/\n in {0/clk,-0.75/vld,-1.5/rdy,-2.25/addr} \node[sig,anchor=east] at (-0.1,\y-0.2) {\n};
+    % relógio
+    \foreach \i in {0,...,10} \draw[thick] ({\i*\w},-0.4) -- ({\i*\w},0) -- ({\i*\w+\w/2},0) -- ({\i*\w+\w/2},-0.4) -- ({\i*\w+\w},-0.4);
+    % vld: alto nos ciclos 1-3 e 5-6
+    \draw[thick,azul] (0,-1.15) -- ({1*\w},-1.15) -- ({1*\w},-0.75) -- ({4*\w},-0.75) -- ({4*\w},-1.15) -- ({5*\w},-1.15) -- ({5*\w},-0.75) -- ({7*\w},-0.75) -- ({7*\w},-1.15) -- ({11*\w},-1.15);
+    % rdy: pulso no ciclo 3 e no ciclo 6
+    \draw[thick,laranja!80!black] (0,-1.9) -- ({3*\w},-1.9) -- ({3*\w},-1.5) -- ({4*\w},-1.5) -- ({4*\w},-1.9) -- ({6*\w},-1.9) -- ({6*\w},-1.5) -- ({7*\w},-1.5) -- ({7*\w},-1.9) -- ({11*\w},-1.9);
+    % barramento
+    \draw[thick] (0,-2.25) -- ({1*\w-0.08},-2.25);
+    \draw[thick] ({4*\w+0.08},-2.25) -- ({5*\w-0.08},-2.25);
+    \draw[thick] ({7*\w+0.08},-2.25) -- ({11*\w},-2.25);
+    \draw[thick] ({1*\w-0.08},-2.25) -- ({1*\w},-2.05) -- ({4*\w},-2.05) -- ({4*\w+0.08},-2.25) -- ({4*\w},-2.45) -- ({1*\w},-2.45) -- cycle;
+    \draw[thick] ({5*\w-0.08},-2.25) -- ({5*\w},-2.05) -- ({7*\w},-2.05) -- ({7*\w+0.08},-2.25) -- ({7*\w},-2.45) -- ({5*\w},-2.45) -- cycle;
+    \node[sig] at ({2.5*\w},-2.25) {A0};
+    \node[sig] at ({6*\w},-2.25) {A1};
+    % transferências
+    \begin{pgfonlayer}{background}\fill[green!14] ({3*\w},-2.6) rectangle ({4*\w},0.15);\end{pgfonlayer}
+    \begin{pgfonlayer}{background}\fill[green!14] ({6*\w},-2.6) rectangle ({7*\w},0.15);\end{pgfonlayer}
+    \node[font=\scriptsize,text=verde!80!black] at ({3.5*\w},-2.85) {transferência};
+    \node[font=\scriptsize,text=verde!80!black] at ({6.5*\w},-2.85) {transferência};
+    \node[font=\scriptsize,text=corpo,align=center] at ({2*\w},0.5) {espera (\emph{stall})};
+    \draw[<->,thin,corpo] ({1*\w},0.3) -- ({3*\w},0.3);
+  \end{scope}
+\end{tikzpicture}

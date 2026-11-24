@@ -1,12 +1,12 @@
-# Processo de Boot do RISC-V
+# Boot
 
 Este documento descreve o processo de inicialização do processador RISC-V, desde o sinal de reset elétrico até a execução da aplicação do usuário. O fluxo segue uma hierarquia de níveis: primeiro o código em Assembly (`crt0.s`/`start.s`) prepara o ambiente mínimo para execução em C, e em seguida o bootloader em C (`boot.c`) assume o controle para carregar e executar a aplicação final.
 
 ---
 
-## 1. O Processo de Inicialização de Baixo Nível (Startup em Assembly)
+## O Processo de Inicialização de Baixo Nível (Startup em Assembly)
 
-### 1.1 O Fluxo de Execução Imediatamente Após o Reset
+### O Fluxo de Execução Imediatamente Após o Reset
 
 Quando o processador RISC-V sai do estado de reset, o contador de programa (PC - Program Counter) é forçado ao endereço de boot definido pelo hardware. A especificação da arquitetura RISC-V não define um endereço fixo para o Reset Vector — este valor é estritamente determinado pelo projeto de hardware (SoC) específico.
 
@@ -16,7 +16,7 @@ A partir deste ponto, o processador começa a executar instruções sequencialme
 
 O ponto de entrada é simbolizado pelo rótulo `_start`, que deve ser declarado como símbolo global para que o linker possa resolvê-lo. No RISC-V, a convenção de nomes com underscore prefixado (`_start`) é utilizada para distinguir o símbolo de entrada do padrão C que espera `main`.
 
-### 1.2 Análise do Código de Inicialização
+### Análise do Código de Inicialização
 
 #### Arquivo start.s
 
@@ -64,7 +64,7 @@ Este arquivo implementa a mesma função básica, porém com duas diferenças im
 
 2. **Halt da simulação**: Após o retorno de `main`, escreve o valor `1` no endereço MMIO `0x10000008`, que é conectado ao hardware de simulação para encerrar a execução controlada.
 
-### 1.3 Inicialização do Stack Pointer (sp)
+### Inicialização do Stack Pointer (sp)
 
 A inicialização do registrador `sp` (Stack Pointer) é **obrigatória** antes de executar qualquer código em C. O motivo é profundamente enraizado na ABI (Application Binary Interface) do RISC-V e no funcionamento do modelo de chamadas de função.
 
@@ -91,7 +91,7 @@ addi sp, sp, %lo(_stack_start)
 
 A pilha cresce para baixo (endereços decrescentes), então inicializá-la no maior endereço disponível garante espaço máximo para crescimento sem colidir com o código ou dados.
 
-### 1.4 Limpeza da Seção .bss
+### Limpeza da Seção .bss
 
 Em programas C, variáveis globais declaradas sem inicialização explícita (como `int count;`) devem ser automaticamente inicializadas com zero pelo runtime. O compilador coloca essas variáveis na seção `.bss` (Block Started by Symbol), que é uma região de memória não inicializada.
 
@@ -110,7 +110,7 @@ bge a0, a1, .Lend
 
 Nos arquivos analisados (`start.s` e `crt0.s`), esta etapa está ausente porque são exemplos minimalistas. Em um ambiente de produção completo, o crt0.s deveria incluir esta limpeza.
 
-### 1.5 Transição para main()
+### Transição para main()
 
 Após inicializar `sp` (e opcionalmente limpar `.bss`), o startup executa `call main`. A instrução `call` é uma pseudoinstrução que expande para:
 
@@ -124,9 +124,9 @@ O registrador `ra` (Return Address) é automaticamente configurado para apontar 
 
 ---
 
-## 2. O Bootloader em C
+## O Bootloader em C
 
-### 2.1 Contexto e Propósito
+### Contexto e Propósito
 
 Uma vez que o código C pode executar corretamente (ambiente preparado pelo startup), o bootloader assume o controle. No contexto deste projeto, o bootloader é um programa em C que reside em memória ROM/Flash on-chip (endereço `0x00000000` após o startup) e possui duas funções principais:
 
@@ -135,7 +135,7 @@ Uma vez que o código C pode executar corretamente (ambiente preparado pelo star
 
 Este modelo permite que o hardware (FPGA) seja reprogramado com novas aplicações sem modificar o hardware bitstream.
 
-### 2.2 Análise do Código do Bootloader
+### Análise do Código do Bootloader
 
 #### Configuração de Periféricos UART
 
@@ -231,9 +231,9 @@ Esta técnica funciona porque:
 
 Se a aplicação retornar (situação anormal), o bootloader entra em loop infinito.
 
-### 2.3 Persistência no Cartão microSD
+### Persistência no Cartão microSD
 
-Desde a v1.4.0, o bootloader também guarda um programa no cartão microSD, como a flash de um microcontrolador (detalhes em [Cartão microSD](../soc/sd_controller.md)):
+Desde a v1.4.0, o bootloader também guarda um programa no cartão microSD, como a flash de um microcontrolador (detalhes em [Cartão microSD](../perifericos/sd.md)):
 
 - A magic word passa a ter um **prazo de ~1 s** (medido pelo `mtime` do CLINT). Sem upload nesse tempo, o bootloader tenta carregar o programa gravado no cartão; sem cartão ou sem programa válido, volta a esperar pela UART sem prazo, como antes.
 - O **bit 31 do tamanho** pede a gravação no cartão (`upload.py --save` ou `make upload SAVE=1`). Os carregadores que não o usam (GUI-TCC, Eureka) continuam só carregando na RAM.
@@ -244,7 +244,7 @@ A pilha do bootloader fica nos 2 KB abaixo do app (`_stack_start = 0x80000800` e
 
 ---
 
-## 3. Resumo do Fluxo de Boot
+## Resumo do Fluxo de Boot
 
 O processo completo pode ser visualizado como uma cascata de estágios:
 
